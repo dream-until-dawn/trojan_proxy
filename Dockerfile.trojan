@@ -1,0 +1,23 @@
+FROM alpine:latest
+
+# 安装Trojan
+RUN apk add --no-cache trojan && \
+    mkdir -p /etc/trojan/cert
+
+# 创建非root用户运行trojan
+RUN addgroup -S trojan && adduser -S trojan -G trojan
+
+# 复制配置文件
+COPY config/config.json /etc/trojan/config.json
+
+# 设置权限
+RUN chown -R trojan:trojan /etc/trojan
+
+# 切换用户
+USER trojan
+
+# 暴露端口
+EXPOSE 443
+
+# 启动Trojan
+CMD ["trojan", "-c", "/etc/trojan/config.json"]

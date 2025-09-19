@@ -1,0 +1,26 @@
+FROM alpine:latest
+
+# 安装必要的软件包
+RUN apk update && apk add --no-cache \
+    certbot \
+    bash \
+    curl \
+    openssl \
+    cronie \
+    python3 \
+    py3-pip \
+    && pip3 install certbot-dns-cloudflare \
+    && rm -rf /var/cache/apk/*
+
+# 创建证书存储目录
+RUN mkdir -p /etc/letsencrypt
+
+# 复制自定义脚本
+COPY scripts /opt/certbot-scripts/
+RUN chmod +x /opt/certbot-scripts/*.sh
+
+# 设置工作目录
+WORKDIR /opt/certbot-scripts
+
+# 设置入口点
+ENTRYPOINT ["bash", "/opt/certbot-scripts/menu.sh"]
