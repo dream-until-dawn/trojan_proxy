@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务器状态监控面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(87, 51, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent, 
+                rgba(87, 51, 255, 0.1), 
+                rgba(135, 71, 255, 0.2)
+            );
+            transform: rotate(0deg);
+            animation: rotate 20s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes rotate {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(229, 46, 113, 0.5);
+        }
+        
+        .subtitle {
+            color: #a0a0e0;
+            font-size: 1.2rem;
+        }
+        
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(87, 51, 255, 0.4);
+        }
+        
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #a0a0e0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        .server-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-online {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        
+        .status-offline {
+            background: #ff0000;
+            box-shadow: 0 0 10px #ff0000;
+        }
+        
+        .status-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .online {
+            color: #00ff00;
+        }
+        
+        .offline {
+            color: #ff0000;
+        }
+        
+        .timestamp {
+            font-size: 2.5rem;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(135, 71, 255, 0.8);
+        }
+        
+        .date {
+            text-align: center;
+            color: #a0a0e0;
+            font-size: 1.2rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(90deg, #ff8a00, #e52e71);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(229, 46, 113, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(229, 46, 113, 0.6);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .uptime {
+            text-align: center;
+            margin-top: 20px;
+            color: #a0a0e0;
+            font-size: 1.1rem;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .timestamp {
+                font-size: 1.8rem;
+            }
+            
+            .status-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>服务器状态监控面板</h1>
+            <p class="subtitle">实时监控服务器运行状态和时间戳</p>
+        </header>
+        
+        <div class="status-cards">
+            <div class="card">
+                <h2 class="card-title">
+                    <i>📊</i> 服务器状态
+                </h2>
+                <div class="server-status">
+                    <div class="status-indicator status-online pulse"></div>
+                    <div class="status-text online">运行中</div>
+                </div>
+                <p>当前服务器运行正常，所有服务均可使用。</p>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">
+                    <i>🕐</i> 服务器时间戳
+                </h2>
+                <div class="timestamp" id="timestamp">00:00:00</div>
+                <div class="date" id="date">0000-00-00</div>
+            </div>
+        </div>
+        
+        <div class="uptime">
+            运行时间: <span id="uptime">0 天 0 小时 0 分钟 0 秒</span>
+        </div>
+        
+        <div class="controls">
+            <button id="refreshBtn">刷新状态</button>
+            <button id="toggleBtn">模拟状态切换</button>
+        </div>
+    </div>
+
+    <script>
+        // 更新时间戳和日期
+        function updateDateTime() {
+            const now = new Date();
+            
+            // 更新时间
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('timestamp').textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // 更新日期
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('date').textContent = `${year}-${month}-${day}`;
+            
+            // 更新运行时间
+            updateUptime();
+        }
+        
+        // 运行时间计算（从页面加载开始）
+        let startTime = Date.now();
+        
+        function updateUptime() {
+            const currentTime = Date.now();
+            const uptimeMs = currentTime - startTime;
+            
+            const seconds = Math.floor(uptimeMs / 1000) % 60;
+            const minutes = Math.floor(uptimeMs / (1000 * 60)) % 60;
+            const hours = Math.floor(uptimeMs / (1000 * 60 * 60)) % 24;
+            const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('uptime').textContent = 
+                `${days} 天 ${hours} 小时 ${minutes} 分钟 ${seconds} 秒`;
+        }
+        
+        // 切换服务器状态
+        function toggleServerStatus() {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.status-text');
+            const statusCard = document.querySelector('.server-status');
+            
+            if (statusIndicator.classList.contains('status-online')) {
+                // 切换到离线状态
+                statusIndicator.classList.remove('status-online', 'pulse');
+                statusIndicator.classList.add('status-offline');
+                statusText.textContent = '离线';
+                statusText.classList.remove('online');
+                statusText.classList.add('offline');
+                statusCard.nextElementSibling.textContent = '服务器当前不可用，请检查连接。';
+            } else {
+                // 切换到在线状态
+                statusIndicator.classList.remove('status-offline');
+                statusIndicator.classList.add('status-online', 'pulse');
+                statusText.textContent = '运行中';
+                statusText.classList.remove('offline');
+                statusText.classList.add('online');
+                statusCard.nextElementSibling.textContent = '当前服务器运行正常，所有服务均可使用。';
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始更新时间
+            updateDateTime();
+            
+            // 设置定时器，每秒更新一次时间
+            setInterval(updateDateTime, 1000);
+            
+            // 添加按钮事件监听器
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                // 添加刷新动画效果
+                this.textContent = '刷新中...';
+                setTimeout(() => {
+                    this.textContent = '刷新状态';
+                    updateDateTime();
+                }, 500);
+            });
+            
+            document.getElementById('toggleBtn').addEventListener('click', toggleServerStatus);
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 #!/bin/bash
 source ./untill.sh
 source ./install.acme.sh
-source ./entrance.menu.sh
 
 set -e  # 遇到错误立即退出
 
@@ -21,4 +20,4 @@ else
     exit 1
 fi
 
-main
+wait
