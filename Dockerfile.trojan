@@ -1,23 +1,27 @@
 FROM alpine:latest
 
-# 安装Trojan
-RUN apk add --no-cache trojan && \
-    mkdir -p /etc/trojan/cert
+# 安装必要的软件包
+RUN apk add --no-cache wget bash openssl socat nginx nginx-mod-http-js
 
-# 创建非root用户运行trojan
-RUN addgroup -S trojan && adduser -S trojan -G trojan
+# 设置环境变量
+ENV EMAIL=test@example.com
 
-# 复制配置文件
-COPY config/config.json /etc/trojan/config.json
+# 创建存储目录
+RUN mkdir -p /etc/letsencrypt ~/.acme.sh/ /opt/scripts/
 
-# 设置权限
-RUN chown -R trojan:trojan /etc/trojan
+# 复制脚本
+COPY scripts /opt/scripts/
 
-# 切换用户
-USER trojan
+# 设置工作目录
+WORKDIR /opt/scripts
+
+# 复制配置
+COPY config/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY config/nginx/conf.d/ /etc/nginx/conf.d/
+COPY config/nginx/njs/ /etc/nginx/njs/
 
 # 暴露端口
-EXPOSE 443
+EXPOSE 80 443
 
-# 启动Trojan
-CMD ["trojan", "-c", "/etc/trojan/config.json"]
+#使用JSON数组格式指定CMD
+CMD ["bash", "install.environment.sh"]
