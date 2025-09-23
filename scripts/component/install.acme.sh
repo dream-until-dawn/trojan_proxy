@@ -1,5 +1,4 @@
 #!/bin/bash
-
 source ./untill.sh
 
 # 使用脚本安装acme.sh
@@ -19,11 +18,14 @@ start_acme(){
         if install_acme /tmp/get.acme.sh; then
             success "在线安装acme.sh成功"
             rm -f /tmp/get.acme.sh
+            return 0
         fi
-    elif [ -f "/opt/scripts/fallback/get.acme.sh" ]; then
+    fi
+    if [ -f "/opt/scripts/fallback/get.acme.sh" ]; then
         success "✓ 找到本地get.acme.sh文件"
         if install_acme /opt/scripts/fallback/get.acme.sh; then
             success "本地安装acme.sh成功"
+            return 0
         else
             error "本地安装也失败了"
             return 1
