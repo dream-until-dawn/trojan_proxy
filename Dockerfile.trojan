@@ -1,14 +1,14 @@
 FROM alpine:latest
 
 # 安装必要的软件包
-RUN apk add --no-cache wget bash openssl socat nginx iputils
+RUN apk add --no-cache wget bash openssl socat nginx iputils tar
 
 # 设置环境变量
-ENV EMAIL=test@example.com
 ENV DOMAIN=example.com
+ENV TROJAN_PW=
 
 # 创建存储目录
-RUN mkdir -p /etc/letsencrypt ~/.acme.sh/ /opt/scripts/
+RUN mkdir -p ~/.acme.sh/ /opt/scripts/
 
 # 复制脚本
 COPY scripts /opt/scripts/
