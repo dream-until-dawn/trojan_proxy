@@ -1,12 +1,37 @@
 #!/bin/bash
 source /opt/scripts/component/utils.sh
 
+# 写入 Nginx 配置文件
+write_in_nginx_config(){
+    cat > /etc/nginx/conf.d/80.conf <<-EOF
+server {
+    listen       127.0.0.1:80;
+    server_name  $DOMAIN;
+    root /usr/share/nginx/html;
+    index index.php index.html index.htm;
+
+    location /test {
+        access_log off;
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+}
+server {
+    listen       0.0.0.0:80;
+    server_name  $DOMAIN;
+    return 301 https://$DOMAIN\$request_uri;
+}
+EOF
+    success "Nginx 配置文件写入成功"
+}
+
 # 启动 Nginx
 start_nginx(){
     info "启动nginx..."
     if pgrep nginx > /dev/null; then
         warning "Nginx 已经在运行"
     else
+        write_in_nginx_config
         nginx -g "daemon off;" & # 启动 Nginx
         # 等待 Nginx 启动完成
         sleep 2
@@ -65,7 +90,7 @@ reload_nginx(){
     info "重新加载nginx配置..."
     if ! pgrep nginx > /dev/null; then
         warning "Nginx 未在运行，请先启动"
-    elif nginx -s reload > /dev/null 2>&1; then
+        elif nginx -s reload > /dev/null 2>&1; then
         success "Nginx 配置已重新加载"
     else
         error "重新加载 Nginx 配置失败"

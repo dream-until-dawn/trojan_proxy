@@ -89,19 +89,6 @@ issue_acme_cert(){
         bash ~/.acme.sh/acme.sh --register-account -m $EMAIL --server zerossl
         bash ~/.acme.sh/acme.sh --issue -d $DOMAIN --nginx
         success "证书申请成功"
-        cat > /etc/nginx/conf.d/80.conf <<-EOF
-server {
-    listen       127.0.0.1:80;
-    server_name  $DOMAIN;
-    root /usr/share/nginx/html;
-    index index.php index.html index.htm;
-}
-server {
-    listen       0.0.0.0:80;
-    server_name  $DOMAIN;
-    return 301 https://$DOMAIN\$request_uri;
-}
-EOF
         bash ~/.acme.sh/acme.sh  --installcert -d $DOMAIN   \
         --key-file /usr/src/trojan-cert/$DOMAIN/private.key \
         --fullchain-file /usr/src/trojan-cert/$DOMAIN/fullchain.cer \
