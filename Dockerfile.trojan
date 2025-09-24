@@ -1,7 +1,7 @@
 FROM alpine:latest
 
 # 安装必要的软件包
-RUN apk add --no-cache wget bash openssl socat nginx iputils tar
+RUN apk add --no-cache wget bash openssl socat nginx iputils tar xz
 
 # 设置环境变量
 ENV DOMAIN=example.com

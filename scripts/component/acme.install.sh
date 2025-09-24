@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./utils.sh
+source /opt/scripts/component/utils.sh
 
 # 使用脚本安装acme.sh
 install_acme() {

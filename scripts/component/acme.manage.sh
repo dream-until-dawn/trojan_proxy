@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./utils.sh
+source /opt/scripts/component/utils.sh
 
 get_acme_cert(){
     if [ ! -d "/usr/src/trojan-cert" ]; then

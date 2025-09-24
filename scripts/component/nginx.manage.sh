@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./utils.sh
+source /opt/scripts/component/utils.sh
 
 # 启动 Nginx
 nginx_start(){
