@@ -25,3 +25,25 @@ function check_ip(){
     fi
     return 0
 }
+
+# 端口冲突检查函数
+# 用法: check_port_conflict <端口号>
+# 返回: 0-端口可用, 1-端口被占用, 2-参数错误
+check_port_conflict() {
+    local port="$1"
+    
+    # 参数校验
+    [[ "$port" =~ ^[0-9]+$ ]] || { error "端口必须是数字"; return 2; }
+    (( port >= 1 && port <= 65535 )) || { error "端口范围无效"; return 2; }
+    
+    # 使用 ss 检查
+    if ss -tulnp 2>/dev/null | awk -v p=":$port " '$5 ~ p {exit 1}'; then
+        success "${port}端口可用"
+        return 0
+    else
+        error "${port}端口被占用"
+        return 1
+    fi
+}
+
+

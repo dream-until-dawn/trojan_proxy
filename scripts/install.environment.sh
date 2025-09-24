@@ -10,7 +10,7 @@ info "开始安装必要程序...域名:${DOMAIN},邮箱:${EMAIL},trojan密码:$
 install_latest_acme
 install_latest_trojan
 
-start_nginx
 start_trojan
+start_nginx
 
 wait

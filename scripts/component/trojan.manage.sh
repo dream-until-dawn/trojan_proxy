@@ -36,13 +36,18 @@ install_latest_trojan() {
     info "开始安装 trojan ${TROJAN_VERSION} 至 ${TROJAN_BINARYPATH}..."
     install -Dm755 "trojan" "$TROJAN_BINARYPATH"
     # 验证安装
-    if command -v trojan >/dev/null 2>&1; then
-        success "trojan 命令已可用，版本信息："
-        trojan --version
+    if [ -x "$TROJAN_BINARYPATH" ]; then
+        info "文件已正确安装，正在验证可执行性..."
+        if "$TROJAN_BINARYPATH" --version >/dev/null 2>&1; then
+            success "trojan 命令已可用"
+        else
+            error "文件存在但无法执行，可能是依赖问题"
+            ldd "$TROJAN_BINARYPATH" || true
+            exit 1
+        fi
     else
-        warning "trojan 命令不在PATH中，尝试重新加载PATH"
-        export PATH="$TROJAN_INSTALLPREFIX/bin:$PATH"
-        trojan --version
+        error "文件安装失败或不可执行"
+        exit 1
     fi
 }
 
@@ -60,8 +65,8 @@ write_in_trojan_config(){
     ],
     "log_level": 1,
     "ssl": {
-        "cert": $CERTIFICATEPATH,
-        "key": $KEYPATH,
+        "cert": "$CERTIFICATEPATH",
+        "key": "$KEYPATH",
         "key_password": "",
         "cipher_tls13":"TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
         "prefer_server_cipher": true,
@@ -136,6 +141,19 @@ is_trojan_running() {
         return 1  # 没有运行
     fi
 }
+is_trojan_running() {
+    # 方法1：检查进程名和动态链接器组合
+    if pgrep -f "ld-linux-x86-64.*trojan" >/dev/null || pgrep -x "trojan" >/dev/null; then
+        return 0  # 正在运行
+    fi
+    # 方法2：检查端口占用（更可靠）
+    if ss -tulnp | grep -qE ':443\b.*trojan'; then
+        return 0
+    fi
+    return 1  # 没有运行
+}
+
+
 
 # 启动trojan
 start_trojan() {
@@ -144,13 +162,18 @@ start_trojan() {
         return 1
     fi
     
-    if [ ! -f $CERTIFICATEPATH] then
-        error "证书文件不存在"
+    if ! check_port_conflict 443; then
+        error "启动前端口检查失败"
         return 1
     fi
     
-    if [ ! -f $KEYPATH] then
-        error "证书密钥文件不存在"
+    if [ ! -f "${CERTIFICATEPATH}" ]; then
+        error "证书文件不存在,请先申请证书"
+        return 1
+    fi
+    
+    if [ ! -f "${KEYPATH}" ]; then
+        error "证书密钥文件不存在,请先申请证书"
         return 1
     fi
     
@@ -161,8 +184,18 @@ start_trojan() {
     fi
     write_in_trojan_config "${_password}";
     
-    info "正在启动 trojan..."
-    nohup trojan -c "$SERVERCONFIGPATH" >/dev/null 2>&1 &
+    info "使用证书文件路径 ${CERTIFICATEPATH} 和密钥文件路径 ${KEYPATH} 启动 trojan..."
+    if ! trojan -t "$TROJAN_SERVERCONFIGPATH"; then
+        cat "$TROJAN_SERVERCONFIGPATH" | jq . >/dev/null 2>&1 || {
+            error "trojan 配置文件格式错误"
+            return 1
+        }
+        error "trojan 配置文件校验失败"
+        return 1
+    fi
+    
+    success "trojan 配置文件校验成功,开始启动 trojan..."
+    nohup trojan -c "$TROJAN_SERVERCONFIGPATH" >/dev/null 2>&1 &
     sleep 1  # 等待进程启动
     
     if is_trojan_running; then
@@ -170,7 +203,18 @@ start_trojan() {
         return 0
     else
         error "trojan 启动失败"
-        return 1
+        # 修改启动部分为：
+        info "尝试前台运行trojan..."
+        if trojan -c "$TROJAN_SERVERCONFIGPATH"; then
+            success "trojan 启动成功"
+            return 0
+        else
+            error "trojan 启动失败，最后错误信息："
+            # 获取最后一次错误
+            local last_err=$(dmesg | grep trojan | tail -n 1)
+            [ -n "$last_err" ] && error "$last_err"
+            return 1
+        fi
     fi
 }
 
