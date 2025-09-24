@@ -5,6 +5,7 @@ RUN apk add --no-cache wget bash openssl socat nginx iputils tar xz libstdc++ li
 
 # 设置环境变量
 ENV DOMAIN=example.com
+ENV FORCE_LOCAL=false
 ENV TROJAN_PW=
 
 # 创建存储目录

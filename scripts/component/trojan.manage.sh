@@ -1,10 +1,12 @@
 #!/bin/bash
 source /opt/scripts/component/utils.sh
 
-wget https://api.github.com/repos/trojan-gfw/trojan/releases/latest >/dev/null 2>&1
-TROJAN_VERSION=`grep tag_name latest| awk -F '[:,"v]' '{print $6}'`
-rm -f latest
+mkdir -p /mnt/tmp_download
+wget https://api.github.com/repos/trojan-gfw/trojan/releases/latest -P /mnt/tmp_download >/dev/null 2>&1
+rm -f /mnt/tmp_download
+TROJAN_VERSION=`grep tag_name /tmp_download/latest| awk -F '[:,"v]' '{print $6}'`
 TROJAN_TARBALL="trojan-$TROJAN_VERSION-linux-amd64.tar.xz"
+TROJAN_OLD="/opt/scripts/fallback/trojan-1.16.0-linux-amd64.tar.xz"
 TROJAN_DOWNLOADURL="https://github.com/trojan-gfw/trojan/releases/download/v$TROJAN_VERSION/$TROJAN_TARBALL"
 RANDOMSTRING=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
 TROJAN_INSTALLDIR="/opt"
@@ -19,22 +21,34 @@ CERTIFICATEPATH="/usr/src/trojan-cert/${DOMAIN}/fullchain.cer"
 KEYPATH="/usr/src/trojan-cert/${DOMAIN}/private.key"
 
 install_latest_trojan() {
-    mkdir -p $RANDOMSTRING
-    info "进入临时工作目录 ${RANDOMSTRING}..."
-    cd "$RANDOMSTRING"
-    info "开始下载 trojan ${TROJAN_VERSION}..."
-    wget -q --show-progress "$TROJAN_DOWNLOADURL"
-    success "下载成功开始解压 ${TROJAN_TARBALL}..."
-    tar xf "${TROJAN_TARBALL}" -C "${TROJAN_INSTALLDIR}" >/dev/null 2>&1 || {
+    if $FORCE_LOCAL; then
+        warning "强制使用本地安装trojan"
+        install_trojan "$TROJAN_OLD"
+        return 0
+    fi
+    if [ -z "$TROJAN_VERSION" ]; then
+        error "未找到trojan最新版本,使用本地旧版"
+        install_trojan "$TROJAN_OLD"
+        return 0
+    else
+        info "找到trojan最新版本: $TROJAN_VERSION"
+        info "开始下载 trojan ${TROJAN_VERSION}..."
+        wget -q --show-progress "$TROJAN_DOWNLOADURL"
+        install_trojan "$TROJAN_DOWNLOADURL"
+        success "在线安装完成,删除在线下载文件"
+        rm -f "$TROJAN_TARBALL"
+        return 0
+    fi
+}
+
+install_trojan() {
+    success "开始解压 $1..."
+    tar xf $1 -C "${TROJAN_INSTALLDIR}" >/dev/null 2>&1 || {
         error "解压失败,请检查文件完整性"
         exit 1
     }
-    rm -f "$TROJAN_TARBALL"
-    info "trojan解压完成,移除临时目录 ${RANDOMSTRING}..."
-    rm -rf "$RANDOMSTRING"
-    cd "${TROJAN_INSTALLDIR}/trojan"
     info "开始安装 trojan ${TROJAN_VERSION} 至 ${TROJAN_BINARYPATH}..."
-    install -Dm755 "trojan" "$TROJAN_BINARYPATH"
+    install -Dm755 "${TROJAN_INSTALLDIR}/trojan/trojan" "$TROJAN_BINARYPATH"
     # 验证安装
     if [ -x "$TROJAN_BINARYPATH" ]; then
         info "文件已正确安装，正在验证可执行性..."
@@ -135,13 +149,6 @@ EOF
 
 # 检查trojan是否正在运行
 is_trojan_running() {
-    if pgrep -x "trojan" >/dev/null; then
-        return 0  # 正在运行
-    else
-        return 1  # 没有运行
-    fi
-}
-is_trojan_running() {
     # 方法1：检查进程名和动态链接器组合
     if pgrep -f "ld-linux-x86-64.*trojan" >/dev/null || pgrep -x "trojan" >/dev/null; then
         return 0  # 正在运行
@@ -152,7 +159,6 @@ is_trojan_running() {
     fi
     return 1  # 没有运行
 }
-
 
 
 # 启动trojan
@@ -184,7 +190,7 @@ start_trojan() {
     fi
     write_in_trojan_config "${_password}";
     
-    info "使用证书文件路径 ${CERTIFICATEPATH} 和密钥文件路径 ${KEYPATH} 启动 trojan..."
+    info "使用证书 ${CERTIFICATEPATH} 和密钥 ${KEYPATH} 启动 trojan..."
     if ! trojan -t "$TROJAN_SERVERCONFIGPATH"; then
         cat "$TROJAN_SERVERCONFIGPATH" | jq . >/dev/null 2>&1 || {
             error "trojan 配置文件格式错误"
@@ -226,9 +232,10 @@ stop_trojan() {
     fi
     
     info "正在停止 trojan..."
-    pkill -x "trojan"
-    sleep 1  # 等待进程停止
+    fuser -k 443/tcp
     
+    # 二次确认
+    sleep 1
     if ! is_trojan_running; then
         success "trojan 已停止"
         return 0
@@ -237,6 +244,7 @@ stop_trojan() {
         return 1
     fi
 }
+
 
 # 重启trojan
 restart_trojan() {

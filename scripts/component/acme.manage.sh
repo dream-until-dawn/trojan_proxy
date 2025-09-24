@@ -1,6 +1,60 @@
 #!/bin/bash
 source /opt/scripts/component/utils.sh
 
+ACME_OLD="/opt/scripts/fallback/acme.sh"
+ACME_OLDTAR="/opt/scripts/fallback/acme.sh-master.tar.gz"
+ACME_DOWNLOADURL="https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh"
+
+install_latest_acme(){
+    if ! $FORCE_LOCAL; then
+        warning "强制使用本地安装acme.sh"
+        install_local_acme
+        return 0
+    fi
+    info "尝试从网络下载get.acme.sh..."
+    if wget --timeout=30 -q -O /tmp/get.acme.sh "https://get.acme.sh" 1>/dev/null 2>&1; then
+        success "远程下载get.acme.sh成功"
+        if install_acme /tmp/get.acme.sh; then
+            success "在线安装acme.sh成功"
+            rm -f /tmp/get.acme.sh
+            return 0
+        else
+            error "在线安装acme.sh失败"
+            install_local_acme
+            return 0
+        fi
+    else
+        error "远程下载get.acme.sh失败"
+        install_local_acme
+    fi
+}
+
+install_local_acme(){
+    info "开始解压本地旧版acme.sh..."
+    tar xzf $ACME_OLDTAR -C /tmp
+    info "开始安装本地旧版acme.sh..."
+    cd /tmp/acme.sh-master
+    bash ./acme.sh --install 1>/dev/null 2>&1
+    rm -rf /tmp/acme.sh-master
+    success "本地安装acme.sh成功"
+    cd /opt/scripts
+}
+
+# 使用脚本安装acme.sh
+install_acme() {
+    cd /tmp
+    info "正在安装: $1"
+    chmod +x "$1"
+    bash "$1" email="$EMAIL" 1>/dev/null 2>&1 || {
+        error "安装失败，尝试其他方法..."
+        cd /opt/scripts
+        return 1
+    }
+    cd /opt/scripts
+    return 0
+}
+
+# 取得证书
 get_acme_cert(){
     if [ ! -d "/usr/src/trojan-cert" ]; then
         mkdir -p /usr/src/trojan-cert
@@ -24,6 +78,7 @@ get_acme_cert(){
     fi
 }
 
+# 申请证书
 issue_acme_cert(){
     get_acme_cert;
     ret=$?
@@ -55,6 +110,7 @@ EOF
     fi
 }
 
+# 续订证书
 renew_acme_cert(){
     get_acme_cert;
     ret=$?

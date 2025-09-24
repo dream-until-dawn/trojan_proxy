@@ -1,6 +1,6 @@
 #!/bin/bash
 source ./component/utils.sh
-source ./component/acme.install.sh
+source ./component/acme.manage.sh
 source ./component/trojan.manage.sh
 source ./component/nginx.manage.sh
 
