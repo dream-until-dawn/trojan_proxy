@@ -169,7 +169,6 @@ is_trojan_running() {
     return 1  # 没有运行
 }
 
-
 # 启动trojan
 start_trojan() {
     if is_trojan_running; then
@@ -200,7 +199,7 @@ start_trojan() {
     write_in_trojan_config "${_password}";
     
     info "使用证书 ${CERTIFICATEPATH} 和密钥 ${KEYPATH} 启动 trojan..."
-    if ! trojan -t "$TROJAN_SERVERCONFIGPATH"; then
+    if ! trojan -t "$TROJAN_SERVERCONFIGPATH" >/dev/null 2>&1 ; then
         cat "$TROJAN_SERVERCONFIGPATH" | jq . >/dev/null 2>&1 || {
             error "trojan 配置文件格式错误"
             return 1
@@ -209,7 +208,7 @@ start_trojan() {
         return 1
     fi
     
-    success "trojan 配置文件校验成功,开始启动 trojan..."
+    info "trojan 配置文件校验成功,开始启动 trojan..."
     nohup trojan -c "$TROJAN_SERVERCONFIGPATH" >/dev/null 2>&1 &
     sleep 1  # 等待进程启动
     
@@ -253,7 +252,6 @@ stop_trojan() {
         return 1
     fi
 }
-
 
 # 重启trojan
 restart_trojan() {
