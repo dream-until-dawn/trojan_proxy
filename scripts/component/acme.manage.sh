@@ -47,8 +47,8 @@ EOF
         bash ~/.acme.sh/acme.sh  --installcert -d $DOMAIN   \
         --key-file /usr/src/trojan-cert/$DOMAIN/private.key \
         --fullchain-file /usr/src/trojan-cert/$DOMAIN/fullchain.cer \
-        --reloadcmd "nginx -s reload"
-        success "证书保存成功,请重新启动nginx"
+        --reloadcmd "bash /opt/scripts/restart_trojan.sh"
+        success "证书保存成功"
         return 0
     else
         return 1

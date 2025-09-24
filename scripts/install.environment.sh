@@ -6,17 +6,11 @@ source ./component/nginx.manage.sh
 
 set -euo pipefail
 
-info "开始安装acme.sh...邮箱地址: ${EMAIL}"
-
-# if start_acme; then
-#     info "acme.sh安装成功"
-# else
-#     error "acme.sh安装失败"
-#     exit 1
-# fi
-
+info "开始安装必要程序...域名:${DOMAIN},邮箱:${EMAIL},trojan密码:${TROJAN_PW}"
+install_latest_acme
 install_latest_trojan
 
-nginx_start
+start_nginx
+start_trojan
 
 wait

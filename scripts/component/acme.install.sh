@@ -11,7 +11,7 @@ install_acme() {
     }
 }
 
-start_acme(){
+install_latest_acme(){
     info "尝试从网络下载acme.sh..."
     if wget --timeout=30 -q -O /tmp/get.acme.sh "https://get.acme.sh"; then
         success "远程下载成功"

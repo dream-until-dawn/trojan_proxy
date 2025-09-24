@@ -15,6 +15,9 @@ TROJAN_BINARYPATH="$TROJAN_INSTALLPREFIX/bin/trojan"
 TROJAN_SERVERCONFIGPATH="$TROJAN_INSTALLPREFIX/etc/trojan/server.json"
 TROJAN_CLIENTCONFIGPATH="$TROJAN_INSTALLPREFIX/etc/trojan/client.json"
 
+CERTIFICATEPATH="/usr/src/trojan-cert/${DOMAIN}/fullchain.cer"
+KEYPATH="/usr/src/trojan-cert/${DOMAIN}/private.key"
+
 install_latest_trojan() {
     mkdir -p $RANDOMSTRING
     info "进入临时工作目录 ${RANDOMSTRING}..."
@@ -41,13 +44,6 @@ install_latest_trojan() {
         export PATH="$TROJAN_INSTALLPREFIX/bin:$PATH"
         trojan --version
     fi
-    _password=$TROJAN_PW
-    if [ -z "${_password}" ]; then
-        _password=$RANDOMSTRING
-        warning "未设置trojan密码,使用随机密码:${_password}"
-    fi
-    write_in_trojan_config "${_password}";
-    
 }
 
 write_in_trojan_config(){
@@ -64,8 +60,8 @@ write_in_trojan_config(){
     ],
     "log_level": 1,
     "ssl": {
-        "cert": "/usr/src/trojan-cert/$DOMAIN/fullchain.cer",
-        "key": "/usr/src/trojan-cert/$DOMAIN/private.key",
+        "cert": $CERTIFICATEPATH,
+        "key": $KEYPATH,
         "key_password": "",
         "cipher_tls13":"TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384",
         "prefer_server_cipher": true,
@@ -130,4 +126,87 @@ EOF
 }
 EOF
     success "trojan配置(客户端)文件写入成功"
+}
+
+# 检查trojan是否正在运行
+is_trojan_running() {
+    if pgrep -x "trojan" >/dev/null; then
+        return 0  # 正在运行
+    else
+        return 1  # 没有运行
+    fi
+}
+
+# 启动trojan
+start_trojan() {
+    if is_trojan_running; then
+        warning "trojan 已经在运行中"
+        return 1
+    fi
+    
+    if [ ! -f $CERTIFICATEPATH] then
+        error "证书文件不存在"
+        return 1
+    fi
+    
+    if [ ! -f $KEYPATH] then
+        error "证书密钥文件不存在"
+        return 1
+    fi
+    
+    _password=$TROJAN_PW
+    if [ -z "${_password}" ]; then
+        _password=$RANDOMSTRING
+        warning "未设置trojan密码,使用随机密码:${_password}"
+    fi
+    write_in_trojan_config "${_password}";
+    
+    info "正在启动 trojan..."
+    nohup trojan -c "$SERVERCONFIGPATH" >/dev/null 2>&1 &
+    sleep 1  # 等待进程启动
+    
+    if is_trojan_running; then
+        success "trojan 启动成功"
+        return 0
+    else
+        error "trojan 启动失败"
+        return 1
+    fi
+}
+
+# 停止trojan
+stop_trojan() {
+    if ! is_trojan_running; then
+        warning "trojan 已经停止"
+        return 1
+    fi
+    
+    info "正在停止 trojan..."
+    pkill -x "trojan"
+    sleep 1  # 等待进程停止
+    
+    if ! is_trojan_running; then
+        success "trojan 已停止"
+        return 0
+    else
+        error "trojan 停止失败"
+        return 1
+    fi
+}
+
+# 重启trojan
+restart_trojan() {
+    stop_trojan
+    start_trojan
+}
+
+# 检查trojan状态
+check_trojan_status() {
+    if is_trojan_running; then
+        success "trojan 正在运行"
+        return 0
+    else
+        warning "trojan 没有运行"
+        return 1
+    fi
 }

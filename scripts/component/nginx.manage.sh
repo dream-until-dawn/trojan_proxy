@@ -2,7 +2,7 @@
 source /opt/scripts/component/utils.sh
 
 # 启动 Nginx
-nginx_start(){
+start_nginx(){
     info "启动nginx..."
     if pgrep nginx > /dev/null; then
         warning "Nginx 已经在运行"
@@ -20,7 +20,7 @@ nginx_start(){
 }
 
 # 停止 Nginx
-nginx_stop(){
+stop_nginx(){
     info "停止nginx..."
     if ! pgrep nginx > /dev/null; then
         warning "Nginx 已经停止"
@@ -38,20 +38,20 @@ nginx_stop(){
 }
 
 # 重启 Nginx
-nginx_restart(){
+restart_nginx(){
     info "重启nginx..."
     if ! pgrep nginx > /dev/null; then
         warning "Nginx 未在运行，尝试启动"
-        nginx_start
+        start_nginx
     else
-        nginx_stop
+        stop_nginx
         sleep 2
-        nginx_start
+        start_nginx
     fi
 }
 
 # 检查 Nginx 配置
-nginx_check_config(){
+check_nginx_config(){
     info "检查nginx配置..."
     if nginx -t > /dev/null 2>&1; then
         success "Nginx 配置正确"
@@ -61,7 +61,7 @@ nginx_check_config(){
 }
 
 # 重新加载 Nginx 配置
-nginx_reload(){
+reload_nginx(){
     info "重新加载nginx配置..."
     if ! pgrep nginx > /dev/null; then
         warning "Nginx 未在运行，请先启动"
