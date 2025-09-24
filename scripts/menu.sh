@@ -24,17 +24,6 @@ view_certs() {
     if get_acme_cert; then
         bash ~/.acme.sh/acme.sh --info -d $DOMAIN
     fi
-    read -p "按任意键继续..."
-}
-
-# 申请证书 (HTTP 验证)
-issue_cert_http() {
-    if ! check_ip; then
-        read -p "按任意键继续..."
-        return 1
-    fi
-    issue_acme_cert
-    read -p "按任意键继续..."
 }
 
 # 续订证书（带确认提示）
@@ -49,7 +38,6 @@ renew_certs() {
             info -e "已取消操作。"
         ;;
     esac
-    read -p "按任意键继续..."
 }
 
 main() {
@@ -63,19 +51,22 @@ main() {
                 exit 0
             ;;
             1)
+                # 查看证书信息
                 view_certs
             ;;
             2)
-                issue_cert_http
+                # 申请新证书 (HTTP 验证)
+                issue_acme_cert
             ;;
             3)
+                # 续订证书（带确认提示）
                 renew_certs
             ;;
             *)
                 warning "无效选项，请重新选择"
-                read -p "按任意键继续..."
             ;;
         esac
+        read -p "按任意键继续..."
     done
 }
 

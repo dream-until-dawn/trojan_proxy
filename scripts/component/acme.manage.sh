@@ -6,7 +6,7 @@ ACME_OLDTAR="/opt/scripts/fallback/acme.sh-master.tar.gz"
 ACME_DOWNLOADURL="https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh"
 
 install_latest_acme(){
-    if ! $FORCE_LOCAL; then
+    if $FORCE_LOCAL; then
         warning "强制使用本地安装acme.sh"
         install_local_acme
         return 0
@@ -34,7 +34,7 @@ install_local_acme(){
     tar xzf $ACME_OLDTAR -C /tmp
     info "开始安装本地旧版acme.sh..."
     cd /tmp/acme.sh-master
-    bash ./acme.sh --install 1>/dev/null 2>&1
+    bash ./acme.sh --install --cert-home /opt/acme-certs 1>/dev/null 2>&1
     rm -rf /tmp/acme.sh-master
     success "本地安装acme.sh成功"
     cd /opt/scripts
@@ -45,7 +45,7 @@ install_acme() {
     cd /tmp
     info "正在安装: $1"
     chmod +x "$1"
-    bash "$1" email="$EMAIL" 1>/dev/null 2>&1 || {
+    bash "$1" email="$EMAIL" --cert-home /opt/acme-certs 1>/dev/null 2>&1 || {
         error "安装失败，尝试其他方法..."
         cd /opt/scripts
         return 1
@@ -80,6 +80,9 @@ get_acme_cert(){
 
 # 申请证书
 issue_acme_cert(){
+    if ! check_ip; then
+        return 1
+    fi
     get_acme_cert;
     ret=$?
     if [ $ret -eq 1 ]; then
@@ -106,6 +109,7 @@ EOF
         success "证书保存成功"
         return 0
     else
+        warning "证书已存在，无需申请"
         return 1
     fi
 }

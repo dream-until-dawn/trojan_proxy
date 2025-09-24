@@ -1,10 +1,14 @@
 #!/bin/bash
 source /opt/scripts/component/utils.sh
 
-mkdir -p /mnt/tmp_download
-wget https://api.github.com/repos/trojan-gfw/trojan/releases/latest -P /mnt/tmp_download >/dev/null 2>&1
-rm -f /mnt/tmp_download
-TROJAN_VERSION=`grep tag_name /tmp_download/latest| awk -F '[:,"v]' '{print $6}'`
+TROJAN_VERSION=""
+wget -q --server-response -O /tmp/tmp_download/latest https://api.github.com/repos/trojan-gfw/trojan/releases/latest 2>&1 | grep -q "HTTP/.* 200"
+if [ $? -eq 0 ]; then
+    TROJAN_VERSION=$(grep tag_name /tmp/tmp_download/latest | awk -F '[:,"v]' '{print $6}')
+    success "获取最新trojan版本成功 ${TROJAN_VERSION}"
+else
+    error "trojan版本请求失败,HTTP 状态码非 200"
+fi
 TROJAN_TARBALL="trojan-$TROJAN_VERSION-linux-amd64.tar.xz"
 TROJAN_OLD="/opt/scripts/fallback/trojan-1.16.0-linux-amd64.tar.xz"
 TROJAN_DOWNLOADURL="https://github.com/trojan-gfw/trojan/releases/download/v$TROJAN_VERSION/$TROJAN_TARBALL"
@@ -31,18 +35,23 @@ install_latest_trojan() {
         install_trojan "$TROJAN_OLD"
         return 0
     else
+        cd /tmp/tmp_download
         info "找到trojan最新版本: $TROJAN_VERSION"
         info "开始下载 trojan ${TROJAN_VERSION}..."
-        wget -q --show-progress "$TROJAN_DOWNLOADURL"
-        install_trojan "$TROJAN_DOWNLOADURL"
+        wget "$TROJAN_DOWNLOADURL" >/dev/null 2>&1 || {
+            error "trojan下载失败,请检查网络"
+            exit 1
+        }
+        install_trojan "$TROJAN_TARBALL"
         success "在线安装完成,删除在线下载文件"
-        rm -f "$TROJAN_TARBALL"
+        rm -rf /tmp/tmp_download
+        cd /opt/scripts
         return 0
     fi
 }
 
 install_trojan() {
-    success "开始解压 $1..."
+    info "开始解压 $1..."
     tar xf $1 -C "${TROJAN_INSTALLDIR}" >/dev/null 2>&1 || {
         error "解压失败,请检查文件完整性"
         exit 1
