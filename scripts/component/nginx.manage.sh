@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./untill.sh
+source ./utils.sh
 
 # 启动 Nginx
 nginx_start(){

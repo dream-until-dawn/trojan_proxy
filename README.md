@@ -1,4 +1,4 @@
-# trojan_proxy
+# trojan_proxy(开发中)
 trojan代理docker容器
 
 ## 证书管理

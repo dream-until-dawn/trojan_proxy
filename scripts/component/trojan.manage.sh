@@ -1,37 +1,40 @@
 #!/bin/bash
-source ./untill.sh
+source ./utils.sh
 
-NAME=trojan
-VERSION=$(curl -fsSL https://api.github.com/repos/trojan-gfw/trojan/releases/latest | grep tag_name | sed -E 's/.*"v(.*)".*/\1/')
-TARBALL="$NAME-$VERSION-linux-amd64.tar.xz"
-DOWNLOADURL="https://github.com/trojan-gfw/$NAME/releases/download/v$VERSION/$TARBALL"
-TMPDIR="$(mktemp -d)"
+wget https://api.github.com/repos/trojan-gfw/trojan/releases/latest >/dev/null 2>&1
+VERSION=`grep tag_name latest| awk -F '[:,"v]' '{print $6}'`
+rm -f latest
+TARBALL="trojan-$VERSION-linux-amd64.tar.xz"
+DOWNLOADURL="https://github.com/trojan-gfw/trojan/releases/download/v$VERSION/$TARBALL"
+RANDOMSTRING=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
 INSTALLPREFIX=/usr/local
 SYSTEMDPREFIX=/etc/systemd/system
 
-BINARYPATH="$INSTALLPREFIX/bin/$NAME"
-SERVERCONFIGPATH="$INSTALLPREFIX/etc/$NAME/server.json"
-CLIENTCONFIGPATH="$INSTALLPREFIX/etc/$NAME/client.json"
+BINARYPATH="$INSTALLPREFIX/bin/trojan"
+SERVERCONFIGPATH="$INSTALLPREFIX/etc/trojan/server.json"
+CLIENTCONFIGPATH="$INSTALLPREFIX/etc/trojan/client.json"
 
 install_latest_trojan() {
-    info 进入临时工作目录 $TMPDIR...
-    cd "$TMPDIR"
-    echo 开始下载 $NAME $VERSION...
+    mkdir -p $RANDOMSTRING
+    info "进入临时工作目录 ${RANDOMSTRING}..."
+    cd "$RANDOMSTRING"
+    info "开始下载 trojan ${VERSION}..."
     wget -q --show-progress "$DOWNLOADURL"
-    success 下载成功开始解压 $NAME $VERSION...
+    success "下载成功开始解压 trojan ${VERSION}..."
     tar xf "$TARBALL"
-    cd "$NAME"
-    info 开始安装 $NAME $VERSION 至 $BINARYPATH...
-    install -Dm755 "$NAME" "$BINARYPATH"
-    success $NAME $VERSION 安装成功
+    rm -f "$TARBALL"
+    cd "trojan"
+    info "开始安装 trojan ${VERSION} 至 ${BINARYPATH}..."
+    install -Dm755 "trojan" "$BINARYPATH"
+    success "trojan ${VERSION} 安装成功"
     _password=$TROJAN_PW
     if [ -z "$_password" ]; then
-        _password=$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c 12)
-        warning "未设置trojan密码,使用随机密码$_password"
+        _password=$RANDOMSTRING
+        warning "未设置trojan密码,使用随机密码:${_password}"
     fi
     write_in_trojan_config "$_password";
-    echo 完成安装脚本,移除临时目录 $TMPDIR...
-    rm -rf "$TMPDIR"
+    info 完成安装脚本,移除临时目录 $RANDOMSTRING...
+    rm -rf "$RANDOMSTRING"
 }
 
 write_in_trojan_config(){
