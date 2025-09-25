@@ -1,43 +1,22 @@
 #!/bin/bash
 source ./component/utils.sh
 source ./component/acme.manage.sh
+source ./component/nginx.manage.sh
+source ./component/trojan.manage.sh
 
 # 显示菜单函数
 show_menu() {
+    clear
     cd /opt/scripts
     info "====================================================="
     info "      瓜瓜的VPN Docker"
-    info "      (acme使用邮箱: $EMAIL)"
-    info "      (acme使用域名: $DOMAIN)"
     info "====================================================="
-    info "1. 查看证书信息"
-    info "2. 申请新证书 (HTTP 验证)"
-    info "3. 续订证书"
+    info "1. acme菜单(域名证书)"
+    info "2. nginx菜单"
+    info "3. trojan菜单"
     info "0. 退出脚本"
     info "====================================================="
     echo -n "请输入选项 [0-3]: "
-}
-
-# 查看证书信息
-view_certs() {
-    success "ssl证书:"
-    if get_acme_cert; then
-        bash ~/.acme.sh/acme.sh --info -d $DOMAIN
-    fi
-}
-
-# 续订证书（带确认提示）
-renew_certs() {
-    # 提示用户确认
-    read -p "是否强制更新证书?(y/n) " confirm
-    case "$confirm" in
-        [yY][eE][sS]|[yY])
-            renew_acme_cert
-        ;;
-        *)
-            info -e "已取消操作。"
-        ;;
-    esac
 }
 
 main() {
@@ -51,22 +30,21 @@ main() {
                 exit 0
             ;;
             1)
-                # 查看证书信息
-                view_certs
+                # acme菜单(域名证书)
+                while_show_acme_menu
             ;;
             2)
-                # 申请新证书 (HTTP 验证)
-                issue_acme_cert
+                # nginx菜单
+                while_show_nginx_menu
             ;;
             3)
-                # 续订证书（带确认提示）
-                renew_certs
+                # trojan菜单
+                while_show_trojan_menu
             ;;
             *)
                 warning "无效选项，请重新选择"
             ;;
         esac
-        read -p "按任意键继续..."
     done
 }
 

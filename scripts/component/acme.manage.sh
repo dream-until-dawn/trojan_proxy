@@ -54,6 +54,84 @@ install_acme() {
     return 0
 }
 
+# 显示菜单函数
+show_acme_menu() {
+    clear
+    cd /opt/scripts
+    info "====================================================="
+    info "      管理acme.sh脚本"
+    info "      (acme使用邮箱: $EMAIL)"
+    info "      (acme使用域名: $DOMAIN)"
+    info "====================================================="
+    info "1. 查看证书信息"
+    info "2. 申请新证书 (HTTP 验证)"
+    info "3. 续订证书"
+    info "0. 返回主菜单"
+    info "====================================================="
+    echo -n "请输入选项 [0-3]: "
+}
+
+while_show_acme_menu() {
+    # 主循环
+    while true; do
+        show_acme_menu
+        read choice
+        case $choice in
+            0)
+                info "返回主菜单"
+                return 0
+            ;;
+            1)
+                # 查看证书信息
+                check_cert
+            ;;
+            2)
+                # 申请新证书 (HTTP 验证)
+                issue_acme_cert
+            ;;
+            3)
+                # 续订证书（带确认提示）
+                # 提示用户确认
+                read -p "是否强制更新证书?(y/n) " confirm
+                case "$confirm" in
+                    [yY][eE][sS]|[yY])
+                        renew_acme_cert
+                    ;;
+                    *)
+                        info -e "已取消操作。"
+                    ;;
+                esac
+            ;;
+            *)
+                warning "无效选项，请重新选择"
+            ;;
+        esac
+        read -p "按任意键继续..."
+    done
+}
+
+# 查看证书信息
+check_cert(){
+    if [ ! -d "/opt/acme-certs" ] || [ -z "$(ls -A /opt/acme-certs)" ]; then
+        warning "未绑定acme.sh内部域名管理目录,或未申请过证书"
+        if [ -f "/usr/src/trojan-cert/$DOMAIN/fullchain.cer" ]; then
+            warning "检测到域名 $DOMAIN 证书存在,但未绑定acme.sh管理"
+            return 1
+        fi
+    else
+        get_acme_cert
+        case $? in
+            0)
+                info "证书信息:"
+                bash ~/.acme.sh/acme.sh --info -d $DOMAIN
+            ;;
+            2)
+                bash ~/.acme.sh/acme.sh --info -d $DOMAIN
+            ;;
+        esac
+    fi
+}
+
 # 取得证书
 get_acme_cert(){
     if [ ! -d "/usr/src/trojan-cert" ]; then

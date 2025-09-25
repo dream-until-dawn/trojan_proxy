@@ -2,13 +2,6 @@
 source /opt/scripts/component/utils.sh
 
 TROJAN_VERSION=""
-wget -q --server-response -O /tmp/tmp_download/latest https://api.github.com/repos/trojan-gfw/trojan/releases/latest 2>&1 | grep -q "HTTP/.* 200"
-if [ $? -eq 0 ]; then
-    TROJAN_VERSION=$(grep tag_name /tmp/tmp_download/latest | awk -F '[:,"v]' '{print $6}')
-    success "获取最新trojan版本成功 ${TROJAN_VERSION}"
-else
-    error "trojan版本请求失败,HTTP 状态码非 200"
-fi
 TROJAN_TARBALL="trojan-$TROJAN_VERSION-linux-amd64.tar.xz"
 TROJAN_OLD="/opt/scripts/fallback/trojan-1.16.0-linux-amd64.tar.xz"
 TROJAN_DOWNLOADURL="https://github.com/trojan-gfw/trojan/releases/download/v$TROJAN_VERSION/$TROJAN_TARBALL"
@@ -30,6 +23,16 @@ install_latest_trojan() {
         install_trojan "$TROJAN_OLD"
         return 0
     fi
+    wget -q --server-response -O /tmp/tmp_download/latest https://api.github.com/repos/trojan-gfw/trojan/releases/latest 2>&1 | grep -q "HTTP/.* 200"
+    if [ $? -eq 0 ]; then
+        TROJAN_VERSION=$(grep tag_name /tmp/tmp_download/latest | awk -F '[:,"v]' '{print $6}')
+        TROJAN_TARBALL="trojan-$TROJAN_VERSION-linux-amd64.tar.xz"
+        TROJAN_DOWNLOADURL="https://github.com/trojan-gfw/trojan/releases/download/v$TROJAN_VERSION/$TROJAN_TARBALL"
+        success "获取最新trojan版本成功 ${TROJAN_VERSION}"
+    else
+        error "trojan版本请求失败,HTTP 状态码非 200"
+    fi
+    
     if [ -z "$TROJAN_VERSION" ]; then
         error "未找到trojan最新版本,使用本地旧版"
         install_trojan "$TROJAN_OLD"
@@ -156,6 +159,65 @@ EOF
     success "trojan配置(客户端)文件写入成功"
 }
 
+# 显示菜单函数
+show_trojan_menu() {
+    clear
+    cd /opt/scripts
+    TROJAN_STATUS="未启动"
+    if is_trojan_running; then
+        TROJAN_STATUS="正在运行"
+    fi
+    info "====================================================="
+    info "      管理trojan"
+    info "      (trojan运行状态: ${TROJAN_STATUS}"
+    info "====================================================="
+    info "1. 查看trojan配置"
+    info "2. 启动trojan"
+    info "3. 停止trojan"
+    info "4. 重启trojan"
+    info "0. 返回主菜单"
+    info "====================================================="
+    echo -n "请输入选项 [0-5]: "
+}
+
+while_show_trojan_menu() {
+    # 主循环
+    while true; do
+        show_trojan_menu
+        read choice
+        case $choice in
+            0)
+                info "返回主菜单"
+                return 0
+            ;;
+            1)
+                # 查看trojan配置
+                success "trojan服务端配置:"
+                cat $TROJAN_SERVERCONFIGPATH
+                success "trojan客户端配置:"
+                cat $TROJAN_CLIENTCONFIGPATH
+            ;;
+            2)
+                # 启动trojan
+                start_trojan
+            ;;
+            3)
+                # 停止trojan
+                stop_trojan
+            ;;
+            4)
+                # 重启trojan
+                restart_trojan
+            ;;
+            *)
+                warning "无效选项，请重新选择"
+            ;;
+        esac
+        read -p "按任意键继续..."
+    done
+}
+
+
 # 检查trojan是否正在运行
 is_trojan_running() {
     # 方法1：检查进程名和动态链接器组合
@@ -257,15 +319,4 @@ stop_trojan() {
 restart_trojan() {
     stop_trojan
     start_trojan
-}
-
-# 检查trojan状态
-check_trojan_status() {
-    if is_trojan_running; then
-        success "trojan 正在运行"
-        return 0
-    else
-        warning "trojan 没有运行"
-        return 1
-    fi
 }
