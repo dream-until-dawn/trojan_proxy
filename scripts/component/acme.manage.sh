@@ -118,24 +118,16 @@ while_show_acme_menu() {
 
 # 查看证书信息
 check_cert(){
-    if [ ! -d "/opt/acme-certs" ] || [ -z "$(ls -A /opt/acme-certs)" ]; then
-        warning "未绑定acme.sh内部域名管理目录,或未申请过证书"
-        if [ -f "/usr/src/trojan-cert/$DOMAIN/fullchain.cer" ]; then
-            warning "检测到域名 $DOMAIN 证书存在,但未绑定acme.sh管理"
-            return 1
-        fi
-    else
-        get_acme_cert
-        case $? in
-            0)
-                info "证书信息:"
-                bash ~/.acme.sh/acme.sh --info -d $DOMAIN
-            ;;
-            2)
-                bash ~/.acme.sh/acme.sh --info -d $DOMAIN
-            ;;
-        esac
-    fi
+    get_acme_cert
+    case $? in
+        0)
+            info "证书信息:"
+            bash ~/.acme.sh/acme.sh --info -d $DOMAIN
+        ;;
+        2)
+            bash ~/.acme.sh/acme.sh --info -d $DOMAIN
+        ;;
+    esac
 }
 
 # 取得证书
