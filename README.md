@@ -1,4 +1,4 @@
-# trojan_proxy(开发中)
+# trojan_proxy
 
 trojan 代理 docker 容器
 
@@ -9,17 +9,23 @@ trojan 代理 docker 容器
 #### docker 启动时脚本流程
 
 - 启动 docker 容器时，执行`install.environment.sh`脚本。
-- 安装acme.sh脚本和trojan程序。
-- 启动nginx,使用acme.sh申请证书。
-- 检查是否已有或未完成申请,如有使用acme.sh内置80端口服务申请证书
-- 如未有,先尝试zerossl,再尝试letsencrypt
+- 安装 acme.sh 脚本和 trojan 程序。
+- 启动 nginx,使用 acme.sh 申请证书。
+- 检查是否已有或未完成申请,如有使用 acme.sh 内置 80 端口服务申请证书
+- 如未有,先尝试 zerossl,再尝试 letsencrypt
 - 申请成功后,将证书和密钥文件保存到`/usr/src/trojan-cert`目录下
-- 使用trojan密码和证书文件启动启动trojan程序
+- 使用 trojan 密码和证书文件启动启动 trojan 程序
 
 #### PS
+
 - 非常强烈建议挂载 /usr/src/trojan-cert 和 /root/.acme.sh 目录持久化
-- 有挂载目录情况下,首次启动证书申请不成功(这时仅尝试了zerossl和letsencrypt),二次启动的申请会使用standalone方式
-- 第二次启动还是失败,可以尝试自己手动申请证书,并将证书和密钥文件的本地路径挂载到 /usr/src/trojan-cert 目录下(目标目录下应有一个以你的域名为明的文件夹,在其中包含.key和.cer文件)
+- 有挂载目录情况下,首次启动证书申请不成功(这时仅尝试了 zerossl 和 letsencrypt),二次启动的申请会使用 standalone 方式
+- 第二次启动还是失败,可以尝试自己手动申请证书,并将证书和密钥文件的本地路径挂载到 /usr/src/trojan-cert 目录下(目标目录下应有一个以你的域名为明的文件夹,在其中包含.key 和.cer 文件)
+- 可以配置使用自己的前端项目作为伪装(于 Dockerfile.trojan 中修改)
+  ```bash
+  # 复制html
+  COPY config/index.html /usr/share/nginx/html/index.html
+  ```
 
 ### docker 打包
 
