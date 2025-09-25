@@ -19,8 +19,8 @@ trojan 代理 docker 容器
 #### PS
 
 - 非常强烈建议挂载 /usr/src/trojan-cert 和 /root/.acme.sh 目录持久化
-- 有挂载目录情况下,首次启动证书申请不成功(这时仅尝试了 zerossl 和 letsencrypt),二次启动的申请会使用 standalone 方式
-- 第二次启动还是失败,可以尝试自己手动申请证书,并将证书和密钥文件的本地路径挂载到 /usr/src/trojan-cert 目录下(目标目录下应有一个以你的域名为明的文件夹,在其中包含.key 和.cer 文件)
+- 有挂载目录情况下,首次启动证书申请如不成功(这时仅尝试了 zerossl 和 letsencrypt),二次启动的申请会使用 standalone 方式
+- 第二次启动还是失败,可以尝试自己手动申请证书,并将证书和密钥文件的本地路径挂载到 /usr/src/trojan-cert 目录下(目标目录下应有一个以你的域名为名的文件夹,在其中包含 private.key 和 fullchain.cer 文件)
 - 可以配置使用自己的前端项目作为伪装(于 Dockerfile.trojan 中修改)
   ```bash
   # 复制html
