@@ -1,0 +1,15 @@
+services:
+  trojan:
+    image: trojan:latest
+    container_name: trojan
+    dns: 8.8.8.8
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /mnt/trojan-cert:/usr/src/trojan-cert
+      - /mnt/acme-home:/opt/acme-config
+    environment:
+      - DOMAIN=example.com
+      - FORCE_LOCAL=false
+      - TROJAN_PW=
