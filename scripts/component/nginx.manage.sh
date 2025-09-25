@@ -66,26 +66,79 @@ while_show_nginx_menu() {
 
 # 写入 Nginx 配置文件
 write_in_nginx_config(){
-    cat > /etc/nginx/conf.d/80.conf <<-EOF
-server {
-    listen       127.0.0.1:80;
-    server_name  $DOMAIN;
-    root /usr/share/nginx/html;
-    index index.php index.html index.htm;
-
-    location /test {
-        access_log off;
-        return 200 'OK';
-        add_header Content-Type text/plain;
-    }
+    cat > /etc/nginx/nginx.conf <<-EOF
+user  root;
+worker_processes  1;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+events {
+    worker_connections  1024;
 }
-server {
-    listen       0.0.0.0:80;
-    server_name  $DOMAIN;
-    return 301 https://$DOMAIN\$request_uri;
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile        on;
+    #tcp_nopush     on;
+    keepalive_timeout  120;
+    client_max_body_size 20m;
+    #gzip  on;
+    server {
+        listen       127.0.0.1:80;
+        server_name  $DOMAIN;
+        root /usr/share/nginx/html;
+        index index.php index.html index.htm;
+    }
 }
 EOF
     success "Nginx 配置文件写入成功"
+}
+
+# 写入 Nginx 配置文件
+write_in_nginx_config_two(){
+    cat > /etc/nginx/nginx.conf <<-EOF
+user  root;
+worker_processes  1;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+events {
+    worker_connections  1024;
+}
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile        on;
+    #tcp_nopush     on;
+    keepalive_timeout  120;
+    client_max_body_size 20m;
+    #gzip  on;
+    server {
+        listen       127.0.0.1:80;
+        server_name  $DOMAIN;
+        root /usr/share/nginx/html;
+        index index.php index.html index.htm;
+
+        location /test {
+            access_log off;
+            return 200 'OK';
+            add_header Content-Type text/plain;
+        }
+    }
+    server {
+        listen       0.0.0.0:80;
+        server_name  $DOMAIN;
+        return 301 https://$DOMAIN\$request_uri;
+    }
+}
+EOF
+    success "Nginx 配置文件重新写入成功"
 }
 
 # 检查nginx是否正在运行
@@ -103,7 +156,6 @@ start_nginx(){
     if is_nginx_running; then
         warning "Nginx 已经在运行"
     else
-        write_in_nginx_config
         nginx -g "daemon off;" & # 启动 Nginx
         # 等待 Nginx 启动完成
         sleep 2

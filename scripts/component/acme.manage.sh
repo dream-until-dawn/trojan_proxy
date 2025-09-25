@@ -1,11 +1,17 @@
 #!/bin/bash
 source /opt/scripts/component/utils.sh
+source /opt/scripts/component/nginx.manage.sh
 
 ACME_OLD="/opt/scripts/fallback/acme.sh"
 ACME_OLDTAR="/opt/scripts/fallback/acme.sh-master.tar.gz"
 ACME_DOWNLOADURL="https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh"
 
+
 install_latest_acme(){
+    if [ -f "/root/.acme.sh/acme.sh" ]; then
+        info "已挂载原有acme.sh,无需安装"
+        return 0
+    fi
     if $FORCE_LOCAL; then
         warning "强制使用本地安装acme.sh"
         install_local_acme
@@ -34,7 +40,7 @@ install_local_acme(){
     tar xzf $ACME_OLDTAR -C /tmp
     info "开始安装本地旧版acme.sh..."
     cd /tmp/acme.sh-master
-    bash ./acme.sh --install --cert-home /opt/acme-certs 1>/dev/null 2>&1
+    bash ./acme.sh --install 1>/dev/null 2>&1
     rm -rf /tmp/acme.sh-master
     success "本地安装acme.sh成功"
     cd /opt/scripts
@@ -45,7 +51,7 @@ install_acme() {
     cd /tmp
     info "正在安装: $1"
     chmod +x "$1"
-    bash "$1" email="$EMAIL" --cert-home /opt/acme-certs 1>/dev/null 2>&1 || {
+    bash "$1" email="$EMAIL" 1>/dev/null 2>&1 || {
         error "安装失败，尝试其他方法..."
         cd /opt/scripts
         return 1
@@ -65,10 +71,10 @@ show_acme_menu() {
     info "====================================================="
     info "1. 查看证书信息"
     info "2. 申请新证书 (HTTP 验证)"
-    info "3. 续订证书"
+    # info "3. 续订证书"
     info "0. 返回主菜单"
     info "====================================================="
-    echo -n "请输入选项 [0-3]: "
+    echo -n "请输入选项 [0-2]: "
 }
 
 while_show_acme_menu() {
@@ -89,19 +95,19 @@ while_show_acme_menu() {
                 # 申请新证书 (HTTP 验证)
                 issue_acme_cert
             ;;
-            3)
-                # 续订证书（带确认提示）
-                # 提示用户确认
-                read -p "是否强制更新证书?(y/n) " confirm
-                case "$confirm" in
-                    [yY][eE][sS]|[yY])
-                        renew_acme_cert
-                    ;;
-                    *)
-                        info -e "已取消操作。"
-                    ;;
-                esac
-            ;;
+            # 3)
+            #     # 续订证书（带确认提示）
+            #     # 提示用户确认
+            #     read -p "是否强制更新证书?(y/n) " confirm
+            #     case "$confirm" in
+            #         [yY][eE][sS]|[yY])
+            #             renew_acme_cert
+            #         ;;
+            #         *)
+            #             info -e "已取消操作。"
+            #         ;;
+            #     esac
+            # ;;
             *)
                 warning "无效选项，请重新选择"
             ;;
@@ -134,76 +140,74 @@ check_cert(){
 
 # 取得证书
 get_acme_cert(){
-    if [ ! -d "/usr/src/trojan-cert" ]; then
-        mkdir -p /usr/src/trojan-cert
-        mkdir -p /usr/src/trojan-cert/$DOMAIN
-    fi
     if [ -f "/usr/src/trojan-cert/$DOMAIN/fullchain.cer" ]; then
         cd /usr/src/trojan-cert/$DOMAIN
         create_time=`stat -c %Y fullchain.cer`
         now_time=`date +%s`
         minus=$(($now_time - $create_time ))
-        if [  $minus -gt 5184000 ]; then
-            error "2)证书存在但已过期"
+        if [ $minus -gt 5184000 ]; then
+            warning "2)证书存在但已过期"
             return 2
         else
             warning "检测到域名 $DOMAIN 证书存在且未超过60天,无需重新申请"
             return 0
         fi
     else
-        error "1)证书不存在"
+        warning "1)证书不存在"
         return 1
     fi
 }
 
 # 申请证书
 issue_acme_cert(){
+    mkdir -p /usr/src/trojan-cert/$DOMAIN
+    info "开始申请证书..."
     if ! check_ip; then
         return 1
     fi
-    get_acme_cert;
-    ret=$?
-    if [ $ret -eq 1 ]; then
-        bash ~/.acme.sh/acme.sh --register-account -m $EMAIL --server zerossl
-        bash ~/.acme.sh/acme.sh --issue -d $DOMAIN --nginx
-        success "证书申请成功"
+    if ! get_acme_cert;then
+        if grep -r "${DOMAIN}" /root/.acme.sh;then
+            warning "检测到域名 $DOMAIN 证书未申请完成,尝试继续申请"
+            issue_acme_cert_standalone
+            elif ! issue_acme_cert_zerossl; then
+            issue_acme_cert_letsencrypt
+        fi
         bash ~/.acme.sh/acme.sh  --installcert -d $DOMAIN   \
         --key-file /usr/src/trojan-cert/$DOMAIN/private.key \
         --fullchain-file /usr/src/trojan-cert/$DOMAIN/fullchain.cer \
         --reloadcmd "bash /opt/scripts/restart_trojan.sh"
-        success "证书保存成功"
-        return 0
-    else
-        warning "证书已存在，无需申请"
-        return 1
+        if [ -f "/usr/src/trojan-cert/$DOMAIN/fullchain.cer" ]; then
+            success "证书申请成功"
+            return 0
+        else
+            error "证书申请失败"
+            return 1
+        fi
     fi
+    return 0
 }
 
-# 续订证书
-renew_acme_cert(){
-    get_acme_cert;
-    ret=$?
-    case $ret in
-        0)
-            if bash ~/.acme.sh/acme.sh --renew -d "$DOMAIN" --force; then
-                success "证书续订成功！"
-                return 0
-            else
-                error "错误：证书续订失败！"
-                return 1
-            fi
-        ;;
-        2)
-            if bash ~/.acme.sh/acme.sh --renew -d "$DOMAIN" --force; then
-                success "证书续订成功！"
-                return 0
-            else
-                error "错误：证书续订失败！"
-                return 1
-            fi
-        ;;
-        *)
-            return 1
-        ;;
-    esac
+issue_acme_cert_standalone(){
+    stop_nginx
+    info "使用acme(standalone)开始申请证书..."
+    bash ~/.acme.sh/acme.sh --register-account -m $EMAIL --server zerossl
+    ~/.acme.sh/acme.sh  --issue -d $DOMAIN --standalone
+    write_in_nginx_config_two
+}
+
+issue_acme_cert_zerossl(){
+    start_nginx
+    info "使用acme(zerossl)开始申请证书..."
+    bash ~/.acme.sh/acme.sh --register-account -m $EMAIL --server zerossl
+    bash ~/.acme.sh/acme.sh --issue -d $DOMAIN --nginx
+    write_in_nginx_config_two
+}
+
+issue_acme_cert_letsencrypt(){
+    start_nginx
+    info "使用acme(letsencrypt)开始申请证书..."
+    bash ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    bash ~/.acme.sh/acme.sh --issue -d $DOMAIN --nginx
+    bash ~/.acme.sh/acme.sh --set-default-ca --server zerossl
+    write_in_nginx_config_two
 }

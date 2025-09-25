@@ -234,23 +234,23 @@ is_trojan_running() {
 # 启动trojan
 start_trojan() {
     if is_trojan_running; then
-        warning "trojan 已经在运行中"
+        warning "1)trojan 已经在运行中"
         return 1
     fi
     
     if ! check_port_conflict 443; then
-        error "启动前端口检查失败"
-        return 1
+        error "2)启动前端口检查失败"
+        return 2
     fi
     
     if [ ! -f "${CERTIFICATEPATH}" ]; then
-        error "证书文件不存在,请先申请证书"
-        return 1
+        error "3)证书文件不存在,请先申请证书"
+        return 3
     fi
     
     if [ ! -f "${KEYPATH}" ]; then
-        error "证书密钥文件不存在,请先申请证书"
-        return 1
+        error "3)证书密钥文件不存在,请先申请证书"
+        return 3
     fi
     
     _password=$TROJAN_PW
@@ -263,11 +263,11 @@ start_trojan() {
     info "使用证书 ${CERTIFICATEPATH} 和密钥 ${KEYPATH} 启动 trojan..."
     if ! trojan -t "$TROJAN_SERVERCONFIGPATH" >/dev/null 2>&1 ; then
         cat "$TROJAN_SERVERCONFIGPATH" | jq . >/dev/null 2>&1 || {
-            error "trojan 配置文件格式错误"
-            return 1
+            error "4)trojan 配置文件格式错误"
+            return 4
         }
-        error "trojan 配置文件校验失败"
-        return 1
+        error "4)trojan 配置文件校验失败"
+        return 4
     fi
     
     info "trojan 配置文件校验成功,开始启动 trojan..."
@@ -285,11 +285,11 @@ start_trojan() {
             success "trojan 启动成功"
             return 0
         else
-            error "trojan 启动失败，最后错误信息："
+            error "5)trojan 启动失败，最后错误信息："
             # 获取最后一次错误
             local last_err=$(dmesg | grep trojan | tail -n 1)
             [ -n "$last_err" ] && error "$last_err"
-            return 1
+            return 5
         fi
     fi
 }

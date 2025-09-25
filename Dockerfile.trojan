@@ -17,12 +17,8 @@ COPY scripts /opt/scripts/
 # 设置工作目录
 WORKDIR /opt/scripts
 
-# 复制配置
-COPY config/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY config/nginx/conf.d/ /etc/nginx/conf.d/
-
 # 复制html
-COPY config/nginx/index.html /usr/share/nginx/html/index.html
+COPY config/index.html /usr/share/nginx/html/index.html
 
 # 暴露端口
 EXPOSE 80 443
