@@ -1,376 +1,475 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>服务器状态监控面板</title>
+    <title>自主编号预选</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Microsoft YaHei', sans-serif;
         }
-        
+
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
             padding: 20px;
         }
-        
+
         .container {
-            width: 90%;
             max-width: 800px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 0 30px rgba(87, 51, 255, 0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent, 
-                rgba(87, 51, 255, 0.1), 
-                rgba(135, 71, 255, 0.2)
-            );
-            transform: rotate(0deg);
-            animation: rotate 20s linear infinite;
-            z-index: -1;
-        }
-        
-        @keyframes rotate {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(90deg, #ff8a00, #e52e71);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 10px rgba(229, 46, 113, 0.5);
-        }
-        
-        .subtitle {
-            color: #a0a0e0;
-            font-size: 1.2rem;
-        }
-        
-        .status-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
-            background: rgba(20, 20, 40, 0.8);
-            border-radius: 15px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             padding: 25px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s, box-shadow 0.3s;
-            position: relative;
-            overflow: hidden;
         }
-        
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(87, 51, 255, 0.4);
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
         }
-        
-        .card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: linear-gradient(90deg, #ff8a00, #e52e71);
-        }
-        
-        .card-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: #a0a0e0;
+
+        .input-group {
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
         }
-        
-        .card-title i {
-            margin-right: 10px;
-            font-size: 1.5rem;
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
         }
-        
-        .server-status {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .status-indicator {
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        
-        .status-online {
-            background: #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        
-        .status-offline {
-            background: #ff0000;
-            box-shadow: 0 0 10px #ff0000;
-        }
-        
-        .status-text {
-            font-size: 1.5rem;
+
+        label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: bold;
+            color: #555;
         }
-        
-        .online {
-            color: #00ff00;
+
+        select,
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
         }
-        
-        .offline {
-            color: #ff0000;
+
+        select:focus,
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
-        
-        .timestamp {
-            font-size: 2.5rem;
+
+        .number-preview {
             text-align: center;
-            font-family: 'Courier New', monospace;
-            margin: 10px 0;
-            color: #ffffff;
-            text-shadow: 0 0 10px rgba(135, 71, 255, 0.8);
+            font-size: 32px;
+            font-weight: bold;
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 2px dashed #3498db;
+            color: #2c3e50;
+            letter-spacing: 3px;
+            background-image: linear-gradient(45deg, #f8f9fa 25%, transparent 25%, transparent 75%, #f8f9fa 75%, #f8f9fa),
+                linear-gradient(45deg, #f8f9fa 25%, transparent 25%, transparent 75%, #f8f9fa 75%, #f8f9fa);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
         }
-        
-        .date {
-            text-align: center;
-            color: #a0a0e0;
-            font-size: 1.2rem;
-        }
-        
-        .controls {
+
+        .button-group {
             display: flex;
-            justify-content: center;
-            gap: 20px;
+            gap: 10px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #clear-btn {
+            background-color: #e67e22;
+        }
+
+        #clear-btn:hover {
+            background-color: #d35400;
+        }
+
+        .saved-list {
             margin-top: 30px;
         }
-        
-        button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 50px;
-            background: linear-gradient(90deg, #ff8a00, #e52e71);
-            color: white;
+
+        .saved-list h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .plate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 8px;
+            border-bottom: 1px solid #eee;
+            background-color: #f8f9fa;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .plate-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .plate-number {
+            font-size: 18px;
             font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 5px 15px rgba(229, 46, 113, 0.4);
+            color: #2c3e50;
         }
-        
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(229, 46, 113, 0.6);
+
+        .remove-btn {
+            background-color: #e74c3c;
+            padding: 6px 12px;
+            font-size: 14px;
+            width: auto;
         }
-        
-        button:active {
-            transform: translateY(1px);
+
+        .remove-btn:hover {
+            background-color: #c0392b;
         }
-        
-        .uptime {
+
+        .empty-message {
             text-align: center;
-            margin-top: 20px;
-            color: #a0a0e0;
-            font-size: 1.1rem;
+            color: #7f8c8d;
+            padding: 20px;
+            font-style: italic;
         }
-        
-        .pulse {
-            animation: pulse 2s infinite;
+
+        .message {
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
         }
-        
-        @keyframes pulse {
-            0% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-            100% {
-                opacity: 1;
-            }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         @media (max-width: 600px) {
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .timestamp {
-                font-size: 1.8rem;
-            }
-            
-            .status-cards {
-                grid-template-columns: 1fr;
-            }
-            
-            .controls {
+            .input-group {
                 flex-direction: column;
-                align-items: center;
+                gap: 10px;
             }
-            
-            button {
-                width: 100%;
-                max-width: 300px;
+
+            .form-group {
+                min-width: 100%;
             }
+
+            .number-preview {
+                font-size: 24px;
+                padding: 15px;
+            }
+
+            .button-group {
+                flex-direction: row;
+            }
+
+            .plate-item {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .remove-btn {
+                width: 120px;
+                flex: none;
+            }
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <header>
-            <h1>服务器状态监控面板</h1>
-            <p class="subtitle">实时监控服务器运行状态和时间戳</p>
-        </header>
-        
-        <div class="status-cards">
-            <div class="card">
-                <h2 class="card-title">
-                    <i>📊</i> 服务器状态
-                </h2>
-                <div class="server-status">
-                    <div class="status-indicator status-online pulse"></div>
-                    <div class="status-text online">运行中</div>
-                </div>
-                <p>当前服务器运行正常，所有服务均可使用。</p>
+        <div id="message" class="message"></div>
+
+        <div class="input-group">
+            <div class="form-group">
+                <label for="prefix-select">选择号段前缀</label>
+                <select id="prefix-select">
+                    <option value="">请选择号段前缀</option>
+                </select>
+                <div class="info-text">从可用号段中选择前缀</div>
             </div>
-            
-            <div class="card">
-                <h2 class="card-title">
-                    <i>🕐</i> 服务器时间戳
-                </h2>
-                <div class="timestamp" id="timestamp">00:00:00</div>
-                <div class="date" id="date">0000-00-00</div>
+
+            <div class="form-group">
+                <label for="suffix-input">输入后两位数字</label>
+                <input type="text" id="suffix-input" maxlength="2" placeholder="输入后两位数字 (00-99)">
+                <div class="info-text">请输入两位数字 (00-99)</div>
             </div>
         </div>
-        
-        <div class="uptime">
-            运行时间: <span id="uptime">0 天 0 小时 0 分钟 0 秒</span>
+
+        <div class="number-preview" id="number-preview">
+            选择号段+后两位数字
         </div>
-        
-        <div class="controls">
-            <button id="refreshBtn">刷新状态</button>
-            <button id="toggleBtn">模拟状态切换</button>
+
+        <div class="button-group">
+            <button id="save-btn" disabled>保存号码</button>
+            <button id="clear-btn">清空输入</button>
+        </div>
+
+        <div class="saved-list">
+            <h2>已保存的号码</h2>
+            <div id="saved-numbers">
+                <div class="empty-message">暂无保存的号码</div>
+            </div>
         </div>
     </div>
 
     <script>
-        // 更新时间戳和日期
-        function updateDateTime() {
-            const now = new Date();
-            
-            // 更新时间
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('timestamp').textContent = `${hours}:${minutes}:${seconds}`;
-            
-            // 更新日期
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            document.getElementById('date').textContent = `${year}-${month}-${day}`;
-            
-            // 更新运行时间
-            updateUptime();
-        }
-        
-        // 运行时间计算（从页面加载开始）
-        let startTime = Date.now();
-        
-        function updateUptime() {
-            const currentTime = Date.now();
-            const uptimeMs = currentTime - startTime;
-            
-            const seconds = Math.floor(uptimeMs / 1000) % 60;
-            const minutes = Math.floor(uptimeMs / (1000 * 60)) % 60;
-            const hours = Math.floor(uptimeMs / (1000 * 60 * 60)) % 24;
-            const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
-            
-            document.getElementById('uptime').textContent = 
-                `${days} 天 ${hours} 小时 ${minutes} 分钟 ${seconds} 秒`;
-        }
-        
-        // 切换服务器状态
-        function toggleServerStatus() {
-            const statusIndicator = document.querySelector('.status-indicator');
-            const statusText = document.querySelector('.status-text');
-            const statusCard = document.querySelector('.server-status');
-            
-            if (statusIndicator.classList.contains('status-online')) {
-                // 切换到离线状态
-                statusIndicator.classList.remove('status-online', 'pulse');
-                statusIndicator.classList.add('status-offline');
-                statusText.textContent = '离线';
-                statusText.classList.remove('online');
-                statusText.classList.add('offline');
-                statusCard.nextElementSibling.textContent = '服务器当前不可用，请检查连接。';
-            } else {
-                // 切换到在线状态
-                statusIndicator.classList.remove('status-offline');
-                statusIndicator.classList.add('status-online', 'pulse');
-                statusText.textContent = '运行中';
-                statusText.classList.remove('offline');
-                statusText.classList.add('online');
-                statusCard.nextElementSibling.textContent = '当前服务器运行正常，所有服务均可使用。';
+        // 页面元素
+        const prefixSelect = document.getElementById('prefix-select');
+        const suffixInput = document.getElementById('suffix-input');
+        const numberPreview = document.getElementById('number-preview');
+        const saveBtn = document.getElementById('save-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const savedNumbers = document.getElementById('saved-numbers');
+        const messageDiv = document.getElementById('message');
+
+        // 全局变量
+        const base_url = 'https://qinxin.xyz:8009'; // 后端接口地址
+        let availablePrefixes = [];
+        let savedPlates = [];
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function () {
+            loadAvailablePrefixes();
+            loadSavedPlates();
+            // debugger;
+
+            // 监听输入变化
+            prefixSelect.addEventListener('change', updatePreview);
+            suffixInput.addEventListener('input', updatePreview);
+
+            // 保存按钮点击事件
+            saveBtn.addEventListener('click', savePlateNumber);
+
+            // 清空按钮点击事件
+            clearBtn.addEventListener('click', clearInput);
+        });
+
+        // 加载可选号段
+        async function loadAvailablePrefixes() {
+            try {
+                // 模拟从后端获取数据 
+                // 实际使用时请取消注释以下代码，并注释掉上面的mockData
+                const response = await fetch(`${base_url}/get_plate_number`)
+                const data = await response.json();
+
+                if (data && data.list) {
+                    availablePrefixes = data.list;
+
+                    // 清空现有选项
+                    prefixSelect.innerHTML = '<option value="">请选择号段前缀</option>';
+
+                    // 添加新选项
+                    data.list.forEach(item => {
+                        // 提取前缀部分 (例如从 "闽DFE7700 ~ DFE7799" 提取 "闽DFE77")
+                        const prefix = item.split(' ')[0].slice(0, -2);
+                        const option = document.createElement('option');
+                        option.value = prefix;
+                        option.textContent = prefix;
+                        prefixSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('获取号段失败:', error);
+                showMessage('获取号段失败，请刷新页面重试', 'error');
             }
         }
-        
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 初始更新时间
-            updateDateTime();
-            
-            // 设置定时器，每秒更新一次时间
-            setInterval(updateDateTime, 1000);
-            
-            // 添加按钮事件监听器
-            document.getElementById('refreshBtn').addEventListener('click', function() {
-                // 添加刷新动画效果
-                this.textContent = '刷新中...';
-                setTimeout(() => {
-                    this.textContent = '刷新状态';
-                    updateDateTime();
-                }, 500);
+
+        // 更新号码预览
+        function updatePreview() {
+            const prefix = prefixSelect.value;
+            let suffix = suffixInput.value;
+
+            // 只允许输入数字
+            suffix = suffix.replace(/\D/g, '');
+            suffixInput.value = suffix;
+
+            // 验证后缀是否为两位数字
+            const isValidSuffix = /^\d{2}$/.test(suffix);
+
+            if (prefix && isValidSuffix) {
+                numberPreview.textContent = prefix + suffix;
+                saveBtn.disabled = false;
+            } else {
+                numberPreview.textContent = '选择号段+后两位数字';
+                saveBtn.disabled = true;
+            }
+        }
+
+        // 清空输入
+        function clearInput() {
+            prefixSelect.value = '';
+            suffixInput.value = '';
+            updatePreview();
+            showMessage('输入已清空', 'success');
+        }
+
+        // 保存号码
+        async function savePlateNumber() {
+            const plateNumber = numberPreview.textContent;
+
+            // 检查是否已保存
+            if (savedPlates.includes(plateNumber)) {
+                showMessage('该号码已保存', 'error');
+                return;
+            }
+
+            try {
+                // 实际使用时请取消注释以下代码，并注释掉上面的mockData
+                const response = await fetch(`${base_url}/add_choice_plate_number?plate_number=${encodeURIComponent(plateNumber)}`);
+                const data = await response.json();
+
+                if (data && data.list) {
+                    savedPlates = data.list;
+                    renderSavedPlates();
+                    showMessage('号码保存成功', 'success');
+
+                    // 清空输入
+                    clearInput();
+                }
+            } catch (error) {
+                console.error('保存号码失败:', error);
+                showMessage('保存号码失败，请重试', 'error');
+            }
+        }
+
+        // 移除号码
+        async function removePlateNumber(plateNumber) {
+            try {
+                const response = await fetch(`${base_url}/remove_choice_plate_number?plate_number=${encodeURIComponent(plateNumber)}`);
+                const data = await response.json();
+
+                if (data && data.list) {
+                    savedPlates = data.list;
+                    renderSavedPlates();
+                    showMessage('号码移除成功', 'success');
+                }
+            } catch (error) {
+                console.error('移除号码失败:', error);
+                showMessage('移除号码失败，请重试', 'error');
+            }
+        }
+
+        // 加载已保存的号码
+        async function loadSavedPlates() {
+            try {
+                const response = await fetch(`${base_url}/add_choice_plate_number`);
+                const data = await response.json();
+
+                if (data && data.list) {
+                    savedPlates = data.list;
+                    renderSavedPlates();
+                }
+            } catch (error) {
+                console.error('加载已保存号码失败:', error);
+                // 如果失败，我们假设没有保存的号码
+                savedPlates = [];
+            }
+        }
+
+        // 渲染已保存的号码列表
+        function renderSavedPlates() {
+            savedNumbers.innerHTML = '';
+
+            if (savedPlates.length === 0) {
+                savedNumbers.innerHTML = '<div class="empty-message">暂无保存的号码</div>';
+                return;
+            }
+
+            savedPlates.forEach((plate, index) => {
+                const plateItem = document.createElement('div');
+                plateItem.className = 'plate-item';
+
+                const plateNumber = document.createElement('div');
+                plateNumber.className = 'plate-number';
+                plateNumber.textContent = `${index + 1})${plate}`;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = '移除';
+                removeBtn.addEventListener('click', () => removePlateNumber(plate));
+
+                plateItem.appendChild(plateNumber);
+                plateItem.appendChild(removeBtn);
+                savedNumbers.appendChild(plateItem);
             });
-            
-            document.getElementById('toggleBtn').addEventListener('click', toggleServerStatus);
-        });
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            // messageDiv.textContent = text;
+            // messageDiv.className = `message ${type}`;
+            // messageDiv.style.display = 'block';
+
+            // // 3秒后隐藏消息
+            // setTimeout(() => {
+            //     messageDiv.style.display = 'none';
+            // }, 3000);
+        }
     </script>
 </body>
+
 </html>
