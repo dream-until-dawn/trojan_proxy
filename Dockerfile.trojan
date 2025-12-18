@@ -18,7 +18,7 @@ COPY scripts /opt/scripts/
 WORKDIR /opt/scripts
 
 # 复制html
-COPY config/index.html /usr/share/nginx/html/index.html
+COPY config /usr/share/nginx/html/
 
 # 暴露端口
 EXPOSE 80 443
