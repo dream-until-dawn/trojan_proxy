@@ -87,10 +87,27 @@ http {
     client_max_body_size 20m;
     #gzip  on;
     server {
-        listen       127.0.0.1:80;
+        listen       80;
         server_name  $DOMAIN;
-        root /usr/share/nginx/html;
-        index index.php index.html index.htm;
+        root /usr/share/nginx/html/dist;  # 改为你的dist目录绝对路径
+        index index.html;
+
+        # 启用gzip压缩
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+        # 主路由 - 指向Vue的index.html
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # 静态资源缓存
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 3600s;
+            add_header Cache-Control "public, immutable";
+        }
     }
 }
 EOF
@@ -120,7 +137,7 @@ http {
     client_max_body_size 20m;
     #gzip  on;
     server {
-        listen       127.0.0.1:80;
+        listen       80;
         server_name  $DOMAIN;
         root /usr/share/nginx/html/dist;  # 改为你的dist目录绝对路径
         index index.html;
@@ -141,11 +158,6 @@ http {
             expires 3600s;
             add_header Cache-Control "public, immutable";
         }
-    }
-    server {
-        listen       0.0.0.0:80;
-        server_name  $DOMAIN;
-        return 301 https://$DOMAIN\$request_uri;
     }
 }
 EOF
