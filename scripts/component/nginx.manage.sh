@@ -100,7 +100,7 @@ http {
 
         # 主路由 - 指向Vue的index.html
         location / {
-            try_files $uri $uri/ /index.html;
+            try_files \$uri \$uri/ /index.html;
         }
 
         # 静态资源缓存
@@ -150,7 +150,7 @@ http {
 
         # 主路由 - 指向Vue的index.html
         location / {
-            try_files $uri $uri/ /index.html;
+            try_files \$uri \$uri/ /index.html;
         }
 
         # 静态资源缓存
