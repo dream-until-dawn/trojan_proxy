@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-11",
+  "scope": "本地隔离Docker，假口令/临时证书；未部署到服务器",
+  "engine": "ghcr.io/sagernet/sing-box@sha256:0788ffbddab2c68a99a2dd4780bbc50902f159af6f589df3ee74a8389d278279",
+  "client": "metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c",
+  "checks": {
+    "native_engine_check": "passed",
+    "tcp_and_udp": "passed",
+    "wrong_password_and_untrusted_ca": "passed",
+    "private_ip_and_own_ip_rejection": "passed",
+    "domain_resolves_private_rejected": "passed",
+    "dns_public_then_private_rejected": "passed",
+    "remove_ip_guard_mutation": "failed as expected: 目的地址保护失效 127.0.0.1 public-sentinel",
+    "runner_uid_10002_gid_10001": "passed",
+    "controller_uid_cannot_read_private_runtime_config": "passed",
+    "real_check_does_not_start_engine": "passed",
+    "certificate_rotation_actual_tls": "passed",
+    "mismatched_key_rejected": "passed",
+    "expired_certificate_passes_native_check_but_actual_tls_rejects_and_rolls_back": "passed",
+    "kill_only_owned_engine_then_restore_same_config": "passed",
+    "runner_container_restart_then_restore": "passed",
+    "encrypted_command_random_nonce_and_wrong_key": "passed",
+    "totp_ciphertext_not_accepted_as_vpn": "passed",
+    "raw_engine_json_and_extra_commands_rejected": "passed"
+  },
+  "reproduce": [
+    "GOOS=linux GOARCH=amd64 go test -c -tags integration -o .work/vpn-integration.test ./internal/vpn",
+    "python tools/probes/vpn_egress_probe.py",
+    "TROJAN_EGRESS_MUTATION=1 python tools/probes/vpn_egress_probe.py",
+    "docker build -f deploy/Dockerfile.runner -t trojan-runner:dev .",
+    "GOOS=linux GOARCH=amd64 go test -c -tags integration -o .work/runner-integration.test ./internal/vpnrunner",
+    "python tools/probes/runner_lifecycle_probe.py"
+  ],
+  "limitations": [
+    "尚未接入后台API、SQLite修订、证书同步作业及服务器部署。",
+    "图形客户端导入与实际移动设备仍需所有者验收。",
+    "独立网络使用文档保留网段作为公网目标夹具，没有添加私网白名单。"
+  ]
+}

@@ -1,0 +1,17 @@
+# 引擎、编译器和运行镜像固定摘要，运行期不安装依赖。
+FROM ghcr.io/sagernet/sing-box@sha256:0788ffbddab2c68a99a2dd4780bbc50902f159af6f589df3ee74a8389d278279 AS engine
+FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS build
+WORKDIR /src
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN go build -trimpath -ldflags="-s -w" -o /out/vpnrunner ./cmd/vpnrunner
+
+FROM alpine:3.22@sha256:365499d9dccb7c8cfaffef995a6c382e71174585e0556f6476ead1c5971c39fb
+RUN addgroup -g 10001 proxy && adduser -D -H -u 10002 -G proxy vpn
+COPY --from=engine /usr/local/bin/sing-box /usr/local/bin/sing-box
+COPY --from=build /out/vpnrunner /usr/local/bin/vpnrunner
+USER 10002:10001
+ENTRYPOINT ["vpnrunner"]
