@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-11",
+  "scanner": "govulncheck v1.9.0",
+  "rejected_official_engine": {"image": "ghcr.io/sagernet/sing-box@sha256:0788ffbddab2c68a99a2dd4780bbc50902f159af6f589df3ee74a8389d278279", "binary_reports": 27},
+  "replacement": {
+    "source": "github.com/sagernet/sing-box v1.14.4",
+    "upstream_commit": "c005f35300ce76427dc285481ec5695f5b179cd2",
+    "module": "engines/trojan",
+    "go": "1.26.11",
+    "features": ["Trojan inbound", "direct outbound", "UDP DNS"],
+    "linux_source_scan": "No vulnerabilities found",
+    "linux_binary_scan": "No vulnerabilities found",
+    "linux_binary_bytes": 16793762,
+    "local_image_index": "sha256:87a16fd6b988769f73b43ddbd91275745c9e3029b46d2c22384a3195967352f3",
+    "image_config": "sha256:d11bdf65d727627afeac5304cba95e53c8e1cf34345ce0d6b069ca39450b51be",
+    "real_tcp_udp_auth_egress_dns_change": "passed",
+    "real_runner_certificate_rollback_crash_restart": "passed",
+    "root_and_engine_modules_tests_vet": "passed"
+  },
+  "additional_verification": {
+    "linux_race_runtime_vpnservice_auth_api": "passed",
+    "windows_race_attempt": "GCC linker cannot resolve Chinese user path; not counted as test pass",
+    "interrupted_upload_removed_bytes": 21757952,
+    "remote_deployment": "M4 remains unchanged; new VPN not deployed"
+  },
+  "gateway_pending": {
+    "image": "caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9",
+    "go": "1.27.3",
+    "binary_reports": ["GO-2026-5932", "GO-2026-6859", "GO-2026-6860", "GO-2026-6865", "GO-2026-6866"],
+    "status": "继续验证受限构建与依赖修复；二进制报告不能单独证明当前配置的利用路径"
+  },
+  "limitations": ["扫描结论绑定当前源码、工具和漏洞数据库快照，不能保证不存在未知漏洞。", "尚未完成图形客户端、公网端口和完整部署验收。"]
+}

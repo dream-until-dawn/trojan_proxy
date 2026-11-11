@@ -13,6 +13,7 @@ def run(args):
 
 root='/opt/trojan-proxy-refactor'
 report={'managed':os.path.isfile(os.path.join(root,'.managed-by-trojan-refactor')),'files':{},'ports':{}}
+report['staged_uploads']=[{'name':name,'bytes':os.stat('/tmp/'+name).st_size} for name in os.listdir('/tmp') if name.startswith('trojan-m6-') and name.endswith('.tar.gz') and os.path.isfile('/tmp/'+name)]
 for name in ('compose.admin.yaml','Caddyfile.admin','admin.proxy.example.json'):
     with open(os.path.join(root,name),'rb') as stream:report['files'][name]=hashlib.sha256(stream.read()).hexdigest()
 for family,address in ((socket.AF_INET,'0.0.0.0'),(socket.AF_INET6,'::')):

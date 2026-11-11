@@ -7,7 +7,7 @@ import tempfile
 import uuid
 from gateway_probe import command
 
-SERVER='ghcr.io/sagernet/sing-box@sha256:0788ffbddab2c68a99a2dd4780bbc50902f159af6f589df3ee74a8389d278279'
+SERVER='trojan-runner:dev'
 CLIENT='metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c'
 prefix='trojan-egress-'+uuid.uuid4().hex[:10]
 network=None
@@ -19,6 +19,8 @@ def logs(cid):
     result=subprocess.run(['docker','logs',cid],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=10)
     return result.stdout
 try:
+    SERVER=json.loads(command(['docker','image','inspect',SERVER]))[0]['Id']
+    report['server_image']=SERVER
     with tempfile.TemporaryDirectory(prefix='trojan-egress-') as directory:
         root=Path(directory)
         mount=str(root.resolve())+':/fixture'
@@ -36,7 +38,7 @@ try:
         version=root/('a'*64);version.mkdir()
         (version/'fullchain.pem').write_bytes((root/'trusted.crt').read_bytes())
         (version/'private.key').write_bytes((root/'trusted.key').read_bytes())
-        command(['docker','run','--rm','--network','none','-v',mount,'-v',str(root.resolve())+':/certificates:ro',SERVER,'check','-c','/fixture/server.json'])
+        command(['docker','run','--rm','--network','none','-v',mount,'-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'check','-c','/fixture/server.json'])
         network=command(['docker','network','create','--internal','--subnet','198.51.100.0/24',prefix])
         # 文档保留网段仅用于隔离Docker夹具，避免给产品引入任何私网白名单。
         backend_code='''import http.server,socket,threading
@@ -70,7 +72,7 @@ while True:
 '''
         dns=command(['docker','run','-d','--name',prefix+'-dns','--network',network,'--ip','198.51.100.53','--memory','64m','python:3.12-slim','python','-c',dns_code]);containers.append(dns)
         server=command(['docker','run','-d','--name',prefix+'-server','--network',network,'--network-alias','vpn.test','--ip','198.51.100.10',
-            '--memory','128m','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro',SERVER,'run','-c','/fixture/server.json']);containers.append(server)
+            '--memory','128m','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'run','-c','/fixture/server.json']);containers.append(server)
         sentinel=command(['docker','run','-d','--name',prefix+'-private-sentinel','--network','container:'+server,'--memory','64m','python:3.12-slim','python','-c',backend_code]);containers.append(sentinel)
         for phase,password,trust in [('good','fixture-only-password-0123456789abcdef','trusted'),('bad-password','incorrect-password','trusted'),('bad-ca','fixture-only-password-0123456789abcdef','untrusted')]:
             config={'mixed-port':7890,'allow-lan':True,'bind-address':'0.0.0.0','mode':'rule','proxies':[{'name':'probe','type':'trojan','server':'vpn.test','port':18443,'sni':'vpn.test','password':password,'skip-cert-verify':False,'udp':True}],'rules':['MATCH,probe']}

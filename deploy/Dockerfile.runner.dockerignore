@@ -5,3 +5,6 @@
 !cmd/**
 !internal/
 !internal/**
+!engines/
+!engines/trojan/
+!engines/trojan/**

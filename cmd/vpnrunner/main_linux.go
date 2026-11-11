@@ -39,7 +39,7 @@ func run() error {
 			settings.OwnAddresses = append(settings.OwnAddresses, ip)
 		}
 	}
-	engine, err := vpnrunner.NewEngine(settings, "/usr/local/bin/sing-box", "/run/vpn/private")
+	engine, err := vpnrunner.NewEngine(settings, "/usr/local/bin/trojan-engine", "/run/vpn/private")
 	if err != nil {
 		return err
 	}

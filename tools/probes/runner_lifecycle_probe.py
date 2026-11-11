@@ -34,7 +34,7 @@ try:
     binary=str(Path('.work/runner-integration.test').resolve())+':/probe:ro'
     for phase in ('first','crash','restart'):
         if phase=='crash':
-            pid=command(['docker','exec',runner,'pidof','sing-box'])
+            pid=command(['docker','exec',runner,'pidof','trojan-engine'])
             if not re.fullmatch(r'[0-9]+',pid):raise RuntimeError('不能唯一识别本执行器子进程')
             command(['docker','exec',runner,'kill','-9',pid])
         if phase=='restart':command(['docker','restart',runner])
