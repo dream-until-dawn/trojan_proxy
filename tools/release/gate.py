@@ -1,4 +1,5 @@
 """部署前门槛：绑定离线包、实际二进制、三模块检查与真实正反向探针。"""
+import argparse
 import datetime
 import hashlib
 import json
@@ -10,8 +11,12 @@ import tarfile
 import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
-ARCHIVE=ROOT/'.work/m6-images.tar.gz'
-OUTPUT=ROOT/'.work/m6-gate.json'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--archive',type=Path,default=ROOT/'.work/m6-images.tar.gz')
+parser.add_argument('--output',type=Path,default=ROOT/'.work/m6-gate.json')
+args=parser.parse_args()
+ARCHIVE=args.archive.resolve()
+OUTPUT=args.output.resolve()
 LOGS=ROOT/'.work/release-gate'
 BINARIES={
     'trojan-control:m6':['usr/local/bin/control','usr/local/bin/proxyctl'],
@@ -51,7 +56,11 @@ try:
             entries=[entry for entry in manifest if tag in entry.get('RepoTags',[])]
             if len(entries)!=1:raise RuntimeError('离线包缺少唯一镜像: '+tag)
             entry=entries[0]
-            report['images'][tag]='sha256:'+hashlib.sha256(outer.extractfile(entry['Config']).read()).hexdigest()
+            config_body=outer.extractfile(entry['Config']).read()
+            config=json.loads(config_body)
+            if config.get('config',{}).get('Labels',{}).get('org.opencontainers.image.revision')!=report['commit']:
+                raise RuntimeError('镜像缺少本次确切提交标签，请使用 --label org.opencontainers.image.revision=<HEAD> 重建: '+tag)
+            report['images'][tag]='sha256:'+hashlib.sha256(config_body).hexdigest()
             selected={}
             for layer in entry['Layers']:
                 with tarfile.open(fileobj=outer.extractfile(layer),mode='r:*') as files:
