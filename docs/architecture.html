@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>架构与安全设计 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
-<header><div class="eyebrow">02 / 架构与安全设计</div><h1>控制、流量与协议分离</h1><p class="muted">方案 v0.2 · 用户已确认主要运行模式、Trojan 独立端口、Linux 全新部署与 TOTP。组件与实现细节仍需通过 M1 探针。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="plan.html">计划</a></nav></header><main>
+<header><div class="eyebrow">02 / 架构与安全设计</div><h1>控制、流量与协议分离</h1><p class="muted">方案 v0.2 · 用户已确认主要运行模式、Trojan 独立端口、Linux 全新部署与 TOTP。组件与实现细节仍需通过 M1 探针。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="plan.html">计划</a></nav></header><main><section><h2>2026-11-11 设计增补：后台配置优先</h2><p class="note"><a href="admin-first-design.html">部署配置迁移、VPN 30 天记录、默认欢迎页完整设计</a>。本增补修订下文的终端初始化与静态部署配置方案；新增功能均待探针、实现和验收。</p><p>初始仅配置容器数据卷和可选只读发布目录；推荐一条 Compose 命令拉取固定镜像并启动，通过 SSH 隧道在浏览器完成强口令/TOTP 绑定。域名、证书、入口、反代与 VPN 业务设置迁入版本化数据库；新域名/端口采用验证后确认、超时回滚，保留 SSH 恢复通道。任意宿主机挂载、Docker 网络、DNS 与云安全组保持外部边界。</p><p>新增独立 telemetry/采集与 traffic/统计存储模块，不与认证数据库共写；精确实际出站 IP、上下行字节及分钟速度历史最多保留 30 天。标准端口未命中业务路由显示欢迎页及公共 Web 状态点，禁止披露内部服务；统一 robots.txt 和响应头声明不爬取/索引。</p></section>
 <section><h2>1. 已确认的产品契约</h2><div class="table-wrap"><table><thead><tr><th>模式</th><th>80/TCP</th><th>443/TCP</th><th>后台</th><th>Trojan</th></tr></thead><tbody>
 <tr><td>无域名</td><td>HTTP 反代或静态站点</td><td>本项目保留监听，拒绝业务请求；不宣称提供 HTTPS</td><td>本机/SSH 隧道访问</td><td>默认关闭，直到配置域名证书或导入可信证书</td></tr>
 <tr><td>域名签发中</td><td>仅验证路径与最小状态提示；不接受后台凭据</td><td>证书未就绪时拒绝业务 TLS</td><td>SSH 隧道可用</td><td>等待证书</td></tr>
-<tr><td>域名证书就绪</td><td>ACME 验证优先，其余 308 到规范域名的 HTTPS，保留路径及查询</td><td>HTTPS 站点与后台入口</td><td>HTTPS + 强口令 + TOTP</td><td>独立端口，建议 8443；不与 443 争用</td></tr>
+<tr><td>域名证书就绪</td><td>ACME 验证与 robots.txt 声明优先，其余 308 到规范域名的 HTTPS，保留路径及查询</td><td>HTTPS 站点与后台入口</td><td>HTTPS + 强口令 + TOTP</td><td>独立端口，建议 8443；不与 443 争用</td></tr>
 <tr><td>续期失败</td><td>已有有效证书时维持跳转</td><td>使用仍有效的旧证书，报告退化；过期后阻止受保护业务，不静默改 HTTP</td><td>SSH 恢复入口持续可用</td><td>有效旧证书继续；到期后停止接受新连接</td></tr>
 </tbody></table></div><p>固定占用指 TCP 80/443。首版关闭 HTTP/3，不默认占用 UDP/443；后续 QUIC 协议使用独立 UDP 端口并进入同一端口注册表。未知 Host 不被用于重定向目标，也不触发任意域名自动签发。</p><p>“访问 80 指向本机 xxxx”在无域名模式直接反代；HTTPS 模式先跳转 443，再反代到 xxxx。额外端口（如 8001、8002）按各条规则显式选择 HTTP/HTTPS，默认 HTTP。</p></section>
 <section><h2>2. 组件选择与职责</h2><div class="flow"><div><strong>管理浏览器</strong>HTTPS / SSH 本地隧道<br>单管理员会话</div><div><strong>Caddy 网关</strong>80、443、8001…<br>反代、路由、TLS</div><div><strong>Go 控制服务</strong>认证、模型、校验、审计<br>SQLite + 配置修订</div><div><strong>VPN 运行服务</strong>协议适配器 → sing-box 候选<br>Trojan 8443 / 后续协议</div></div>
@@ -20,7 +20,7 @@
 <p>仅将 Docker Desktop 用作构建/部分测试；真实网络行为必须在 Linux 服务器验证。bridge 网络是后续可选模式，不能用 host.docker.internal 替代对宿主机仅回环监听服务的完整支持。</p>
 <ol><li>启动前锁住部署操作，检查 Docker/Compose、CPU 架构、目录权限、磁盘、时间、80/443 和所有配置端口的 IPv4/IPv6 占用。</li><li>遇到其他程序占用时，显示可辨识的 PID/容器信息，退出非零；不停止冲突服务，不自动改端口，不改全局防火墙/SELinux。</li><li>检查到真正 bind 之间仍可能发生竞争。最终 bind 失败必须回滚本次创建的进程，不把预检当作端口预留；不得留下半启动实例。</li><li>升级时允许经实例标识及运行状态核实的本项目监听；不把本实例误判为外部冲突，也不只凭容器名字判定归属。</li><li>HTTP-only 的 portguard 持有 443，转换到 TLS 时受协调器控制交接；转换失败恢复原保留状态。该交接是 M1 必须实测的风险点。</li></ol>
 <p>云安全组/上游防火墙放行不等于应用监听。界面区分“配置生效”“本机可达”“外网已验证”；只绑定、不擅自改云防火墙。</p></section>
-<section><h2>4. 后台鉴权与恢复</h2><p>固定单管理员，无注册、多租户和邮件找回。首次通过服务器终端完成强随机口令初始化、TOTP 绑定与恢复码生成；初始化令牌只能本机读取、短时有效、一次使用。未绑定 TOTP 前不开放公网管理。</p>
+<section><h2>4. 后台鉴权与恢复</h2><p>固定单管理员，无注册、多租户和邮件找回。目标改为通过 SSH 隧道进入浏览器向导，完成强口令初始化、TOTP 绑定与恢复码生成（现有终端初始化待迁移）；初始化令牌只能本机读取、短时有效、一次使用。未绑定 TOTP 前不开放公网管理。</p>
 <ul><li>口令采用 Argon2id，参数根据目标服务器测量校准；会话使用随机不透明 token，服务端存散列。登录轮换会话，退出/重置凭据撤销全部会话。</li><li>用户指定同域名独立端口后，后台固定来源为 https://qin-xin.top:8007。端口不隔离 Cookie，因此不以 Cookie 携带管理凭据：短期不透明令牌只存页面内存，由 Authorization 请求头提交；刷新页面需重新登录。严格匹配 Origin（含协议和端口），默认无跨域授权，写操作限制 JSON 类型、体积及超时。</li><li>SSH 通道是明确的本地模式：仅 loopback 监听和允许的 localhost Host；同样使用内存令牌，只接受初始化配置中明确列出的本地来源。</li><li>登录及 TOTP 限流、渐进延迟、统一错误消息；同一步 TOTP 防重放。恢复码单次使用且仅保存散列，TOTP 秘密加密存储，主密钥单独权限保护。</li><li>会话建议空闲 30 分钟、最长 12 小时；导出 VPN 凭据、重置认证、导入证书和还原备份要求近期再次认证。</li><li>专属后台来源及其监听端口不允许被普通路由覆盖。未知 Host、伪造转发头、公开静态站点到后台的访问均有负向测试。</li><li>无密码回显、无日志 token、无 URL/localStorage/sessionStorage 管理令牌；严格 CSP 与前端输出转义降低 XSS 风险。SSH 本地恢复命令可重置管理员并记录审计；恢复不依赖网关正常运行。</li></ul>
 <p>后台鉴权不自动保护发布的业务站点。公开目录/反代发布时清楚展示“公网无需登录”；如果后续需要业务访问认证，单独建模，不能复用管理员令牌。</p>
 <p>实现依据：<a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">OWASP 口令存储</a>、<a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">会话管理</a>与<a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html">CSRF 防护</a>。这些机制不能抵御已取得服务器 root 的攻击者，此信任边界写入运维说明。</p></section>
@@ -67,6 +67,10 @@ internal/protocols/    公共契约与 trojan/ 适配器
 internal/runtime/      修订协调、回滚、健康状态
 internal/storage/      SQLite repository 与 migrations/
 internal/audit/        审计与脱敏
+internal/bootstrap/    网页初始化、一次性绑定与恢复（新增计划）
+internal/settings/     可变业务设置、迁移与入口切换（新增计划）
+internal/traffic/      分钟聚合、查询及30天清理（新增计划）
+engines/trojan/telemetry/  受限连接/出站计数适配（新增计划）
 web/src/features/      auth/routes/certificates/vpn/system
 deploy/                Compose、Dockerfile、示例配置
 scripts/               少量部署入口；不承载业务逻辑
