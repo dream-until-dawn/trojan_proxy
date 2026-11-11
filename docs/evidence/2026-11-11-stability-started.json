@@ -1,0 +1,31 @@
+{
+  "launch_verified": true,
+  "completed": false,
+  "observation_passed": false,
+  "observer_source_commit": "87b501fab8334887956fa6a5236666841c5ea39c",
+  "started_utc": "2026-11-11T15:14:39.952944Z",
+  "expected_finish_utc": "2026-11-12T15:14:39Z",
+  "smoke_passed": true,
+  "first_sample_and_VPN_positive_negative_passed": true,
+  "code_sha256": {
+    "observe.py": "1d1076d1a0372f6f58d1e9e19ffb904073e78ebc5187e47f54d9ad29b7036c7e",
+    "checks.py": "7fd4253133b91a23dedab2f4d816d469816cf06f0743db8630483b7944075025",
+    "test_checks.py": "bf04b8a6b7d81ab4c13c836f1d8b220aeb64c7a7cd14d26a0c10687bcf88fb86",
+    "vpn_connectivity_probe.py": "2504d2745069e2e426377d68d17126a50e4f1e27ed4b09d625f379dc6857e319",
+    "manifest.json": "1843512f1ccda6b6a53d2cfbf198f3ba2944c35a776de8f42cda25c624d74145"
+  },
+  "early_snapshot": {
+    "passed": false,
+    "completed": false,
+    "started_utc": "2026-11-11T15:14:39.952944Z",
+    "duration_seconds": 86400,
+    "source_commit": "2dfb4dcd556949c32aeb176a77a6daafe3506259",
+    "samples": 2,
+    "failures": 0,
+    "deep_checks": 1,
+    "recent_failures": [],
+    "updated_utc": "2026-11-11T15:15:42.674303Z",
+    "elapsed_seconds": 62.72133454680443
+  },
+  "observer_running_at_snapshot": true
+}
