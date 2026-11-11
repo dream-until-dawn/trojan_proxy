@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,13 +11,23 @@ import (
 	"strings"
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
+	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 )
+
+// Authentication 允许独立验证权限边界，生产实现必须同时支持会话与近期MFA校验。
+type Authentication interface {
+	Login(context.Context, string, string, string) (string, error)
+	Validate(string) bool
+	Recent(string) bool
+	Logout(string)
+}
 
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
-	Auth    *auth.Service
+	Auth    Authentication
 	Origins map[string]bool
 	Static  http.Handler
+	Routes  *routing.Service
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -31,12 +42,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { respond(w, 200, map[string]bool{"alive": true}) })
 	mux.HandleFunc("POST /api/login", s.login)
 	mux.HandleFunc("POST /api/status", s.protected(func(w http.ResponseWriter, r *http.Request) {
-		respond(w, 200, map[string]any{"authenticated": true, "scope": "认证底座已就绪，反代管理尚未接入"})
+		respond(w, 200, map[string]any{"authenticated": true, "scope": "认证正常。业务规则按修订校验、应用；修改需最近五分钟内的双因素登录。"})
 	}))
 	mux.HandleFunc("POST /api/logout", s.protected(func(w http.ResponseWriter, r *http.Request) {
 		s.Auth.Logout(bearer(r))
 		respond(w, 200, map[string]bool{"ok": true})
 	}))
+	mux.HandleFunc("POST /api/routes/list", s.protected(s.listRoutes))
+	mux.HandleFunc("POST /api/routes/apply", s.protected(s.applyRoutes))
 	if s.Static != nil {
 		mux.Handle("/", s.Static)
 	}

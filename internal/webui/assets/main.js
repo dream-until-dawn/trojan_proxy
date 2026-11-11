@@ -1,4 +1,5 @@
 import { login, logout, request } from "./auth.js";
+import { refreshRoutes } from "./routes.js";
 
 const form = document.querySelector("#login-form");
 const message = document.querySelector("#message");
@@ -21,6 +22,7 @@ form.addEventListener("submit", async (event) => {
     document.querySelector("#status").textContent = status.scope;
     document.querySelector("#login-panel").hidden = true;
     document.querySelector("#dashboard").hidden = false;
+	await refreshRoutes();
     message.textContent = "";
   } catch (error) { message.textContent = error.message; }
   finally { submit.disabled = false; }

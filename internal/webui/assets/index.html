@@ -3,10 +3,25 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>独用代理管理</title><link rel="stylesheet" href="/style.css"></head>
 <body><main><header><p class="label">TROJAN PROXY</p><h1>独用代理管理</h1><p>管理入口采用强口令与双重验证。刷新页面后需重新登录。</p></header>
 <section id="login-panel"><h2>管理员登录</h2><form id="login-form">
-<label>管理员口令<input id="password" type="password" autocomplete="current-password" minlength="16" maxlength="1024" required></label>
+<label>管理员口令<input id="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
 <label>验证方式<select id="method"><option value="otp">验证器验证码</option><option value="recovery">一次性恢复码</option></select></label>
 <label>验证码或恢复码<input id="verification" type="text" autocomplete="one-time-code" maxlength="64" required></label>
 <button id="submit" type="submit">安全登录</button></form><p id="message" role="status" aria-live="polite"></p>
 <p class="hint">首次使用请在服务器终端运行管理员初始化，完成验证器绑定并保存恢复码。这里不提供注册入口。</p></section>
-<section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><p class="hint">当前版本正在接入反向代理、证书和VPN管理功能。</p><button id="logout" type="button">退出登录</button></section>
+<section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><button id="logout" type="button">退出登录</button>
+<hr><h2>反向代理与公开目录</h2><p id="revision"></p><p class="hint">当前阶段开放自定义HTTP端口。80/443仍由旧服务持有，完整接管后再开放。此处的业务发布默认无需管理员登录。</p>
+<div class="table-wrap"><table><thead><tr><th>名称</th><th>入口</th><th>目标</th><th>草稿操作</th></tr></thead><tbody id="route-rows"></tbody></table></div>
+<form id="route-form"><h3>添加到草稿</h3>
+<label>名称<input id="route-name" maxlength="60" required></label>
+<label>公开端口<input id="route-port" type="number" min="1024" max="65535" placeholder="例如8001" required></label>
+<label>域名匹配（可留空）<input id="route-host" placeholder="留空匹配此端口所有Host" maxlength="253"></label>
+<label>路径前缀<input id="route-path" value="/" maxlength="512" required></label>
+<label>目标类型<select id="route-kind"><option value="proxy">本机HTTP服务</option><option id="files-option" value="files">公开目录下载</option></select></label>
+<div id="proxy-fields"><label>本机上游IP<input id="upstream-ip" value="127.0.0.1" required></label><label>本机上游端口<input id="upstream-port" type="number" min="1" max="65535" required></label><label class="checkbox"><input id="strip-prefix" type="checkbox"> 转发前去掉路径前缀</label></div>
+<div id="files-fields" hidden><label>已授权目录<select id="directory-id"></select></label><label class="checkbox"><input id="browse" type="checkbox"> 允许访问者列出目录（默认关闭）</label><p class="hint">目录只读，文件以附件下载；隐藏文件不发布。</p></div>
+<button type="submit">添加到草稿</button></form>
+<p class="hint">添加或移除仅修改当前草稿，点击下方按钮才会应用；刷新已生效规则会放弃草稿。</p>
+<label class="checkbox"><input id="ack-public" type="checkbox"> 我确认这些服务/目录可以公开访问，无需后台登录</label>
+<button id="apply-routes" type="button">校验并应用草稿</button><button id="refresh-routes" class="secondary" type="button">刷新已生效规则</button>
+<p id="route-message" role="status" aria-live="polite"></p></section>
 </main><script type="module" src="/main.js"></script></body></html>

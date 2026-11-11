@@ -1,0 +1,21 @@
+{
+  "real_gateway": {
+    "nonroot_unix_socket_access": "PASS",
+    "http_proxy_and_strip_prefix": "PASS",
+    "path_segment_boundary": "PASS",
+    "public_file_and_index_links": "PASS",
+    "directory_canonical_redirect": "PASS",
+    "port_conflict_retains_routes_and_revision": "PASS",
+    "caddy_container_restart_sqlite_restore": "PASS"
+  },
+  "unit_validation": {"go_test_all":"PASS","go_vet_all":"PASS","audit_failure_rolls_back_journal":"PASS","audit_redaction":"PASS"},
+  "server_upgrade": {
+    "backup_directory":"/opt/trojan-proxy-refactor/backups/before-m4-20261111T054003Z",
+    "image_config":"sha256:5c569b2a6cc2cd45078aa909a1cb03f0a05ca90a7b938658eb238cb824ddbf5c",
+    "control_ready":true,
+    "gateway_reconciled":true,
+    "unrelated_containers_unchanged":true
+  },
+  "public_checks":{"tls_verified":true,"new_interface":200,"routes_module":200,"unauthenticated_rules":401,"cross_origin_rules":403},
+  "limitations":["80/443仍由旧Trojan持有，阶段性管理只支持自定义端口。","自动ACME和VPN管理尚未接入。","运行镜像固定以上摘要，后续测试抽象调整尚未重新部署。"]
+}

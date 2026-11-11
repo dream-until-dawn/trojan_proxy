@@ -62,7 +62,7 @@ func run(args []string) error {
 			return err
 		}
 		// 这里只检查部署规划中的所有监听；运行实例的归属识别尚未接入。
-		if err = ports.Check([]int{80, 443, c.AdminPort, c.ControlPort, c.VPNPort}); err != nil {
+		if err = ports.Check([]int{80, 443, c.AdminPort, c.ControlPort, c.ControlPort + 1, c.VPNPort}); err != nil {
 			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(map[string]any{"config_valid": true, "tcp_ports_available": true, "domain": c.Domain, "admin_port": c.AdminPort, "limitations": "未验证Docker版本、云防火墙或公网连通；预检不保留端口"})

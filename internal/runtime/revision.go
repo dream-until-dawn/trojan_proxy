@@ -8,11 +8,15 @@ import (
 	"sync"
 )
 
+// ErrRevisionConflict 表示客户端基于过时快照提交，应刷新后重新确认。
+var ErrRevisionConflict = errors.New("修订号冲突")
+
 // Revision 是一次完整配置快照；编号由持久化存储层分配。
 type Revision struct {
 	Number  uint64 `json:"number"`
 	Gateway string `json:"gateway"`
 	VPN     string `json:"vpn"`
+	Rules   string `json:"rules,omitempty"`
 }
 
 // Journal 保留旧快照直到两个组件都应用成功。
@@ -82,7 +86,7 @@ func (c *Coordinator) Apply(ctx context.Context, expected uint64, next Revision)
 		return errors.New("存在未完成修订，请先恢复")
 	}
 	if j.Applied.Number != expected || next.Number != expected+1 {
-		return errors.New("修订号冲突")
+		return ErrRevisionConflict
 	}
 	if err = c.gateway.Check(ctx, next.Gateway); err != nil {
 		return err

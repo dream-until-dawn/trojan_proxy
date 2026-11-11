@@ -1,0 +1,11 @@
+{
+  "account_initialized": true,
+  "database_integrity": "ok",
+  "backup_directory": "/opt/trojan-proxy-refactor/backups/enrollment-20261111T050753Z",
+  "control_ready": true,
+  "gateway_started": true,
+  "existing_containers_unchanged": true,
+  "external_checks": {"tls_verified":true,"login_page":200,"unauthenticated_status":401,"cross_origin":403},
+  "user_confirmation": "所有者已在内置浏览器正常登录，未向代理提供凭据。",
+  "limitations": ["启动版本仅含认证功能；反代功能随后独立实现与验收。"]
+}

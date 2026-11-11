@@ -136,3 +136,11 @@ func (s *Service) Logout(token string) {
 	defer s.mu.Unlock()
 	delete(s.sessions, TokenHash(token))
 }
+
+// Recent 要求敏感配置修改发生在最近一次双因素登录后的五分钟内。
+func (s *Service) Recent(token string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state, ok := s.sessions[TokenHash(token)]
+	return ok && s.now().Sub(state.created) < 5*time.Minute
+}

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -78,6 +79,10 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS administrator (id INTEGER PRIMARY KEY CHECK(id=1), password_hash TEXT NOT NULL, secret BLOB NOT NULL, last_counter INTEGER NOT NULL, recovery TEXT NOT NULL CHECK(json_valid(recovery)))"); err != nil {
 		return err
 	}
+	// 可选附加表不改变已有凭据/修订格式，兼容性版本仍为2，允许回退到认证阶段镜像。
+	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS config_events (id INTEGER PRIMARY KEY AUTOINCREMENT, created_utc TEXT NOT NULL, revision INTEGER NOT NULL, state TEXT NOT NULL, summary TEXT NOT NULL)"); err != nil {
+		return err
+	}
 	b, err := json.Marshal(control.Journal{Applied: initial})
 	if err != nil {
 		return err
@@ -114,7 +119,38 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 	if err != nil {
 		return err
 	}
-	result, err := s.db.ExecContext(ctx, "UPDATE revision_journal SET body=? WHERE id=1", string(body))
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var previousRaw string
+	if err = tx.QueryRowContext(ctx, "SELECT body FROM revision_journal WHERE id=1").Scan(&previousRaw); err != nil {
+		return err
+	}
+	var previous control.Journal
+	if err = json.Unmarshal([]byte(previousRaw), &previous); err != nil {
+		return err
+	}
+	state := "snapshot"
+	revision := j.Applied.Number
+	if j.Pending != nil {
+		state = "prepared"
+		revision = j.Pending.Number
+	} else if previous.Pending != nil {
+		state = "rolled_back"
+		revision = previous.Pending.Number
+		if j.Applied.Number > previous.Applied.Number {
+			state = "applied"
+		}
+	}
+	var rules []json.RawMessage
+	if j.Applied.Rules != "" {
+		if err = json.Unmarshal([]byte(j.Applied.Rules), &rules); err != nil {
+			return err
+		}
+	}
+	result, err := tx.ExecContext(ctx, "UPDATE revision_journal SET body=? WHERE id=1", string(body))
 	if err != nil {
 		return err
 	}
@@ -125,5 +161,12 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 	if n != 1 {
 		return errors.New("修订日志缺失")
 	}
-	return nil
+	if _, err = tx.ExecContext(ctx, "INSERT INTO config_events(created_utc,revision,state,summary) VALUES(strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?)", revision, state, fmt.Sprintf("已提交%d条业务规则", len(rules))); err != nil {
+		return err
+	}
+	// 限制审计条目数量，避免配置探针和长期运行造成无界增长。
+	if _, err = tx.ExecContext(ctx, "DELETE FROM config_events WHERE id <= (SELECT COALESCE(MAX(id),0)-10000 FROM config_events)"); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

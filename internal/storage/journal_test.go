@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
@@ -46,6 +47,54 @@ func TestAbruptProcessExit(t *testing.T) {
 	}
 	if g.value != "old-g" || v.value != "old-v" {
 		t.Fatal("进程异常退出后未恢复旧配置")
+	}
+}
+
+func TestAuditCommitIsAtomicAndRedacted(t *testing.T) {
+	ctx := context.Background()
+	s, err := OpenJournal(ctx, filepath.Join(t.TempDir(), "audit.db"), control.Revision{Number: 1, Gateway: "secret-old"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	next := control.Revision{Number: 2, Gateway: "secret-new", Rules: "[]"}
+	if err = s.Save(ctx, control.Journal{Applied: control.Revision{Number: 1, Gateway: "secret-old"}, Pending: &next}); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Save(ctx, control.Journal{Applied: next}); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := s.db.QueryContext(ctx, "SELECT state,summary FROM config_events ORDER BY id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var states []string
+	for rows.Next() {
+		var state, summary string
+		if err = rows.Scan(&state, &summary); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(summary, "secret") {
+			t.Fatal("审计泄漏原始配置")
+		}
+		states = append(states, state)
+	}
+	if err = rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	rows.Close()
+	if strings.Join(states, ",") != "prepared,applied" {
+		t.Fatal("审计状态链不完整", states)
+	}
+	if _, err = s.db.ExecContext(ctx, "DROP TABLE config_events"); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Save(ctx, control.Journal{Applied: control.Revision{Number: 3}}); err == nil {
+		t.Fatal("审计写失败未报告")
+	}
+	j, err := s.Load(ctx)
+	if err != nil || j.Applied.Number != 2 {
+		t.Fatal("审计失败后仍提交修订", j, err)
 	}
 }
 

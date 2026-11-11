@@ -6,18 +6,20 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 )
 
 // Config 是版本化部署配置，运行秘密另存于受限数据目录。
 type Config struct {
-	Version     int    `json:"version"`
-	Domain      string `json:"domain"`
-	AdminPort   int    `json:"admin_port"`
-	ControlPort int    `json:"control_port"`
-	VPNPort     int    `json:"vpn_port"`
-	DataDir     string `json:"data_dir"`
+	Version           int               `json:"version"`
+	Domain            string            `json:"domain"`
+	AdminPort         int               `json:"admin_port"`
+	ControlPort       int               `json:"control_port"`
+	VPNPort           int               `json:"vpn_port"`
+	DataDir           string            `json:"data_dir"`
+	PublicDirectories map[string]string `json:"public_directories,omitempty"`
 }
 
 var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
@@ -30,7 +32,15 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("必须指定数据目录")
 	}
-	ports := map[int]bool{80: true, 443: true}
+	if c.ControlPort >= 65535 {
+		return errors.New("内控端口必须为文件服务保留下一端口")
+	}
+	for id, directory := range c.PublicDirectories {
+		if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$`).MatchString(id) || !strings.HasPrefix(directory, "/srv/public/") || path.Clean(directory) != directory {
+			return errors.New("公开目录必须使用有效ID及/srv/public/内的独立挂载路径")
+		}
+	}
+	ports := map[int]bool{80: true, 443: true, c.ControlPort + 1: true}
 	for _, port := range []int{c.AdminPort, c.ControlPort, c.VPNPort} {
 		if port < 1024 || port > 65535 {
 			return errors.New("后台、内控和VPN端口必须在1024至65535之间")

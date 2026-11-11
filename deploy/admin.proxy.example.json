@@ -4,5 +4,6 @@
   "admin_port": 8007,
   "control_port": 18090,
   "vpn_port": 18443,
-  "data_dir": "/data"
+  "data_dir": "/data",
+  "public_directories": {"demo": "/srv/public/demo"}
 }

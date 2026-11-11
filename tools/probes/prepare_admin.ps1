@@ -22,6 +22,8 @@ $files=@{}
 foreach ($name in @('compose.admin.yaml','Caddyfile.admin','admin.proxy.example.json','admin-init.sh')) {
     $files[$name]=(Get-Content -Raw -LiteralPath (Join-Path $repoRoot "deploy/$name")).Replace("`r`n","`n")
 }
+# 此脚本只接受历史认证阶段包，避免将后续含新挂载的配置作为全新部署误用。
+if ($files['compose.admin.yaml'] -notmatch 'image: trojan-control:dev') { throw '当前是M4工作树，已有部署使用upgrade_admin.ps1；全新部署请等待正式安装器' }
 $payload=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($files | ConvertTo-Json -Compress)))
 $probeDir=Join-Path $env:TEMP ('trojan-install-'+[guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $probeDir | Out-Null
