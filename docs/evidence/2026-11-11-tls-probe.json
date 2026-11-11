@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-11",
+  "checks": {
+    "guard_blocks_tls_bind": "PASS",
+    "guard_to_verified_tls": "PASS",
+    "certificate_rotation_fingerprint_changed": "PASS",
+    "untrusted_certificate_rejected": "PASS",
+    "mismatched_key_rejected_previous_tls_live": "PASS"
+  },
+  "limitations": ["未验证真实80/443、ACME自动签发、Trojan及跨组件事务。"],
+  "fingerprints": {
+    "before": "effa4a1d3b3f3e18d1565fbdc41ceceba9c0ea56d90717161ba6658d3fa4958c",
+    "after": "75d5e0d5e9ddfd30572bb106df8b7e90dabb3a2bca2a764d70f1ea2238c06cb8"
+  },
+  "existing_running_containers_unchanged": true,
+  "passed": true
+}

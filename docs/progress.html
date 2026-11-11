@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>开发进展 · Trojan Proxy</title>
+  <link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+<header>
+  <div class="eyebrow">2026-11-11 / M1 持续验证</div>
+  <h1>开发进展与剩余门槛</h1>
+  <nav><a href="index.html">总览</a><a href="plan.html">计划</a></nav>
+</header>
+<main>
+  <section>
+    <h2>本轮新增验证</h2>
+    <p>P3/P4 的高端口 TLS 探针已通过：保留监听阻止抢占、释放后 TLS 接管、证书轮换后的真实握手指纹变化、不可信证书拒绝、错误私钥拒绝且旧 TLS 继续服务。</p>
+    <p><a href="evidence/2026-11-11-tls-probe.json">原始脱敏结果</a> · <a href="../tools/probes/tls_probe.py">源码</a>。沿用已核实的 Caddy 镜像摘要，原有运行容器启动时间保持不变。尚未涉及真实 80/443、ACME 与 VPN 证书发布。</p>
+    <p>P6 使用 Go 1.26.1 的 os.Root，根目录约束在实际打开时生效。正常文件读取成功，非法相对路径、隐藏路径、编码路径、根外符号链接与并发换链攻击在 Linux 测试通过。新增 FIFO 非阻塞防护正在复测。Windows 本地 go test ./...、go vet ./... 通过；Windows 不替代 Linux 符号链接验收。</p>
+    <p>已准备故意改为普通 os.Open 的破坏版本，必须在 Linux 上因“根外符号链接被接受”这一特定断言失败才算完成 mutation 验证。目前二进制上传遇到 SSH 重置，未将其标记为通过。</p>
+    <p>P7 的 Argon2id 成本探针已交叉编译：64 MiB、3 轮、并行度 1，连续五次。依赖锁定 golang.org/x/crypto v0.48.0；这只是性能测量，不能替代后续 TOTP、限流、恢复和会话安全测试。目标服务器测量未完成：大文本、压缩传输和 SCP 均出现 SSH 连接关闭。小型只读健康探针也被关闭；TCP 22 可达，不等于 SSH 执行通道可用。未据此推断容器宕机。</p>
+  </section>
+  <section>
+    <h2>实现边界补充</h2>
+    <p>文件模块允许根内相对符号链接，但由 os.Root 拒绝根外链接与绝对链接；这比先检查 realpath 再打开更能抵御并发换链。发布目录仍必须是专用只读目录，不得挂载 proc、设备或含秘密的子挂载。仅允许普通文件，并禁止百分号路径以保守拒绝残留编码。</p>
+    <p>该模块尚未接入 HTTP 服务，不代表目录发布产品功能已经交付。P2 跨组件事务、P3 真实端口、P4 自动证书发布、P5 客户端、P7 完整认证仍是 M1/M2 后续工作。当前没有跳过门槛进入大规模后台实现。</p>
+  </section>
+  <section>
+    <h2>客户端验收目标与当前阻塞</h2>
+    <p>用户已确认电脑使用 Clash Verge，手机/平板使用 Clash Mi。以 Clash/Mihomo YAML 导出作为首版目标；具体安装版本可在 GUI 体验验收时补记，不阻塞后端探针。参考 <a href="https://github.com/KaringX/clashmi">Clash Mi 项目</a>和 <a href="https://wiki.metacubex.one/config/proxies/trojan/">Mihomo Trojan 文档</a>。</p>
+  <p class="warn">当前阻塞：服务器 SSH 执行会话反复被远端关闭，无法完成 P6 最新 FIFO 复测、mutation 与 P7 成本测量。需要先恢复稳定 SSH 会话。SCP 失败可能留下 /tmp/trojan-binary-* 临时探针文件；恢复后先只读列出精确路径并核实，再清理本轮文件，不使用全局清理。</p>
+  </section>
+</main>
+</body>
+</html>

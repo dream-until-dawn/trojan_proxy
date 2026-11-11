@@ -28,7 +28,7 @@
 <div class="table-wrap"><table><thead><tr><th>例子</th><th>用户填写</th><th>行为</th></tr></thead><tbody><tr><td>本机应用</td><td>80 / → 127.0.0.1:3000</td><td>HTTP 模式直接代理；HTTPS 模式在 443 处理业务</td></tr><tr><td>公开下载</td><td>8001 / → 目录 ID public-downloads</td><td>只读文件服务；可显式启用索引</td></tr><tr><td>其他应用</td><td>8002 / → 127.0.0.1:9000</td><td>独立 HTTP 入口；端口冲突不影响已有规则</td></tr><tr><td>子域名或路径</td><td>app.example.com /api → 127.0.0.1:8080</td><td>精确 Host + 路径前缀，最长前缀优先</td></tr></tbody></table></div>
 <p>保护的系统路由优先于业务路由；同一端口/Host/路径重复规则拒绝；80/443、后台、引擎控制端口不可被自定义监听器覆盖。禁止反代回自身形成循环，禁止云元数据/link-local 和内控接口；允许明确配置的宿主机应用端口。首版上游限定本机 IP，远程 LAN/域名上游后续再扩展，避免引入 DNS 重绑定面。</p>
 <p>发布根目录由安装配置显式挂载到 <code>/srv/public/&lt;id&gt;</code>，后台只能选择此范围。禁止宿主机根目录、密钥、数据库、Docker socket 等敏感位置；新增挂载通过 CLI/部署配置完成，后台不能任意挂载宿主机。</p>
-<p class="warn">仅配置 Caddy root 不构成文件系统沙箱。首版公开文件走受限文件模块：从根目录描述符出发、拒绝符号链接与越界、处理 URL 编码及路径竞争，文件打开后再流式输出；只读挂载作为第二道边界。用恶意目录与并发换链探针验证，不依赖字符串前缀检查。参见 <a href="https://caddyserver.com/docs/caddyfile/directives/file_server">Caddy 文件服务边界说明</a>。</p>
+<p class="warn">仅配置 Caddy root 不构成文件系统沙箱。首版公开文件走受限文件模块：从根目录描述符出发、允许根内相对符号链接、拒绝绝对链接与根外越界、处理 URL 编码及路径竞争，文件打开后再流式输出；只读挂载作为第二道边界。用恶意目录与并发换链探针验证，不依赖字符串前缀检查。参见 <a href="https://caddyserver.com/docs/caddyfile/directives/file_server">Caddy 文件服务边界说明</a>。</p>
 <p>默认拒绝隐藏文件、配置与凭据文件；目录索引默认关闭；公开目录应作为专用发布目录，不承诺识别所有用户误放的敏感内容。不支持上传、编辑、脚本执行。</p></section>
 <section><h2>6. 证书生命周期</h2><p>Caddy 是自动证书的唯一写入者，control 维护证书绑定、来源与状态。首版支持单域名/多域名普通证书、HTTP-01、手工导入；DNS-01/泛域名暂不进入交付。不开启根据任意访问 Host 触发的无限制签发。</p>
 <pre>disabled → validating → issuing → ready → renewing → ready
