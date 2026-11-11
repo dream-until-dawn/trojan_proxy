@@ -66,7 +66,14 @@ func (c *Coordinator) Recover(ctx context.Context) error {
 
 func (c *Coordinator) rollback(ctx context.Context, j Journal) error {
 	// 即使第一个组件失败也尝试恢复另一个，避免不必要的扩大故障。
-	err := errors.Join(c.gateway.Apply(ctx, j.Applied.Gateway), c.vpn.Apply(ctx, j.Applied.VPN))
+	var gatewayErr, vpnErr error
+	if j.Pending != nil && j.Pending.Gateway != j.Applied.Gateway {
+		gatewayErr = c.gateway.Apply(ctx, j.Applied.Gateway)
+	}
+	if j.Pending != nil && j.Pending.VPN != j.Applied.VPN {
+		vpnErr = c.vpn.Apply(ctx, j.Applied.VPN)
+	}
+	err := errors.Join(gatewayErr, vpnErr)
 	if err != nil {
 		return fmt.Errorf("回滚未完成，保留待恢复修订: %w", err)
 	}
@@ -88,17 +95,24 @@ func (c *Coordinator) Apply(ctx context.Context, expected uint64, next Revision)
 	if j.Applied.Number != expected || next.Number != expected+1 {
 		return ErrRevisionConflict
 	}
-	if err = c.gateway.Check(ctx, next.Gateway); err != nil {
-		return err
+	if next.Gateway != j.Applied.Gateway {
+		if err = c.gateway.Check(ctx, next.Gateway); err != nil {
+			return err
+		}
 	}
-	if err = c.vpn.Check(ctx, next.VPN); err != nil {
-		return err
+	if next.VPN != j.Applied.VPN {
+		if err = c.vpn.Check(ctx, next.VPN); err != nil {
+			return err
+		}
 	}
 	j.Pending = &next
 	if err = c.store.Save(ctx, j); err != nil {
 		return err
 	}
-	if err = c.gateway.Apply(ctx, next.Gateway); err == nil {
+	if next.Gateway != j.Applied.Gateway {
+		err = c.gateway.Apply(ctx, next.Gateway)
+	}
+	if err == nil && next.VPN != j.Applied.VPN {
 		err = c.vpn.Apply(ctx, next.VPN)
 	}
 	if err == nil {

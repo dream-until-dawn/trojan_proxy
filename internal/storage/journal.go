@@ -132,6 +132,21 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 	if err = json.Unmarshal([]byte(previousRaw), &previous); err != nil {
 		return err
 	}
+	// 不仅依赖进程内锁：拒绝另一进程以过时快照覆盖准备中或已提交的修订。
+	if j.Pending != nil {
+		if j.Applied != previous.Applied || (previous.Pending != nil && *previous.Pending != *j.Pending) {
+			return control.ErrRevisionConflict
+		}
+	} else if previous.Pending != nil {
+		if j.Applied != previous.Applied && j.Applied != *previous.Pending {
+			return control.ErrRevisionConflict
+		}
+	} else if j.Applied != previous.Applied {
+		bootstrap := previous.Applied.Gateway == "" && j.Applied.Number == previous.Applied.Number && j.Applied.VPN == previous.Applied.VPN && (j.Applied.Rules == "[]" || j.Applied.Rules == "")
+		if !bootstrap {
+			return control.ErrRevisionConflict
+		}
+	}
 	state := "snapshot"
 	revision := j.Applied.Number
 	if j.Pending != nil {

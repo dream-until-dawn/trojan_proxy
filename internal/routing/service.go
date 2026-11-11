@@ -50,7 +50,12 @@ type Snapshot struct {
 
 // NewService 只连接依赖；初始化失败会阻止业务修改但不影响独立登录入口。
 func NewService(store control.Store, engine Gateway, settings gateway.Settings) *Service {
-	return &Service{store: store, gateway: engine, settings: settings, coordinator: control.NewCoordinator(store, engine, unchangedVPN{})}
+	return NewServiceWithCoordinator(store, engine, settings, control.NewCoordinator(store, engine, unchangedVPN{}))
+}
+
+// NewServiceWithCoordinator 让证书、VPN和路由共享同一协调锁，避免跨功能并发提交。
+func NewServiceWithCoordinator(store control.Store, engine Gateway, settings gateway.Settings, coordinator *control.Coordinator) *Service {
+	return &Service{store: store, gateway: engine, settings: settings, coordinator: coordinator}
 }
 
 func (s *Service) initialize(ctx context.Context) error {

@@ -17,10 +17,10 @@ try:
         'alpine:3.22','sh','-c','chown 0:10001 /socket && chmod 0770 /socket && chown 10001:10001 /state /public && chmod 0700 /state /public'])
     openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
     command(['docker','run','--rm','--network','none','-v',certs+':/certs',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
-        '-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost','-keyout','/certs/private.key','-out','/certs/fullchain.cer'])
+        '-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,DNS:localhost.test','-keyout','/certs/private.key','-out','/certs/fullchain.cer'])
     gateway=command(['docker','run','-d','--name',prefix+'-caddy','--user','0:10001','--read-only','--cap-drop','ALL',
         '--security-opt','no-new-privileges','--memory','128m','--cpus','0.5',
-        '-v',sock+':/run/caddy','-v',certs+':/certs:ro','--tmpfs','/data','--tmpfs','/config',
+        '-v',sock+':/run/caddy','-v',certs+':/certs:ro','-v',certs+':/certificates/test:ro','--tmpfs','/data','--tmpfs','/config',
         '-e','CADDY_ADMIN=unix//run/caddy/admin.sock|0660',
         'caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9','caddy','run'])
     binary=str(Path('.work/gateway-integration.test').resolve())+':/probe:ro'
@@ -28,7 +28,7 @@ try:
         if phase=='restart':command(['docker','restart',gateway])
         result=subprocess.run(['docker','run','--rm','--network','container:'+gateway,'--user','10001:10001',
             '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--memory','256m','--cpus','1',
-            '--tmpfs','/tmp','-v',binary,'-v',sock+':/run/caddy:ro','-v',state+':/state','-v',public+':/public',
+            '--tmpfs','/tmp','-v',binary,'-v',sock+':/run/caddy:ro','-v',state+':/state','-v',public+':/public','-v',certs+':/certs:ro',
             '-e','TROJAN_GATEWAY_PHASE='+phase,'--entrypoint','/probe','trojan-control:m4',
             '-test.run','TestRealGatewayLifecycle','-test.v','-test.timeout','60s'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=90)

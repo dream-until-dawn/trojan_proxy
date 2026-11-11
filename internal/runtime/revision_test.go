@@ -137,3 +137,33 @@ func TestRevisionConflict(t *testing.T) {
 		t.Fatal("冲突仍写入")
 	}
 }
+
+func TestUnchangedComponentIsNotTouched(t *testing.T) {
+	ctx := context.Background()
+	t.Run("gateway-only", func(t *testing.T) {
+		s, g, v, c := fixture()
+		v.reject = "old-v"
+		v.fail = "old-v"
+		n := next()
+		n.VPN = "old-v"
+		if err := c.Apply(ctx, 1, n); err != nil {
+			t.Fatal("网关修改错误依赖未变更的VPN", err)
+		}
+		if s.j.Applied.Number != 2 || g.value != "new-g" || v.value != "old-v" {
+			t.Fatal("单组件提交不一致")
+		}
+	})
+	t.Run("vpn-only", func(t *testing.T) {
+		_, g, v, c := fixture()
+		g.reject = "old-g"
+		g.fail = "old-g"
+		n := next()
+		n.Gateway = "old-g"
+		if err := c.Apply(ctx, 1, n); err != nil {
+			t.Fatal("VPN修改错误依赖未变更的网关", err)
+		}
+		if g.value != "old-g" || v.value != "new-v" {
+			t.Fatal("单组件提交不一致")
+		}
+	})
+}

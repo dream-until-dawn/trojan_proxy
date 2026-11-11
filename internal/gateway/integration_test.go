@@ -4,6 +4,8 @@ package gateway_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io"
 	"net"
@@ -182,5 +184,159 @@ func TestRealGatewayLifecycle(t *testing.T) {
 	}
 	if status, _ := fetch(t, publicPort, "/downloads"); status != 301 {
 		t.Fatal("目录标准化跳转失败", status)
+	}
+	testRejectTLSReservation(t, engine, settings)
+	testStandardIngress(t, engine, settings, backendPort)
+}
+
+func testStandardIngress(t *testing.T, engine *gateway.Client, settings gateway.Settings, backendPort int) {
+	t.Helper()
+	ctx := context.Background()
+	original, err := engine.Current(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := engine.Apply(ctx, original); err != nil {
+			t.Error("标准入口测试后恢复失败", err)
+		}
+	}()
+	s := settings
+	s.Domain = ""
+	s.Policy.AllowStandardPorts = true
+	s.Ingress = &gateway.Ingress{Mode: "reserved"}
+	ruleset := []routes.Rule{{ID: "standard", Name: "标准入口", Port: 80, Path: "/", Kind: "proxy", UpstreamIP: "127.0.0.1", UpstreamPort: backendPort}}
+	apply := func() {
+		t.Helper()
+		body, err := gateway.Compile(s, ruleset)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = engine.Apply(ctx, body); err != nil {
+			t.Fatal("标准入口配置被真实Caddy拒绝", err)
+		}
+	}
+	apply()
+	if status, body := fetch(t, 80, "/plain"); status != 200 || body != "upstream:/plain" {
+		t.Fatal("无域名HTTP未承载服务", status, body)
+	}
+	for _, address := range []string{"127.0.0.1:80", "127.0.0.1:443", "[::1]:80", "[::1]:443"} {
+		if l, err := net.Listen("tcp", address); err == nil {
+			l.Close()
+			t.Fatal("标准入口未保留双栈端口", address)
+		}
+	}
+	if l, err := net.Listen("tcp4", "127.0.0.1:"+strconv.Itoa(s.AdminPort)); err != nil {
+		t.Fatal("无域名模式仍开放公网后台端口", err)
+	} else {
+		l.Close()
+	}
+	if conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", "127.0.0.1:443", &tls.Config{ServerName: "localhost"}); err == nil {
+		conn.Close()
+		t.Fatal("无域名443意外提供TLS")
+	}
+	s.Domain = "localhost.test"
+	s.Ingress = &gateway.Ingress{Mode: "manual", Certificate: "/certificates/test/fullchain.cer", Key: "/certificates/test/private.key"}
+	apply()
+	cert, err := os.ReadFile("/certs/fullchain.cer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	roots.AppendCertsFromPEM(cert)
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil, TLSClientConfig: &tls.Config{RootCAs: roots, ServerName: "localhost.test"}}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	request := func(scheme, host, target string) (int, string, string) {
+		t.Helper()
+		req, err := http.NewRequest("GET", scheme+"://127.0.0.1"+target, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = host
+		response, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer response.Body.Close()
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return response.StatusCode, string(body), response.Header.Get("Location")
+	}
+	if status, _, location := request("http", s.Domain, "/safe?q=1"); status != 308 || location != "https://localhost.test/safe?q=1" {
+		t.Fatal("80跳转丢失目标或未升级HTTPS", status, location)
+	}
+	if status, body, _ := request("https", s.Domain, "/secure"); status != 200 || body != "upstream:/secure" {
+		t.Fatal("标准HTTPS业务失败", status, body)
+	}
+	for _, scheme := range []string{"http", "https"} {
+		if status, _, location := request(scheme, "attacker.test", "/"); status != 404 || location != "" {
+			t.Fatal("未授权Host被接受或用于跳转", scheme, status, location)
+		}
+	}
+}
+
+func testRejectTLSReservation(t *testing.T, engine *gateway.Client, settings gateway.Settings) {
+	t.Helper()
+	ctx := context.Background()
+	certificate, err := os.ReadFile("/certs/fullchain.cer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(certificate) {
+		t.Fatal("测试信任根无效")
+	}
+	handshake := func() error {
+		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: 3 * time.Second}, "tcp", "127.0.0.1:"+strconv.Itoa(settings.AdminPort), &tls.Config{ServerName: "localhost", RootCAs: roots, MinVersion: tls.VersionTLS12})
+		if conn != nil {
+			conn.Close()
+		}
+		return err
+	}
+	if err = handshake(); err != nil {
+		t.Fatal("拒绝策略前TLS基线失败", err)
+	}
+	original, err := engine.Current(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var modified map[string]any
+	if err = json.Unmarshal([]byte(original), &modified); err != nil {
+		t.Fatal(err)
+	}
+	servers := modified["apps"].(map[string]any)["http"].(map[string]any)["servers"].(map[string]any)
+	servers["admin"].(map[string]any)["tls_connection_policies"] = []any{map[string]any{"drop": true}}
+	body, err := json.Marshal(modified)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = engine.Apply(ctx, string(body)); err != nil {
+		t.Fatal("网关不支持固定版本TLS拒绝策略", err)
+	}
+	if err = handshake(); err == nil {
+		t.Fatal("存在可信证书时拒绝策略没有生效")
+	}
+	// 去掉所有证书引用后仍必须保留端口，验证HTTP-only部署无需伪造HTTPS。
+	reserved := map[string]any{"admin": map[string]any{"listen": "unix/" + settings.Socket + "|0660"}, "apps": map[string]any{"tls": map[string]any{}, "http": map[string]any{"servers": map[string]any{"reserved": map[string]any{"listen": []string{":" + strconv.Itoa(settings.AdminPort)}, "automatic_https": map[string]any{"disable": true}, "protocols": []string{"h1", "h2"}, "tls_connection_policies": []any{map[string]any{"drop": true}}}}}}}
+	body, err = json.Marshal(reserved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = engine.Apply(ctx, string(body)); err != nil {
+		t.Fatal("无证书保留配置失败", err)
+	}
+	if listener, err := net.Listen("tcp4", "127.0.0.1:"+strconv.Itoa(settings.AdminPort)); err == nil {
+		listener.Close()
+		t.Fatal("拒绝模式没有持有端口")
+	}
+	if err = handshake(); err == nil {
+		t.Fatal("无证书模式错误提供TLS业务")
+	}
+	if err = engine.Apply(ctx, original); err != nil {
+		t.Fatal("从拒绝模式恢复失败", err)
+	}
+	if err = handshake(); err != nil {
+		t.Fatal("恢复后可信TLS失败", err)
 	}
 }

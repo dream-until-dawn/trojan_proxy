@@ -86,6 +86,10 @@ func TestAuditCommitIsAtomicAndRedacted(t *testing.T) {
 	if strings.Join(states, ",") != "prepared,applied" {
 		t.Fatal("审计状态链不完整", states)
 	}
+	third := control.Revision{Number: 3}
+	if err = s.Save(ctx, control.Journal{Applied: next, Pending: &third}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = s.db.ExecContext(ctx, "DROP TABLE config_events"); err != nil {
 		t.Fatal(err)
 	}
@@ -95,6 +99,39 @@ func TestAuditCommitIsAtomicAndRedacted(t *testing.T) {
 	j, err := s.Load(ctx)
 	if err != nil || j.Applied.Number != 2 {
 		t.Fatal("审计失败后仍提交修订", j, err)
+	}
+}
+
+func TestSeparateWriterCannotReplacePending(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "writers.db")
+	a, err := OpenJournal(ctx, path, control.Revision{Number: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	b, err := OpenJournal(ctx, path, control.Revision{Number: 99})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	first := control.Revision{Number: 2, Gateway: "first"}
+	second := control.Revision{Number: 2, Gateway: "second"}
+	if err = a.Save(ctx, control.Journal{Applied: control.Revision{Number: 1}, Pending: &first}); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Save(ctx, control.Journal{Applied: control.Revision{Number: 1}, Pending: &second}); err == nil {
+		t.Fatal("第二个写入者覆盖了未完成事务")
+	}
+	if err = a.Save(ctx, control.Journal{Applied: first}); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Save(ctx, control.Journal{Applied: control.Revision{Number: 1}, Pending: &second}); err == nil {
+		t.Fatal("过时快照覆盖了已提交事务")
+	}
+	j, err := a.Load(ctx)
+	if err != nil || j.Applied.Gateway != "first" || j.Pending != nil {
+		t.Fatal("多写入者破坏修订", j, err)
 	}
 }
 

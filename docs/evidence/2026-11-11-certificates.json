@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-11",
+  "scope": "本地隔离Linux Docker，不改变服务器现有80/443",
+  "caddy_image": "caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9",
+  "pebble_image": "ghcr.io/letsencrypt/pebble@sha256:0c81f05db371f436c97fb894bd6d2ab8fc9c8e2ce40f8bef8a8e15941bcd75ef",
+  "verification": {
+    "go_test_all": "passed",
+    "go_vet_all": "passed",
+    "internal_ca_cache_publish_and_renewal": "passed",
+    "gateway_lifecycle_first_and_restart": "passed",
+    "standard_ports_ipv4_ipv6_reserved": "passed",
+    "http_only_no_public_admin": "passed",
+    "http_only_443_rejects_tls": "passed",
+    "manual_tls_and_host_restriction": "passed",
+    "http_redirect_path_and_query": "passed",
+    "real_http01_pebble": "passed",
+    "renewal_actual_tls_fingerprint": "passed",
+    "untrusted_root_rejected": "passed",
+    "certificate_domain_mutation": "failed as expected: 错误域名通过",
+    "certificate_time_mutation": "failed as expected: 过期证书通过",
+    "separate_sqlite_writer_pending_overwrite_rejected": "passed",
+    "unchanged_runtime_component_not_touched": "passed"
+  },
+  "initial_failure": "root Caddy生成的缓存子目录拒绝非root读取；改为UID10001运行Caddy后通过，未放宽缓存私钥权限。",
+  "reproduce": [
+    "GOOS=linux GOARCH=amd64 go test -c -tags integration -o .work/gateway-integration.test ./internal/gateway",
+    "python tools/probes/gateway_lifecycle_probe.py",
+    "python tools/probes/acme_lifecycle_probe.py",
+    "GOOS=linux GOARCH=amd64 go test -c -tags integration -o .work/certificates-integration.test ./internal/certificates",
+    "python tools/probes/certificate_cache_probe.py",
+    "python tools/probes/certificate_mutation_probe.py"
+  ],
+  "limitations": [
+    "尚未接管服务器80/443或向公共CA签发。",
+    "新入口模式尚未接入部署配置、后台和持久化快照迁移。",
+    "VPN证书激活、续期失败与到期保护仍待实现。",
+    "Pebble不模拟公共CA限流，不能据此宣称限流处理已验收。"
+  ]
+}

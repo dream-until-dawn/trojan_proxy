@@ -16,10 +16,14 @@ type Settings struct {
 	AdminPort, ControlPort, FilePort int
 	Socket                           string
 	Policy                           routes.Policy
+	Ingress                          *Ingress
 }
 
 // Compile 生成完整配置，始终保留后台入口，绝不拼接原始配置文本。
 func Compile(settings Settings, rules []routes.Rule) (string, error) {
+	if err := validateIngress(settings, rules); err != nil {
+		return "", &routes.ValidationError{Cause: err}
+	}
 	if err := routes.ValidateSet(rules, settings.Policy); err != nil {
 		return "", err
 	}
@@ -53,7 +57,12 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 			proxy["headers"] = map[string]any{"request": map[string]any{"set": map[string]any{"X-Trojan-Original-URI": []string{"{http.request.orig_uri}"}}}}
 		}
 		handles = append(handles, proxy)
-		serverRoutes[r.Port] = append(serverRoutes[r.Port], map[string]any{"match": []any{match}, "handle": handles, "terminal": true})
+		listenPort := r.Port
+		if settings.Ingress != nil && settings.Domain != "" && r.Port == 80 {
+			// 标准HTTP规则代表公开网站入口；域名模式实际由HTTPS承载。
+			listenPort = 443
+		}
+		serverRoutes[listenPort] = append(serverRoutes[listenPort], map[string]any{"match": []any{match}, "handle": handles, "terminal": true})
 	}
 	servers := map[string]any{}
 	for port, rs := range serverRoutes {
@@ -66,8 +75,16 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	}
 	servers["admin"] = map[string]any{"listen": []string{fmt.Sprintf(":%d", settings.AdminPort)}, "automatic_https": map[string]any{"disable": true}, "tls_connection_policies": []any{map[string]any{}},
 		"routes": []any{map[string]any{"match": []any{map[string]any{"host": []string{settings.Domain}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.ControlPort))}}}}}}}
+	tlsApp := map[string]any{"certificates": map[string]any{"load_files": []any{map[string]any{"certificate": "/certs/fullchain.cer", "key": "/certs/private.key"}}}}
+	if settings.Ingress != nil {
+		configureIngress(settings, servers, tlsApp)
+	}
+	for _, value := range servers {
+		// 首版不开放UDP/HTTP3，避免TCP预检通过但UDP监听冲突。
+		value.(map[string]any)["protocols"] = []string{"h1", "h2"}
+	}
 	root := map[string]any{"admin": map[string]any{"listen": "unix/" + settings.Socket + "|0660"}, "apps": map[string]any{
-		"http": map[string]any{"servers": servers}, "tls": map[string]any{"certificates": map[string]any{"load_files": []any{map[string]any{"certificate": "/certs/fullchain.cer", "key": "/certs/private.key"}}}}}}
+		"http": map[string]any{"servers": servers}, "tls": tlsApp}}
 	body, err := json.Marshal(root)
 	return string(body), err
 }
