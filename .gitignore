@@ -1,3 +1,4 @@
 .work/
 *.test
 *.exe
+__pycache__/

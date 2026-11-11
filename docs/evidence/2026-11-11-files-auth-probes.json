@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-11",
+  "platform": "Alibaba Cloud Linux 3 x86_64",
+  "files": {
+    "TestRejectFIFO": "PASS",
+    "TestRootBoundary": "PASS",
+    "concurrent_symlink_swap": "PASS",
+    "mutation": {"exit_code": 1, "expected_failure": "根外符号链接被接受", "observed_failure": "根外符号链接被接受"}
+  },
+  "argon2id": {"memory_kib": 65536, "iterations": 3, "parallelism": 1, "durations_ms": [339, 350, 342, 319, 329]},
+  "health": {"trojan_status": "running", "started_at": "2026-09-20T01:19:34.096442517Z", "restart_count": 0},
+  "limitations": ["散列成本不代表完整鉴权已验收。", "SSH 已恢复，之前中断的根因尚未确定。"]
+}
