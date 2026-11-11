@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-11",
+  "scope": "Browser enrollment implementation and bounded local/Linux validation; not deployed to the existing administrator instance",
+  "checks": {
+    "three_modules_test_and_vet": "passed",
+    "real_loopback_http_enrollment_and_listener_closure": "passed",
+    "independent_database_connections_and_reopen": "passed",
+    "wrong_expired_reused_tokens_and_concurrent_enrollment": "passed",
+    "totp_confirmation_recovery_login_and_replay_rejection": "passed",
+    "existing_account_and_missing_master_key_protection": "passed",
+    "fixed_origin_host_forwarding_and_loopback_boundaries": "passed",
+    "javascript_syntax": "passed",
+    "linux_race": "passed",
+    "token_consumption_mutation": "expected specific failure observed",
+    "expiry_boundary_mutation": "expected specific failure observed",
+    "origin_mutation": "expected specific failure observed",
+    "protected_port_mutation": "expected specific failure observed"
+  },
+  "linux_test_image_config_id": "sha256:519c1fd82c6cfc2e8ef79176fa206ae351c104f4e796efff38b13bec3edf5db7",
+  "limits": [
+    "The first complete Windows run hit sandbox filesystem rename restrictions in existing certificate tests; all three modules subsequently passed outside that sandbox.",
+    "Final Compose startup without business JSON, configuration migration, two-phase endpoint switching, SSH credential reset and clean-host release acceptance remain outstanding."
+  ]
+}

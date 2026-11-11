@@ -51,15 +51,15 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("必须指定数据目录")
 	}
-	if c.ControlPort >= 65535 {
-		return errors.New("内控端口必须为文件服务保留下一端口")
+	if c.ControlPort >= 65534 {
+		return errors.New("内控端口必须为文件和首次绑定服务保留后两个端口")
 	}
 	for id, directory := range c.PublicDirectories {
 		if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$`).MatchString(id) || !strings.HasPrefix(directory, "/srv/public/") || path.Clean(directory) != directory {
 			return errors.New("公开目录必须使用有效ID及/srv/public/内的独立挂载路径")
 		}
 	}
-	ports := map[int]bool{80: true, 443: true, c.ControlPort + 1: true}
+	ports := map[int]bool{80: true, 443: true, c.ControlPort + 1: true, c.ControlPort + 2: true}
 	for _, port := range []int{c.AdminPort, c.ControlPort, c.VPNPort} {
 		if port < 1024 || port > 65535 {
 			return errors.New("后台、内控和VPN端口必须在1024至65535之间")

@@ -44,18 +44,9 @@ func run() error {
 		return err
 	}
 	defer s.Close()
-	ready, err := s.Initialized(context.Background())
-	if err != nil {
-		return err
-	}
-	if !ready {
-		return errors.New("管理员尚未初始化，请在终端执行 proxyctl admin-init --config <配置文件>")
-	}
-	keyPath := filepath.Join(c.DataDir, "master.key")
-	if _, err = os.Stat(keyPath); err != nil {
-		return fmt.Errorf("主密钥缺失，必须从备份恢复: %w", err)
-	}
-	key, err := auth.LoadKey(keyPath)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	key, err := prepareAdministrator(ctx, c, s)
 	if err != nil {
 		return err
 	}
@@ -117,8 +108,6 @@ func run() error {
 		return err
 	}
 	defer fileListener.Close()
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 	fileErrors := make(chan error, 1)
 	reconcileDone := make(chan struct{})
 	go func() {

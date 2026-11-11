@@ -50,7 +50,7 @@ func ValidateSet(rules []Rule, policy Policy) (validationErr error) {
 	if len(rules) > 100 {
 		return fmt.Errorf("规则数量最多100条")
 	}
-	reserved := map[int]bool{22: true, 2375: true, 2376: true, 2019: true, policy.AdminPort: true, policy.ControlPort: true, policy.VPNPort: true, policy.FilePort: true}
+	reserved := map[int]bool{22: true, 2375: true, 2376: true, 2019: true, policy.AdminPort: true, policy.ControlPort: true, policy.ControlPort + 2: true, policy.VPNPort: true, policy.FilePort: true}
 	listen := map[int]bool{80: true, 443: true}
 	for _, r := range rules {
 		listen[r.Port] = true

@@ -79,6 +79,9 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS administrator (id INTEGER PRIMARY KEY CHECK(id=1), password_hash TEXT NOT NULL, secret BLOB NOT NULL, last_counter INTEGER NOT NULL, recovery TEXT NOT NULL CHECK(json_valid(recovery)))"); err != nil {
 		return err
 	}
+	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS bootstrap_state (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL CHECK(json_valid(body)))"); err != nil {
+		return err
+	}
 	// 可选附加表不改变已有凭据/修订格式，兼容性版本仍为2，允许回退到认证阶段镜像。
 	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS config_events (id INTEGER PRIMARY KEY AUTOINCREMENT, created_utc TEXT NOT NULL, revision INTEGER NOT NULL, state TEXT NOT NULL, summary TEXT NOT NULL)"); err != nil {
 		return err

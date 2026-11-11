@@ -5,4 +5,5 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY internal ./internal
-RUN go test -race ./internal/runtime ./internal/vpnservice ./internal/auth ./internal/api ./internal/routing
+COPY cmd ./cmd
+RUN go test -race ./internal/runtime ./internal/vpnservice ./internal/auth ./internal/api ./internal/routing ./internal/bootstrap ./internal/storage ./cmd/control

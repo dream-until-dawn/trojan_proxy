@@ -21,7 +21,7 @@ func TestValidate(t *testing.T) {
 			t.Fatalf("未拒绝域名: %s", domain)
 		}
 	}
-	for _, port := range []int{-1, 80, 443, 18090, 65536} {
+	for _, port := range []int{-1, 80, 443, 18090, 18091, 18092, 65536} {
 		c = valid()
 		c.AdminPort = port
 		if c.Validate() == nil {

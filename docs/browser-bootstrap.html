@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>P8 · 浏览器初始化实施设计</title><link rel="stylesheet" href="assets/docs.css"></head>
+<body><header><div class="eyebrow">P8 / 实施前契约</div><h1>首次绑定只经本机隧道完成</h1><nav><a href="plan.html">计划</a><a href="admin-first-design.html">需求设计</a></nav></header><main>
+<section><h2>监听与权限边界</h2><p>新实例尚无管理员时，control 在独立的 127.0.0.1:control_port+2 提供初始化网页。此端口不作为网关上游，不与普通后台 API 共用；业务规则将其列为保护端口。只接受固定 loopback Host/Origin，不信任转发头，公网域名来源不能初始化。</p><p>所有者执行本机交互命令 <code>proxyctl setup-token --config …</code> 获取 10 分钟一次性令牌，复制 SSH 隧道命令进入网页。令牌不在 URL、普通日志或环境变量中出现；普通业务配置无需终端填写。已有管理员时拒绝签发、开始及完成绑定。</p></section>
+<section><h2>持久化状态机</h2><pre>无管理员 → 本机签发 token（数据库仅散列，10分钟）
+ → begin(token, password)：校验令牌，Argon2id，生成TOTP/恢复码
+ → 原子消费 token，保存加密TOTP/口令散列/恢复码散列及 session 散列
+ → 浏览器一次显示秘密与恢复码
+ → finish(session, OTP, saved=true)：验证当前OTP
+ → 同一事务创建唯一管理员、消费OTP步长、删除绑定状态
+ → 关闭初始化监听，启动正常后台</pre><p>中断/刷新不重显秘密；通过本机重新签发令牌重新开始。进程重启不会让已消费令牌复活；有效 session 可在原页面继续。并发状态转换使用数据库条件更新而非仅进程锁；账户唯一约束及同一事务保证只能创建一次。错误、过期和已消费令牌统一拒绝；验证码失败单窗口最多五次，超过需本机重新签发。初始化入口从不返回正常管理员会话。</p><p>主密钥缺失：已有账户必须拒绝启动，不自动换密钥；新账户绑定草稿已加密而主密钥丢失也必须拒绝，清理草稿和重新初始化需要明确本机恢复操作。新增初始化表是兼容附加表，不修改已有账户或恢复码消费状态。</p></section>
+<section><h2>探针与测试</h2><p>真实 SQLite、多进程连接重开验证：正确绑定、下一步TOTP/恢复码登录；错误/过期/复用令牌、弱口令、未保存确认、错误验证码、并发开始/完成、终端与网页初始化竞争、旧账户不变。HTTP 验证错误 Host/Origin/转发头/非loopback客户端、超大/多段/未知字段JSON，以及 no-store/CSP。故意删除 token 消费或 finish 一次创建约束，指定重放断言必须失败；后续 Linux 容器探针确认独立监听隔离及完成后关闭。</p></section>
+</main><footer>记录与实现按实际测试更新，不把单元测试替代最终干净主机部署验收。</footer></body></html>

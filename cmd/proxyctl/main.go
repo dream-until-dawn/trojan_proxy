@@ -31,6 +31,8 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "setup-token":
+		return issueSetupToken(*path)
 	case "certificate-check":
 		c, err := config.Load(*path)
 		if err != nil {

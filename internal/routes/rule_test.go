@@ -8,6 +8,19 @@ func baseline() Rule {
 func policy() Policy {
 	return Policy{AdminPort: 8007, ControlPort: 18090, VPNPort: 18443, Directories: map[string]string{"public": "/srv/public"}}
 }
+
+func TestBootstrapPortCannotBePublished(t *testing.T) {
+	r := baseline()
+	r.UpstreamPort = policy().ControlPort + 2
+	if err := ValidateSet([]Rule{r}, policy()); err == nil {
+		t.Fatal("bootstrap upstream became publicly publishable")
+	}
+	r = baseline()
+	r.Port = policy().ControlPort + 2
+	if err := ValidateSet([]Rule{r}, policy()); err == nil {
+		t.Fatal("bootstrap listener became publicly publishable")
+	}
+}
 func TestRuleBoundary(t *testing.T) {
 	if err := ValidateSet([]Rule{baseline()}, policy()); err != nil {
 		t.Fatal(err)
