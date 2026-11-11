@@ -1,0 +1,32 @@
+{
+  "purpose": "Owner reported imported Clash profile cannot access Google; bounded read-only diagnosis",
+  "date": "2026-11-11",
+  "service_changes": false,
+  "credential_changes": false,
+  "server_local": {
+    "trojan_port": 18443,
+    "trusted_tls": "TLSv1.3",
+    "direct_google_http": "HTTP/1.1 204 No Content",
+    "trojan_google_domain_http": "HTTP/1.1 204 No Content",
+    "trojan_google_ipv4_http": "HTTP/1.1 204 No Content",
+    "trojan_google_https": "HTTP/1.1 204 No Content",
+    "google_inner_tls_verified": true,
+    "wrong_password_rejected": true,
+    "wrong_password_error": "ConnectionResetError"
+  },
+  "workstation_direct_ip_with_domain_sni": {
+    "8007": "trusted TLSv1.3 succeeded",
+    "18443": "SSLEOFError before TLS handshake completed"
+  },
+  "server_ipv4_ingress_after_capture_ready": {
+    "duration_seconds": 30,
+    "8007": {"packets": 8, "syn": 1, "payload_packets": 2},
+    "18443": {"packets": 0, "syn": 0, "payload_packets": 0}
+  },
+  "limits": [
+    "The first 20-second capture had zero packets for both ports and was inconclusive; only the repeated capture with explicit readiness and positive 8007 control is used.",
+    "This verifies server-local Trojan TCP and HTTPS, not actual Clash Verge or Clash Mi acceptance or UDP connectivity.",
+    "The external failing connection was not observed reaching the host IPv4 TCP stack during the controlled window; cloud security-group blocking and workstation/intermediate path interference have not yet been distinguished."
+  ],
+  "next_action": "Owner checks inbound TCP 18443 security-group rule and supplies Clash latency-test error; then repeat end-to-end validation."
+}
