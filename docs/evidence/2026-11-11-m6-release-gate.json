@@ -1,0 +1,55 @@
+{
+  "passed": true,
+  "checks": {
+    "packaged_binaries_and_local_images": "passed",
+    "three_modules_test_vet": "passed",
+    "linux_race": "passed",
+    "control_linux_source_scan": "passed",
+    "trojan_linux_source_scan": "passed",
+    "gateway_linux_source_scan": "passed",
+    "gateway_lifecycle": "passed",
+    "acme_lifecycle": "passed",
+    "certificate_cache": "passed",
+    "vpn_egress": "passed",
+    "runner_lifecycle": "passed",
+    "auth_mutation": "passed",
+    "certificate_mutation": "passed",
+    "vpn_egress_mutation": "passed"
+  },
+  "images": {
+    "trojan-control:m6": "sha256:b5666f1932a5d11ed003347c7118b14b683a7881289c390f3022cff7c1fa19de",
+    "trojan-runner:dev": "sha256:d43a5d922b0a35e82bc7a4c4f68e3be9769e89f60e341c5887bcaabaf50d3c30",
+    "trojan-gateway:dev": "sha256:c4b67b59f37b7a6f5a3efab61fed5cdab1c03defa248c395c7d4cc93eed5e353"
+  },
+  "binaries": {
+    "trojan-control-m6-control": {
+      "sha256": "cae4e5bfc0e8810f758b4c8c6feb335889b2c01fce482d32d954c76d18e40fa9",
+      "bytes": 13729954,
+      "scan": "passed"
+    },
+    "trojan-control-m6-proxyctl": {
+      "sha256": "649fc959c5ec17e8f3252048a16527a198e05ee14fd7f134585588d2b9fffef8",
+      "bytes": 9552034,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-trojan-engine": {
+      "sha256": "2c8bb4fcb9db27eb38ae155377cd54419bf7e6247dc8fcd84f656a79439876e9",
+      "bytes": 16793762,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-vpnrunner": {
+      "sha256": "651fc0a66303ea84f4076f44c291294808538cbcd6354b2d4a7f1094a2784e03",
+      "bytes": 6566050,
+      "scan": "passed"
+    },
+    "trojan-gateway-dev-caddy": {
+      "sha256": "d5fe590df861eeceabfed9a958006577aac10e860683981d28e4f89806a505f9",
+      "bytes": 48160930,
+      "scan": "passed"
+    }
+  },
+  "created_utc": "2026-11-11T08:21:05.246717+00:00",
+  "commit": "6279313ec1ccbaf044a1425e758b4c32a2848b2a",
+  "archive_sha256": "4f8c31f9e4f0202d96405c0bde6a7eff002a49d90d4572ae892b73c751dbbb6a",
+  "scanner": "Go: go1.26.11\nScanner: govulncheck@v1.9.0\nDB: https://vuln.go.dev\nDB updated: 2026-11-11 02:51:11 +0000 UTC"
+}

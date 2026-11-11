@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-11",
+  "runtime_source_commit": "6279313ec1ccbaf044a1425e758b4c32a2848b2a",
+  "release_gate": "2026-11-11-m6-release-gate.json",
+  "backup_directory": "/opt/trojan-proxy-refactor/backups/before-m6-20261111T083518Z",
+  "admin_url": "https://qin-xin.top:8007",
+  "images": {
+    "control": "sha256:b5666f1932a5d11ed003347c7118b14b683a7881289c390f3022cff7c1fa19de",
+    "runner": "sha256:d43a5d922b0a35e82bc7a4c4f68e3be9769e89f60e341c5887bcaabaf50d3c30",
+    "gateway": "sha256:c4b67b59f37b7a6f5a3efab61fed5cdab1c03defa248c395c7d4cc93eed5e353"
+  },
+  "containers": {
+    "control": "403831cb70071744a773c77ff0fdf4213b7630a0f65e2f7502484cc4f91aeb2b",
+    "runner": "c26fce8f06fa4eff1cca59a61caf09de8f98319a61abc41d10f8f07088b7e3c1",
+    "gateway": "7253abb7946abac9006b5a12d13a584312a984730fa432f978228338c6fd58b6"
+  },
+  "gateway_revision": 2,
+  "gateway_reconciled": true,
+  "old_trojan": {
+    "container": "175cd41e4bdb1710ce9523715125a6c765ccafcbb27876e4527dc708dff163b6",
+    "started_utc": "2026-09-20T01:19:34.096442517Z",
+    "restart_count": 0,
+    "still_serving_80_443": true
+  },
+  "existing_other_containers_unchanged": true,
+  "public_verification": {
+    "trusted_tls_sni_with_actual_ip": "passed",
+    "certificate_sha256": "2e978bb599d560cc7bf8bd17073a3e8848fc81d4639a44a88e21b363a39f831f",
+    "admin_page_and_vpn_js": 200,
+    "unauthenticated_vpn_status": 401,
+    "unauthenticated_vpn_export": 401,
+    "wrong_origin_vpn_export": 403,
+    "all_admin_responses_no_store": true
+  },
+  "vpn_state_at_deployment": {"enabled": false, "running": false, "planned_port": 18443},
+  "remaining": [
+    "所有者重新登录、启用Trojan并在Clash Verge/Clash Mi导入验收，记录客户端版本。",
+    "公网18443真实数据链路与设备UDP使用验收。",
+    "完整80/443接管、公共ACME、证书管理界面、最终一键安装及运维命令。",
+    "SSH凭据重置、备份恢复和24小时长稳等剩余阶段门槛。"
+  ],
+  "passed": true
+}

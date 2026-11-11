@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>开发计划与验收 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
 <header><div class="eyebrow">03 / 分期与验收</div><h1>先证明可行，再逐步交付</h1><p class="muted">范围：Docker 全新部署、单管理员、HTTP/HTTPS 反代、公开目录、Trojan 独立端口。具体工期在 M1 后估计，不用未验证假设承诺上线日期。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="architecture.html">架构</a></nav></header><main>
-<section><h2>阶段、依赖与退出条件</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>工作与交付</th><th>退出条件</th></tr></thead><tbody>
+<section><h2>阶段、依赖与退出条件</h2><p class="note">当前：M0完成；M1关键隔离探针与安全构建通过，真实80/443交接仍待验收；M2/M3底座与认证已部署，最终一键安装、SSH重置及恢复工具未完成；M4自定义HTTP反代/目录已部署；M5隔离ACME/续期已通过，公共ACME及证书管理未完成；M6管理与runner已并行部署，等待Clash Verge/Clash Mi真机反馈；M7自动门槛已通过，完整故障/备份恢复和24小时长稳未完成。<a href="vpn-staging.html">当前所有者操作</a>。</p><div class="table-wrap"><table><thead><tr><th>阶段</th><th>工作与交付</th><th>退出条件</th></tr></thead><tbody>
 <tr><td>M0 · 调研与决策</td><td>审计当前代码，记录基线；确认 HTTP 模式、后台安全、VPN 端口、平台。交付本套 HTML 设计。</td><td>主要决策已确认；服务器系统/架构、端口与现有容器已核实；未知项明确列出。</td></tr>
 <tr><td>M1 · 可行性与版本锁定</td><td>P1–P7 探针；确定 Caddy、Go、VPN 引擎版本/摘要，许可证及维护成本。补充设计 ADR 与原始结果。</td><td>所有关键探针通过；失败项有替代方案且已验证，不能跳过证书发布/443 保留交接。</td></tr>
 <tr><td>M2 · 部署与数据底座</td><td>模块目录、配置 schema、SQLite 迁移；构建镜像；proxyctl/install.sh 初始化、端口预检、健康检查、停止/诊断；离线秘密文件。</td><td>干净主机最少交互启动；二次执行幂等；80/443 任一被占用则不留半启动实例；重建容器不丢状态。</td></tr>
