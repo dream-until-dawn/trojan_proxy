@@ -12,6 +12,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/dream-until-dawn/trojan_proxy/engines/trojan/telemetry"
+
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter/certificate"
 	"github.com/sagernet/sing-box/adapter/endpoint"
@@ -28,10 +30,18 @@ import (
 )
 
 func registryContext() context.Context {
+	return registryContextWithRecorder(nil)
+}
+
+func registryContextWithRecorder(recorder telemetry.Recorder) context.Context {
 	inbounds := inbound.NewRegistry()
 	trojan.RegisterInbound(inbounds)
 	outbounds := outbound.NewRegistry()
-	direct.RegisterOutbound(outbounds)
+	if recorder == nil {
+		direct.RegisterOutbound(outbounds)
+	} else {
+		telemetry.Register(outbounds, recorder)
+	}
 	transports := dns.NewTransportRegistry()
 	transport.RegisterUDP(transports)
 	return box.Context(service.ContextWithDefaultRegistry(context.Background()), inbounds, outbounds, endpoint.NewRegistry(), transports, boxservice.NewRegistry(), certificate.NewRegistry())

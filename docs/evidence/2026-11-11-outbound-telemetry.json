@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-11",
+  "scope": "Actual direct-outbound instrumentation probe; collection is not enabled in the production engine context",
+  "probe_sha256": "5c13edc10e9859dfe613fecbb27ea5d40fdd01e817bec533f164a2a893e33555",
+  "checks": {
+    "actual_successful_tcp_ip_after_multi_address_fallback": "passed",
+    "failed_candidate_not_counted": "passed",
+    "tcp_exact_payload_upload_download": "passed",
+    "udp_ipv4_ipv6_actual_target_and_exact_payload": "passed",
+    "tcp_half_close_response_preserved": "passed",
+    "linux_no_network_non_root_readonly_container": "passed",
+    "linux_engine_race": "passed",
+    "remove_tcp_counter_mutation": "expected specific failure observed",
+    "swap_upload_direction_mutation": "expected specific failure observed",
+    "remove_half_close_mutation": "expected specific failure observed",
+    "swap_udp_upload_direction_mutation": "expected specific failure observed"
+  },
+  "limits": [
+    "UDP multi-peer reuse, periodic aggregation, backpressure and full Trojan-to-statistics end-to-end acceptance remain outstanding.",
+    "The independent traffic database and UI are separate work; this record does not claim them complete.",
+    "Network-dependent tests use an explicit integration build tag so an image build does not require IPv6 loopback support."
+  ]
+}
