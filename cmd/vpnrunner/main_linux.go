@@ -28,7 +28,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if !c.VPNManagement {
+	if !c.VPNManagement && !c.StandardIngress {
 		return errors.New("部署配置尚未启用VPN管理")
 	}
 	settings, err := vpn.SettingsFromConfig(c)

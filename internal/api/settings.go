@@ -111,7 +111,11 @@ func (s *Server) settingsCancel(w http.ResponseWriter, r *http.Request) {
 func settingsError(w http.ResponseWriter, err error) {
 	status := 503
 	message := "入口配置未能生效，请刷新状态；旧入口和SSH恢复通道仍应保留"
+	var invalid *settings.ValidationError
 	switch {
+	case errors.As(err, &invalid):
+		status = 400
+		message = invalid.Error()
 	case errors.Is(err, control.ErrRevisionConflict):
 		status = 409
 		message = "修订已变化，请刷新后重试"

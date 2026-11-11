@@ -22,6 +22,8 @@ type Resolver interface {
 type Handler struct {
 	Roots    map[string]*Root
 	Resolver Resolver
+	// RootProvider 每次从已提交绑定获得独立句柄，释放发生在整个响应结束之后。
+	RootProvider func(context.Context, string) (*Root, error)
 }
 
 var directoryTemplate = template.Must(template.New("directory").Parse(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>公开下载目录</title><h1>公开下载目录</h1><p>此目录无需登录即可访问，文件以附件下载。</p><ul>{{range .}}<li><a href="{{.URL}}">{{.Name}}{{if .Directory}}/{{end}}</a></li>{{end}}</ul></html>`))
@@ -46,6 +48,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	root := h.Roots[rule.DirectoryID]
+	if h.RootProvider != nil {
+		root, err = h.RootProvider(r.Context(), rule.DirectoryID)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		if root != nil {
+			defer root.Close()
+		}
+	}
 	if root == nil {
 		http.NotFound(w, r)
 		return

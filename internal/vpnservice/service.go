@@ -27,6 +27,8 @@ type Options struct {
 	PublishedDirectory string
 	Source             func() (certificates.Pair, error)
 	ReadPublished      func(vpn.Desired) (certificates.Pair, error)
+	ProfileSource      func(context.Context) (*vpn.Profile, error)
+	WriteGuard         func(context.Context) error
 }
 
 // Status 是普通读取接口，口令、私钥、路径、密文均不在响应中。
@@ -113,7 +115,19 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
+	if !d.Enabled && s.options.ProfileSource != nil {
+		profile, err := s.options.ProfileSource(ctx)
+		if err != nil {
+			return Status{}, err
+		}
+		if profile != nil {
+			settings.Domain, settings.Port = profile.Domain, profile.Port
+		}
+	}
 	status := Status{Revision: j.Applied.Number, Enabled: d.Enabled, Pending: j.Pending != nil, Domain: settings.Domain, Port: settings.Port, Capabilities: vpn.TrojanCapabilities(), Message: "VPN未启用"}
+	if s.options.WriteGuard != nil && s.options.WriteGuard(ctx) != nil {
+		status.Pending = true
+	}
 	var pair certificates.Pair
 	if d.Enabled {
 		pair, err = s.readPublished(d)
@@ -155,11 +169,25 @@ func (s *Service) Apply(ctx context.Context, expected uint64, enabled, rotate bo
 	if j.Applied.Number != expected {
 		return control.ErrRevisionConflict
 	}
+	if s.options.WriteGuard != nil {
+		if err = s.options.WriteGuard(ctx); err != nil {
+			return err
+		}
+	}
 	d, err := vpn.Open(s.options.Key, j.Applied.VPN)
 	if err != nil {
 		return err
 	}
 	if enabled {
+		if s.options.ProfileSource != nil {
+			d.Profile, err = s.options.ProfileSource(ctx)
+			if err != nil {
+				return err
+			}
+			if _, err = vpn.EffectiveSettings(s.options.Settings, d); err != nil {
+				return err
+			}
+		}
 		if s.options.Source == nil {
 			return errors.New("证书来源未配置")
 		}

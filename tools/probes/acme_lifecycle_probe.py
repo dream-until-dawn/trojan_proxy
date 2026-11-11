@@ -24,6 +24,9 @@ try:
     openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
     command(['docker','run','--rm','--network','none','-v',fixture+':/fixture',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
         '-subj','/CN=pebble','-addext','subjectAltName=DNS:pebble','-keyout','/fixture/key.pem','-out','/fixture/ca.pem'])
+    command(['docker','run','--rm','--network','none','-v',fixture+':/fixture',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
+        '-subj','/CN=probe.test','-addext','subjectAltName=DNS:probe.test','-keyout','/fixture/manual.key','-out','/fixture/manual.crt'])
+    command(['docker','run','--rm','--network','none','-v',fixture+':/fixture','alpine:3.22','sh','-c','chown -R 0:10001 /fixture && chmod 0750 /fixture && chmod 0640 /fixture/*'])
     caddy=command(['docker','run','-d','--name',prefix+'-caddy','--network',network,'--user','10001:10001','--read-only','--cap-drop','ALL',
         '--security-opt','no-new-privileges','--memory','128m','--cpus','1','-v',sock+':/run/caddy','-v',cache+':/data',
         '-v',fixture+':/fixture:ro','--tmpfs','/config','-e','CADDY_ADMIN=unix//run/caddy/admin.sock|0660',CADDY,'caddy','run'])

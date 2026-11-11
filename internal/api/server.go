@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
+	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 	"github.com/dream-until-dawn/trojan_proxy/internal/settings"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
@@ -46,6 +47,11 @@ type TrafficManagement interface {
 	Clear(context.Context) error
 }
 
+type CertificateManagement interface {
+	Status(context.Context) (certificates.State, error)
+	Import(string, []byte, []byte) (certificates.Prepared, error)
+}
+
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
 	Auth           Authentication
@@ -57,6 +63,7 @@ type Server struct {
 	OriginProvider func() map[string]bool
 	WriteGuard     func(context.Context) error
 	Traffic        TrafficManagement
+	Certificates   CertificateManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -89,6 +96,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/traffic/live", s.protected(s.trafficLive))
 	mux.HandleFunc("POST /api/traffic/dashboard", s.protected(s.trafficDashboard))
 	mux.HandleFunc("POST /api/traffic/clear", s.protected(s.trafficClear))
+	mux.HandleFunc("POST /api/certificates/status", s.protected(s.certificateStatus))
+	mux.HandleFunc("POST /api/certificates/import", s.protected(s.certificateImport))
 	if s.Static != nil {
 		mux.Handle("/", s.Static)
 	}

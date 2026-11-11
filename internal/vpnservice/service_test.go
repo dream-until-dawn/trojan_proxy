@@ -29,6 +29,55 @@ type fakeRunner struct {
 	reject  bool
 }
 
+func TestCurrentProfileAndCoreWriteFreeze(t *testing.T) {
+	ctx := context.Background()
+	pair := pairFixture(t)
+	db, err := storage.OpenJournal(ctx, filepath.Join(t.TempDir(), "control.db"), control.Revision{Number: 1, Gateway: "unchanged"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	key := make([]byte, 32)
+	runner := &fakeRunner{}
+	coordinator := control.NewCoordinator(db, untouchedGateway{}, vpnComponent{runner: runner, key: key})
+	frozen := false
+	service := NewService(db, coordinator, runner, Options{Settings: vpn.Settings{Domain: "vpn.example", Port: 18443}, Key: key, PublishedDirectory: filepath.Join(t.TempDir(), "published"), Source: func() (certificates.Pair, error) { return pair, nil }, ReadPublished: func(vpn.Desired) (certificates.Pair, error) { return pair, nil }, ProfileSource: func(context.Context) (*vpn.Profile, error) {
+		return &vpn.Profile{Version: 1, Domain: "vpn.example", Port: 19443, AdminPort: 8007, OwnAddresses: []string{"198.51.100.10"}, Resolver: "9.9.9.9:53"}, nil
+	}, WriteGuard: func(context.Context) error {
+		if frozen {
+			return errors.New("fixture entry pending")
+		}
+		return nil
+	}})
+	state, err := service.Status(ctx)
+	if err != nil || state.Port != 19443 {
+		t.Fatal("disabled status ignored current profile", state, err)
+	}
+	if err = service.Apply(ctx, 1, true, false); err != nil {
+		t.Fatal(err)
+	}
+	j, err := db.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	desired, err := vpn.Open(key, j.Applied.VPN)
+	if err != nil || desired.Profile == nil || desired.Profile.Port != 19443 {
+		t.Fatal("enable ignored current runtime profile", err)
+	}
+	frozen = true
+	if err = service.Apply(ctx, j.Applied.Number, false, false); err == nil {
+		t.Fatal("VPN service bypassed pending entry write freeze")
+	}
+	after, err := db.Load(ctx)
+	if err != nil || after.Applied != j.Applied {
+		t.Fatal("rejected VPN write changed revision", err)
+	}
+	state, err = service.Status(ctx)
+	if err != nil || !state.Pending {
+		t.Fatal("VPN pending settings not visible", state, err)
+	}
+}
+
 func (r *fakeRunner) Status(context.Context) (vpnrunner.State, error) { return r.state, nil }
 func (r *fakeRunner) Apply(_ context.Context, d vpn.Desired) error {
 	r.applies++

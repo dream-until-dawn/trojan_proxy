@@ -24,6 +24,19 @@ func OpenRoot(path string) (*Root, error) {
 // Close 释放目录句柄。
 func (r *Root) Close() error { return r.root.Close() }
 
+// Sub 在现有目录句柄约束内打开子目录；禁止先拼接宿主路径再重新授权。
+// 返回的根有独立生命周期，其内部符号链接也不能逃出本次发布范围。
+func (r *Root) Sub(name string) (*Root, error) {
+	if !validName(name, true) {
+		return nil, fs.ErrPermission
+	}
+	child, err := r.root.OpenRoot(name)
+	if err != nil {
+		return nil, err
+	}
+	return &Root{root: child}, nil
+}
+
 // Open 只打开根目录内普通文件；name 必须是 HTTP 层解码后的相对路径。
 // os.Root 在实际打开时约束路径解析，符号链接不得逃出发布根目录。
 func (r *Root) Open(name string) (*os.File, error) {

@@ -19,6 +19,7 @@ FROM alpine:3.22@sha256:365499d9dccb7c8cfaffef995a6c382e71174585e0556f6476ead1c5
 RUN addgroup -g 10001 proxy && adduser -D -H -u 10002 -G proxy vpn
 COPY --from=engine /out/trojan-engine /usr/local/bin/trojan-engine
 COPY --from=build /out/vpnrunner /usr/local/bin/vpnrunner
+COPY deploy/default.proxy.json /etc/trojan-proxy/proxy.json
 COPY engines/trojan /usr/share/trojan-engine-source
 USER 10002:10001
 ENTRYPOINT ["vpnrunner"]

@@ -1,0 +1,33 @@
+{
+  "scope": "local candidate, not final server deployment or public release",
+  "checks": {
+    "three_modules_test_vet_prior_core": "passed",
+    "linux_race_core_site_deployment": "passed",
+    "typed_runtime_profile_native_listener_rollback": "passed",
+    "persistent_view_and_pending_reconcile_guard": "passed",
+    "subroot_symlink_isolation_linux": "passed",
+    "certificate_import_trust_expiry_quota_no_secret_echo": "passed",
+    "settings_view_four_targeted_mutations": "passed",
+    "certificate_control_five_targeted_mutations": "passed",
+    "same_domain_manual_and_automatic_certificate_overlap": "passed",
+    "real_http01_trusted_handshake_and_renewal": "passed",
+    "default_compose_fresh_enrollment_route_directory_and_confirmation": "passed",
+    "default_compose_repeat_and_recreate_persistence": "passed",
+    "actual_runtime_uid_gid_and_all_capability_sets": "passed",
+    "setup_token_non_tty_refused": "passed",
+    "browser_fixture_candidate_review_confirmation_logout_clear": "passed"
+  },
+  "images": {
+    "control_config": "sha256:1748007814ba1114428daa172b430e5f8f05ea8a3ba7cbd9d960d9a7be1f2806",
+    "runner_config": "sha256:d3fb6d80390de72aebbc109fe1d9b4efd6cbbd239e480d47269042416470740b",
+    "gateway_config": "sha256:ef663a13b51e42cfa8da224c5c1d15a6b02469d6c1b33a1c026ba94f264c61be",
+    "linux_race_config": "sha256:86a71d5c625d682c956801bc2e6e35b4080ca45dbe5f57fbcc1bc7f801bdc325"
+  },
+  "limitations": [
+    "default images are local candidates, public registry versions not yet published",
+    "full latest binary release gate must run after source commit",
+    "server remains on statistics staging commit 5faf4ed",
+    "backup restore SSH recovery and 24 hour stability pending"
+  ],
+  "disposable_compose_projects_cleaned": true
+}

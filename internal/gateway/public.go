@@ -5,7 +5,16 @@ import "github.com/dream-until-dawn/trojan_proxy/internal/welcome"
 const robotsTag = "noindex, nofollow, noarchive, nosnippet"
 
 func welcomeRoute(domain string) (any, error) {
-	body, err := welcome.Render(domain, true)
+	return welcomeRouteWithReady(domain, true)
+}
+
+func welcomeForSettings(s Settings) (any, error) {
+	ready := s.Ingress == nil || (!s.Ingress.AwaitCertificate && s.Ingress.Mode != "unavailable")
+	return welcomeRouteWithReady(s.Domain, ready)
+}
+
+func welcomeRouteWithReady(domain string, ready bool) (any, error) {
+	body, err := welcome.Render(domain, ready)
 	if err != nil {
 		return nil, err
 	}

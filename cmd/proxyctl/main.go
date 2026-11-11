@@ -8,8 +8,10 @@ import (
 	"os"
 	"time"
 
+	"context"
 	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
+	"github.com/dream-until-dawn/trojan_proxy/internal/deployment"
 	"github.com/dream-until-dawn/trojan_proxy/internal/ports"
 )
 
@@ -18,7 +20,11 @@ func run(args []string) error {
 		return fmt.Errorf("用法: proxyctl init|doctor --config <配置文件>")
 	}
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	path := flags.String("config", "proxy.json", "部署配置文件")
+	defaultPath := "proxy.json"
+	if args[0] == "setup-token" || args[0] == "prepare" {
+		defaultPath = "/etc/trojan-proxy/proxy.json"
+	}
+	path := flags.String("config", defaultPath, "部署配置文件")
 	domain := flags.String("domain", "", "域名；留空为HTTP-only")
 	admin := flags.Int("admin-port", 8007, "后台端口")
 	data := flags.String("data-dir", "./data", "数据目录")
@@ -31,6 +37,19 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "prepare":
+		c, err := config.Load(*path)
+		if err != nil {
+			return err
+		}
+		if c.DataDir != "/data" {
+			return fmt.Errorf("预制部署的数据卷必须挂载到/data；自定义部署请使用独立预检")
+		}
+		if err = deployment.Prepare(context.Background(), c, deployment.Defaults(c.DataDir)); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stdout, "专用卷和80/443预检通过，可以启动服务")
+		return nil
 	case "setup-token":
 		return issueSetupToken(*path)
 	case "certificate-check":

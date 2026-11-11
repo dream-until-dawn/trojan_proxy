@@ -22,7 +22,9 @@ try:
     openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
     command(['docker','run','--rm','--network','none','-v',certs+':/certs',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
         '-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,DNS:localhost.test','-keyout','/certs/private.key','-out','/certs/fullchain.cer'])
+    command(['docker','run','--rm','--network','none','-v',certs+':/certs','alpine:3.22','sh','-c','chown -R 0:10001 /certs && chmod 0750 /certs && chmod 0640 /certs/*'])
     gateway=command(['docker','run','-d','--name',prefix+'-caddy','--user','0:10001','--read-only','--cap-drop','ALL',
+        '--cap-add','SETUID','--cap-add','SETGID','--cap-add','SETPCAP','--cap-add','NET_BIND_SERVICE',
         '--security-opt','no-new-privileges','--memory','128m','--cpus','0.5',
         '--mount','type=volume,source='+sock+',target=/run/caddy,volume-nocopy','-v',certs+':/certs:ro','-v',certs+':/certificates/test:ro','--tmpfs','/data','--tmpfs','/config',
         '-e','CADDY_ADMIN=unix//run/caddy/admin.sock|0660',

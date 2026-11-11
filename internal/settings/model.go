@@ -30,6 +30,7 @@ type Site struct {
 	VPNResolver       string      `json:"vpn_resolver"`
 	CertificateSource string      `json:"certificate_source"`
 	ACMEEmail         string      `json:"acme_email"`
+	ImportedVersion   string      `json:"imported_version,omitempty"`
 	Directories       []Directory `json:"directories"`
 }
 
@@ -50,6 +51,7 @@ type Transition struct {
 }
 
 var identifier = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$`)
+var publishedVersion = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // FromLegacy 仅供首次导入；不可将此函数用于覆盖已有网页设置。
 func FromLegacy(c config.Config) Document {
@@ -101,6 +103,9 @@ func (d Document) Validate(deployment config.Config) error {
 		}
 	default:
 		return errors.New("未知证书来源")
+	}
+	if d.Site.ImportedVersion != "" && (d.Site.CertificateSource != "imported" || !publishedVersion.MatchString(d.Site.ImportedVersion)) {
+		return errors.New("导入证书版本必须来自受控证书发布目录")
 	}
 	if d.Site.ACMEEmail != "" {
 		address, err := mail.ParseAddress(d.Site.ACMEEmail)

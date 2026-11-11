@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/routes"
+	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 )
 
@@ -64,6 +65,10 @@ func (s *Server) applyRoutes(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, control.ErrRevisionConflict) {
 			status = 409
 			message = "修订已变化，请刷新后重新确认草稿"
+		}
+		if errors.Is(err, routing.ErrWriteFrozen) {
+			status = 423
+			message = "已有入口等待确认，请先确认或撤回"
 		}
 		respond(w, status, map[string]string{"error": message})
 		return

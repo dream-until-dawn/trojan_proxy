@@ -2,13 +2,14 @@ import { login, logout, request } from "./auth.js";
 import { refreshRoutes } from "./routes.js";
 import { refreshVPN } from "./vpn.js";
 import { startTraffic, stopTraffic } from "./traffic.js";
+import { refreshSettings, clearSettings } from "./settings.js";
 
 const form = document.querySelector("#login-form");
 const message = document.querySelector("#message");
 const submit = document.querySelector("#submit");
 
 function showLogin() {
-  stopTraffic();
+  stopTraffic(); clearSettings();
   document.querySelector("#login-panel").hidden = false;
   document.querySelector("#dashboard").hidden = true;
   document.querySelector("#password").focus();
@@ -29,6 +30,7 @@ form.addEventListener("submit", async (event) => {
     document.querySelector("#status").textContent = status.scope;
     document.querySelector("#login-panel").hidden = true;
     document.querySelector("#dashboard").hidden = false;
+    await refreshSettings();
 	await refreshRoutes();
 	await refreshVPN();
     await startTraffic();

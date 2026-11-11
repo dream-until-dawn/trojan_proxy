@@ -5,6 +5,8 @@
 !cmd/**
 !internal/
 !internal/**
+!deploy/
+!deploy/default.proxy.json
 !engines/
 !engines/trojan/
 !engines/trojan/**

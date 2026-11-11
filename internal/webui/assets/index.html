@@ -7,8 +7,22 @@
 <label>验证方式<select id="method"><option value="otp">验证器验证码</option><option value="recovery">一次性恢复码</option></select></label>
 <label>验证码或恢复码<input id="verification" type="text" autocomplete="one-time-code" maxlength="64" required></label>
 <button id="submit" type="submit">安全登录</button></form><p id="message" role="status" aria-live="polite"></p>
-<p class="hint">首次使用请在服务器终端运行管理员初始化，完成验证器绑定并保存恢复码。这里不提供注册入口。</p></section>
+<p class="hint">首次部署请通过SSH隧道进入本机初始化向导，完成验证器绑定并保存恢复码。公网不提供注册入口。</p></section>
 <section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><button id="logout" type="button">退出登录</button>
+<hr><details id="settings-panel" hidden><summary>系统设置与证书</summary><p id="site-current" class="hint"></p>
+<form id="settings-form"><fieldset id="settings-fields"><legend id="settings-legend">网站与管理入口</legend>
+<label>域名（可留空）<input id="site-domain" maxlength="253" placeholder="例如 example.com，不带协议、路径或端口"></label>
+<label>后台HTTPS端口<input id="site-admin-port" type="number" min="1024" max="65535" required></label>
+<label>证书来源<select id="site-certificate-source"><option value="none">无域名，使用HTTP</option><option value="automatic">自动申请并续期</option><option value="imported">导入可信证书</option></select></label>
+<label>证书通知邮箱（可选）<input id="site-acme-email" type="email" maxlength="254"></label>
+<p class="hint">无域名时通过SSH隧道管理。有域名时需将DNS指向此服务器，并放行80/443。证书就绪后自动升级到HTTPS。更改后台端口时还需放行新端口；5分钟内未确认会恢复原入口。</p>
+<details><summary>VPN网络设置</summary><label>Trojan端口<input id="site-vpn-port" type="number" min="1024" max="65535" required></label><label>公网DNS解析器<input id="site-resolver" placeholder="9.9.9.9:53" required></label><label>服务器自身IP（每行一个）<textarea id="site-addresses" rows="3" placeholder="填写实际公网IP，以及需要保护的其他自身IP"></textarea></label><p class="hint">启用VPN前必须核实自身IP和云安全组。内控端口及部署保护地址始终保留保护；端口变更后需要重新下载客户端配置。</p></details>
+<details><summary>公开目录范围</summary><p class="hint">仅能选择部署时显式挂载的只读目录及其中的子目录。这里只定义范围，添加公开访问规则后才会对外提供下载。</p><div id="site-directories"></div><button id="site-add-directory" type="button" class="secondary">添加目录绑定</button></details>
+<label class="checkbox"><input id="site-ack-change" type="checkbox"> 我已保存路由草稿，确认入口或VPN设置变更可能影响现有连接</label><button id="site-propose" type="submit">创建候选设置</button></fieldset></form>
+<div id="site-pending" hidden><h3>等待入口确认</h3><p id="site-pending-summary"></p><p><a id="site-candidate-link" target="_blank" rel="noopener noreferrer"></a></p><p class="hint">如果新入口是127.0.0.1，请先建立SSH隧道。登录凭据不会自动传到新页面。</p><button id="site-confirm" type="button">确认此入口与设置</button><button id="site-cancel" class="secondary" type="button">撤回候选变更</button></div>
+<button id="site-refresh" type="button" class="secondary">刷新设置并丢弃草稿</button><p id="settings-message" role="status"></p>
+<h3>当前证书</h3><p id="certificate-status"></p><button id="certificate-refresh" class="secondary" type="button">刷新证书状态</button>
+<details><summary>导入证书与私钥</summary><p class="hint">请先在上方填写证书对应域名。导入仅暂存并校验，不立即替换当前证书。需要最近5分钟内的双因素登录。</p><form id="certificate-form"><label>完整PEM证书链<input id="certificate-chain" type="file" accept=".pem,.crt,.cer" required></label><label>PEM私钥<input id="certificate-key" type="file" accept=".pem,.key" required></label><button id="certificate-import" type="submit">校验并暂存证书</button></form><p id="certificate-message" role="status"></p></details></details>
 <hr><h2>Trojan VPN</h2><p id="vpn-status">正在读取状态…</p><p id="vpn-endpoint"></p><p id="vpn-certificate" class="hint"></p>
 <label class="checkbox"><input id="vpn-ack-change" type="checkbox"> 我确认启停或轮换口令会影响VPN连接，轮换后需重新导入配置</label>
 <button id="vpn-enable" type="button" disabled>启用Trojan</button><button id="vpn-disable" type="button" disabled>停止VPN</button><button id="vpn-rotate" type="button" disabled>轮换随机口令</button><button id="vpn-refresh" class="secondary" type="button">刷新VPN状态</button>
@@ -17,7 +31,7 @@
 <label>历史范围<select id="traffic-hours"><option value="1">最近1小时</option><option value="24" selected>最近24小时</option><option value="168">最近7天</option><option value="720">最近30天</option></select></label><button id="traffic-refresh" type="button" class="secondary">刷新历史记录</button>
 <p id="traffic-total"></p><p id="traffic-gap" class="hint"></p><svg id="traffic-chart" viewBox="0 0 800 140" role="img" aria-label="上下行采样网速曲线，缺失时间不连线"></svg><p class="hint">绿色为上传，蓝色为下载；速度按实际采样时长计算。目的IP只在此鉴权后台显示。</p>
 <div class="table-wrap"><table id="traffic-table"><thead><tr><th>目的IP</th><th>上传</th><th>下载</th><th>TCP连接数</th><th>采样</th></tr></thead><tbody id="traffic-targets"></tbody></table></div><button id="traffic-prev" type="button" class="secondary">上一页</button><span id="traffic-page"></span><button id="traffic-next" type="button" class="secondary">下一页</button><label class="checkbox"><input id="traffic-ack-clear" type="checkbox"> 我确认永久清空VPN统计历史，配置和服务继续保留</label><button id="traffic-clear" type="button" class="secondary">清空统计历史</button><p id="traffic-message" role="status"></p>
-<hr><h2>反向代理与公开目录</h2><p id="revision"></p><p class="hint">当前阶段开放自定义HTTP端口。80/443仍由旧服务持有，完整接管后再开放。此处的业务发布默认无需管理员登录。</p>
+<hr><h2>反向代理与公开目录</h2><p id="revision"></p><p id="route-scope-hint" class="hint"></p>
 <div class="table-wrap"><table><thead><tr><th>名称</th><th>入口</th><th>目标</th><th>草稿操作</th></tr></thead><tbody id="route-rows"></tbody></table></div>
 <form id="route-form"><h3>添加到草稿</h3>
 <label>名称<input id="route-name" maxlength="60" required></label>

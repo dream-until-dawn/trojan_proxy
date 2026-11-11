@@ -6,4 +6,4 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY internal ./internal
 COPY cmd ./cmd
-RUN go test -race ./internal/runtime ./internal/vpnservice ./internal/auth ./internal/api ./internal/routing ./internal/bootstrap ./internal/storage ./internal/settings ./internal/traffic ./cmd/control ./cmd/vpnrunner
+RUN go test -race ./internal/runtime ./internal/vpnservice ./internal/auth ./internal/api ./internal/routing ./internal/bootstrap ./internal/storage ./internal/settings ./internal/traffic ./internal/files ./internal/certificates ./internal/gateway ./internal/site ./internal/deployment ./cmd/control ./cmd/vpnrunner ./cmd/gateway-entry

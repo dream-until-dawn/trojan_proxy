@@ -11,9 +11,11 @@ import (
 // Ingress 只由部署工具设置。nil保留阶段性高端口后台，非nil固定占用80/443。
 // 自动签发始终限定单个授权域名，不允许业务Host触发任意域名申请。
 type Ingress struct {
-	Mode        string // reserved（无域名）、automatic、manual。
-	Certificate string // manual时必须是不可变发布目录内的固定路径。
-	Key         string
+	Mode             string // reserved（无域名）、automatic、manual。
+	Certificate      string // manual时必须是不可变发布目录内的固定路径。
+	Key              string
+	AwaitCertificate bool // 仅automatic；由证书适配器推导，不接受网页就绪标志。
+	ACMEEmail        string
 }
 
 func validateIngress(s Settings, rules []routes.Rule) error {
@@ -21,6 +23,9 @@ func validateIngress(s Settings, rules []routes.Rule) error {
 		return nil
 	}
 	i := s.Ingress
+	if i.AwaitCertificate && i.Mode != "automatic" {
+		return errors.New("仅自动签发允许等待证书")
+	}
 	if !s.Policy.AllowStandardPorts {
 		return errors.New("标准入口需要部署阶段明确授权接管80/443")
 	}
@@ -29,7 +34,7 @@ func validateIngress(s Settings, rules []routes.Rule) error {
 		if s.Domain != "" || i.Certificate != "" || i.Key != "" {
 			return errors.New("无域名模式不得指定域名或证书")
 		}
-	case "automatic", "manual":
+	case "automatic", "manual", "unavailable":
 		if s.Domain == "" {
 			return errors.New("HTTPS入口需要授权域名")
 		}
@@ -89,7 +94,7 @@ func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any)
 		return nil
 	}
 	if servers["public_443"] == nil {
-		welcome, err := welcomeRoute(s.Domain)
+		welcome, err := welcomeForSettings(s)
 		if err != nil {
 			return err
 		}
@@ -99,14 +104,37 @@ func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any)
 	https["tls_connection_policies"] = []any{map[string]any{}}
 	// 标准HTTPS整体限制Host，避免空Host业务规则被其他域名复用。
 	https["routes"] = []any{map[string]any{"match": []any{map[string]any{"host": []string{s.Domain}}}, "handle": []any{map[string]any{"handler": "subroute", "routes": https["routes"]}}, "terminal": true}, notFound()}
-	redirect := map[string]any{"match": []any{map[string]any{"host": []string{s.Domain}}}, "handle": []any{map[string]any{"handler": "static_response", "status_code": 308, "headers": map[string]any{"Location": []string{"https://" + s.Domain + "{http.request.uri}"}}}}, "terminal": true}
-	servers["public_80"] = publicServer(":80", []any{redirect})
+	if s.Ingress.AwaitCertificate || s.Ingress.Mode == "unavailable" {
+		if servers["public_80"] == nil {
+			welcome, err := welcomeForSettings(s)
+			if err != nil {
+				return err
+			}
+			servers["public_80"] = publicServer(":80", []any{welcome})
+		}
+		httpServer := servers["public_80"].(map[string]any)
+		httpServer["routes"] = []any{map[string]any{"match": []any{map[string]any{"host": []string{s.Domain}}}, "handle": []any{map[string]any{"handler": "subroute", "routes": httpServer["routes"]}}, "terminal": true}, notFound()}
+	} else {
+		redirect := map[string]any{"match": []any{map[string]any{"host": []string{s.Domain}}}, "handle": []any{map[string]any{"handler": "static_response", "status_code": 308, "headers": map[string]any{"Location": []string{"https://" + s.Domain + "{http.request.uri}"}}}}, "terminal": true}
+		servers["public_80"] = publicServer(":80", []any{redirect})
+	}
+	if s.Ingress.Mode == "unavailable" {
+		delete(servers, "admin")
+		delete(tlsApp, "certificates")
+		delete(tlsApp, "automation")
+		https["tls_connection_policies"] = []any{map[string]any{"drop": true}}
+		return nil
+	}
 	if s.Ingress.Mode == "manual" {
 		tlsApp["certificates"] = map[string]any{"load_files": []any{map[string]any{"certificate": s.Ingress.Certificate, "key": s.Ingress.Key}}}
 		return nil
 	}
 	tlsApp["certificates"] = map[string]any{"automate": []string{s.Domain}}
-	tlsApp["automation"] = map[string]any{"policies": []any{map[string]any{"subjects": []string{s.Domain}, "issuers": []any{map[string]any{"module": "acme", "ca": "https://acme-v02.api.letsencrypt.org/directory", "challenges": map[string]any{"tls-alpn": map[string]any{"disabled": true}}}}}}}
+	issuer := map[string]any{"module": "acme", "ca": "https://acme-v02.api.letsencrypt.org/directory", "challenges": map[string]any{"tls-alpn": map[string]any{"disabled": true}}}
+	if s.Ingress.ACMEEmail != "" {
+		issuer["email"] = s.Ingress.ACMEEmail
+	}
+	tlsApp["automation"] = map[string]any{"policies": []any{map[string]any{"subjects": []string{s.Domain}, "issuers": []any{issuer}}}}
 	return nil
 }
 

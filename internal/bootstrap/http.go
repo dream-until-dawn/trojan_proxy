@@ -22,6 +22,9 @@ func (s *Service) Handler(port int, completed func()) http.Handler {
 	}
 	sub, _ := fs.Sub(assets, "assets")
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		reply(w, 200, map[string]string{"status": "setup_pending"})
+	})
 	mux.Handle("/", http.FileServer(http.FS(sub)))
 	mux.HandleFunc("POST /api/setup/begin", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {

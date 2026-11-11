@@ -93,7 +93,7 @@ def probe(image, pull=False):
         admin, first, second = free_port(), free_port(), free_port()
         assert len({admin, first, second, upstream.server_port}) == 4, '候选端口重复'
         container_id = command([
-            'docker', 'run', '-d', '--name', name, '--network', 'host',
+            'docker', 'run', '-d', '--name', name, '--network', 'host', '--user', '10001:10001',
             '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
             '--memory', '128m', '--cpus', '0.5', '--pids-limit', '128',
             '--tmpfs', '/config', '--tmpfs', '/data', '--tmpfs', '/tmp',

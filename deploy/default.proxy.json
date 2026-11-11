@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "domain": "",
+  "admin_port": 8007,
+  "control_port": 18090,
+  "vpn_port": 18443,
+  "data_dir": "/data",
+  "standard_ingress": true,
+  "public_directories": {"public": "/srv/public/public"}
+}

@@ -94,3 +94,31 @@ func TestIngressRejectsAmbiguousAndUnauthorizedRules(t *testing.T) {
 		})
 	}
 }
+
+func TestUnreadyCertificateKeepsHTTPAndDoesNotRedirect(t *testing.T) {
+	for _, mode := range []string{"automatic", "unavailable"} {
+		s := ingressSettings("example.com", mode)
+		s.Ingress.AwaitCertificate = mode == "automatic"
+		r := routes.Rule{ID: "app", Name: "服务", Port: 80, Path: "/app", Kind: "proxy", UpstreamIP: "127.0.0.1", UpstreamPort: 3000}
+		body, err := Compile(s, []routes.Rule{r})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var c map[string]any
+		if err = json.Unmarshal([]byte(body), &c); err != nil {
+			t.Fatal(err)
+		}
+		servers := c["apps"].(map[string]any)["http"].(map[string]any)["servers"].(map[string]any)
+		httpRoutes, _ := json.Marshal(servers["public_80"])
+		httpsRoutes, _ := json.Marshal(servers["public_443"])
+		if strings.Contains(string(httpRoutes), `"status_code":308`) || !strings.Contains(string(httpRoutes), "3000") || !strings.Contains(string(httpRoutes), "#c64545") {
+			t.Fatal("unready certificate redirected HTTP or hid business", mode, string(httpRoutes))
+		}
+		if strings.Contains(string(httpsRoutes), "3000") {
+			t.Fatal("unready HTTP rule moved to HTTPS", mode)
+		}
+		if mode == "unavailable" && (servers["admin"] != nil || strings.Contains(body, "load_files") || strings.Contains(body, "automate") || !strings.Contains(string(httpsRoutes), `"drop":true`)) {
+			t.Fatal("unavailable certificate did not reserve HTTPS safely", body)
+		}
+	}
+}

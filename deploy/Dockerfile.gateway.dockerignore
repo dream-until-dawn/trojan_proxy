@@ -1,4 +1,9 @@
 **
+!go.mod
+!go.sum
+!cmd/
+!cmd/gateway-entry/
+!cmd/gateway-entry/**
 !engines/
 !engines/gateway/
 !engines/gateway/**

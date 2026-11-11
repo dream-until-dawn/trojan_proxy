@@ -36,6 +36,11 @@ export async function refreshRoutes() {
   try {
     const snapshot = await request("/api/routes/list");
     revision = snapshot.revision; rules = snapshot.rules || [];
+    document.querySelector("#route-port").min = snapshot.standard_ingress ? "1" : "1024";
+    document.querySelector("#route-scope-hint").textContent = snapshot.standard_ingress
+      ? "80为网站入口；有效域名证书就绪后自动升级到443。也可使用其他自定义HTTP端口。业务发布无需后台登录。"
+      : "当前阶段开放自定义HTTP端口；80/443仍由旧服务持有。业务发布无需后台登录。";
+    document.querySelector("#apply-routes").disabled = Boolean(snapshot.pending);
     const directories = document.querySelector("#directory-id"); directories.replaceChildren();
     for (const id of snapshot.directories || []) {
       const option = document.createElement("option"); option.value = id; option.textContent = id; directories.append(option);
@@ -80,6 +85,7 @@ document.querySelector("#apply-routes").addEventListener("click", async () => {
 // VPN只改变其自身配置；仅在基线修订一致时推进编号，保留当前反代草稿。
 document.addEventListener("configuration-changed", (event) => {
   const change = event.detail;
+  if (change.kind === "settings") { refreshRoutes(); return; }
   if (change.kind === "vpn" && revision === change.before) {
     revision = change.after; render();
     message.textContent = "VPN修订已更新，当前反代草稿已保留。";

@@ -1,0 +1,106 @@
+# 发布前仍需替换为通过门槛且已经公开的固定镜像版本；镜像覆盖仅用于隔离验收。
+name: trojan-proxy
+x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control:2.0.0-rc.1}
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "5m", max-file: "3"}
+services:
+  prepare:
+    image: *control-image
+    entrypoint: [proxyctl]
+    command: [prepare]
+    user: "0:10001"
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, FOWNER, DAC_OVERRIDE, NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    restart: "no"
+    volumes:
+      - control-data:/data
+      - gateway-run:/run/caddy
+      - vpn-run:/run/vpn
+      - certificates:/certificates
+      - caddy-data:/caddy-data
+    tmpfs: [/tmp]
+    mem_limit: 64m
+    pids_limit: 32
+    logging: *logging
+  admin-gateway:
+    image: ${TROJAN_GATEWAY_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-gateway:2.0.0-rc.1}
+    depends_on:
+      prepare: {condition: service_completed_successfully}
+    command: [caddy, run, --config, /run/caddy/bootstrap.json]
+    # 启动器先降为10001:10001并只保留NET_BIND_SERVICE，再exec Caddy。
+    user: "0:10001"
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, SETPCAP, NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - gateway-run:/run/caddy
+      - certificates:/certificates:ro
+      - caddy-data:/data
+    tmpfs: [/config, /tmp]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    restart: unless-stopped
+    logging: *logging
+  vpn-runner:
+    image: ${TROJAN_RUNNER_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-runner:2.0.0-rc.1}
+    depends_on:
+      prepare: {condition: service_completed_successfully}
+    user: "10002:10001"
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - vpn-run:/run/vpn
+      - certificates:/certificates:ro
+    tmpfs:
+      - /run/vpn/private:uid=10002,gid=10001,mode=0700
+      - /tmp:uid=10002,gid=10001,mode=0700
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
+    logging: *logging
+  control:
+    image: *control-image
+    depends_on:
+      prepare: {condition: service_completed_successfully}
+      admin-gateway: {condition: service_started}
+      vpn-runner: {condition: service_started}
+    user: "10001:10001"
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - control-data:/data
+      - gateway-run:/run/caddy:ro
+      - vpn-run:/run/vpn:ro
+      - certificates:/certificates
+      - caddy-data:/caddy-data:ro
+      - ./public:/srv/public/public:ro
+    tmpfs: [/tmp]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -T 2 -O /dev/null http://127.0.0.1:18090/healthz || wget -q -T 2 -O /dev/null http://127.0.0.1:18092/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+volumes:
+  control-data:
+  gateway-run:
+  vpn-run:
+  certificates:
+  caddy-data:

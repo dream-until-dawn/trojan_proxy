@@ -66,6 +66,21 @@ func (c *Coordinator) Recover(ctx context.Context) error {
 	return c.rollback(ctx, j)
 }
 
+// ReconcileGateway 在共享协调锁内重新读取最新快照，防止恢复循环用旧副本覆盖新入口。
+// 它只恢复网关，不重启VPN；未完成事务必须先通过Recover处理。
+func (c *Coordinator) ReconcileGateway(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	j, err := c.store.Load(ctx)
+	if err != nil {
+		return err
+	}
+	if j.Pending != nil {
+		return errors.New("存在未完成修订，请先恢复")
+	}
+	return c.gateway.Apply(ctx, j.Applied.Gateway)
+}
+
 func (c *Coordinator) rollback(ctx context.Context, j Journal) error {
 	// 即使第一个组件失败也尝试恢复另一个，避免不必要的扩大故障。
 	var gatewayErr, vpnErr error

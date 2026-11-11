@@ -63,5 +63,5 @@ document.querySelector("#vpn-export").addEventListener("click", async () => {
 });
 
 document.addEventListener("configuration-changed", (event) => {
-  if (event.detail.kind === "routes") refreshVPN();
+  if (["routes", "settings"].includes(event.detail.kind)) refreshVPN();
 });

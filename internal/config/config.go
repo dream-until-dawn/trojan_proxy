@@ -24,6 +24,7 @@ type Config struct {
 	VPNManagement     bool              `json:"vpn_management,omitempty"`
 	VPNAddresses      []string          `json:"vpn_own_addresses,omitempty"`
 	VPNResolver       string            `json:"vpn_resolver,omitempty"`
+	StandardIngress   bool              `json:"standard_ingress,omitempty"` // 部署授权接管80/443并启用持久业务设置。
 }
 
 var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)

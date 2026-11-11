@@ -376,6 +376,22 @@ func testStandardIngress(t *testing.T, engine *gateway.Client, settings gateway.
 	if response.Header.Get("X-Robots-Tag") != "noindex, nofollow, noarchive, nosnippet" {
 		t.Fatal("upstream overrode crawl declaration", response.Header.Get("X-Robots-Tag"))
 	}
+	s.Ingress = &gateway.Ingress{Mode: "unavailable"}
+	apply()
+	if status, body, location := request("http", s.Domain, "/"); status != 200 || !strings.Contains(body, "#c64545") || location != "" {
+		t.Fatal("unavailable certificate did not retain private HTTP fallback", status, body, location)
+	}
+	if status, body, _ := request("http", s.Domain, "/app"); status != 200 || body != "upstream:/app" {
+		t.Fatal("unavailable certificate lost HTTP business", status, body)
+	}
+	if conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", "127.0.0.1:443", &tls.Config{RootCAs: roots, ServerName: s.Domain}); err == nil {
+		conn.Close()
+		t.Fatal("unavailable certificate accepted TLS")
+	}
+	if listener, err := net.Listen("tcp4", "0.0.0.0:443"); err == nil {
+		listener.Close()
+		t.Fatal("unavailable certificate released reserved HTTPS port")
+	}
 }
 
 func testRejectTLSReservation(t *testing.T, engine *gateway.Client, settings gateway.Settings) {

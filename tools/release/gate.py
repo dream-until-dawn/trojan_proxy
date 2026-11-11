@@ -21,12 +21,12 @@ LOGS=ROOT/'.work/release-gate'
 BINARIES={
     'trojan-control:m6':['usr/local/bin/control','usr/local/bin/proxyctl'],
     'trojan-runner:dev':['usr/local/bin/vpnrunner','usr/local/bin/trojan-engine'],
-    'trojan-gateway:dev':['usr/bin/caddy'],
+    'trojan-gateway:dev':['usr/bin/caddy','usr/local/bin/gateway-entry'],
 }
 SCANNER=ROOT/('.work/bin/govulncheck.exe' if os.name=='nt' else '.work/bin/govulncheck')
 report={'passed':False,'checks':{},'images':{},'binaries':{},'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}
 LOGS.mkdir(parents=True,exist_ok=True)
-environment=dict(os.environ,PYTHONIOENCODING='utf-8',TROJAN_EGRESS_MUTATION='0',TROJAN_GATEWAY_IMAGE='trojan-gateway:dev')
+environment=dict(os.environ,PYTHONIOENCODING='utf-8',TROJAN_EGRESS_MUTATION='0',TROJAN_GATEWAY_IMAGE='trojan-gateway:dev',TROJAN_CONTROL_IMAGE='trojan-control:m6',TROJAN_RUNNER_IMAGE='trojan-runner:dev')
 for setting in ('GOOS','GOARCH','CGO_ENABLED'):environment.pop(setting,None)
 
 def command(args,cwd=ROOT,env=None,timeout=180,log=None):
@@ -95,9 +95,9 @@ try:
         progress('Linux源码漏洞扫描 '+name)
         command([SCANNER,'./...'],cwd=module,env=linux,log=name+'-source.log')
         report['checks'][name+'_linux_source_scan']='passed'
-    for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner')]:
+    for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner'),('deployment','deployment')]:
         command(['go','test','-c','-tags','integration','-o','.work/'+name+'-integration.test','./internal/'+package],env=linux,log=name+'-build.log')
-    probes=['gateway_lifecycle','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation']
+    probes=['gateway_lifecycle','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','default_deployment']
     for name in probes:
         progress('真实探针 '+name)
         output=command([sys.executable,'tools/probes/'+name+'_probe.py'],log=name+'.json')

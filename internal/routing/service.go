@@ -38,14 +38,52 @@ type Service struct {
 	settings    gateway.Settings
 	coordinator *control.Coordinator
 	ready       bool
+	provider    SettingsProvider
+	frozen      bool
+}
+
+// SettingsProvider 只解析同一完整修订；第二个返回值表示临时入口尚待确认。
+type SettingsProvider func(context.Context, control.Revision) (gateway.Settings, bool, error)
+
+var ErrWriteFrozen = errors.New("入口等待确认，禁止修改路由")
+
+// NewServiceWithProvider 从持久修订读取设置，避免重启或自动收敛覆盖网页配置。
+func NewServiceWithProvider(store control.Store, engine Gateway, fallback gateway.Settings, coordinator *control.Coordinator, provider SettingsProvider) *Service {
+	s := NewServiceWithCoordinator(store, engine, fallback, coordinator)
+	s.provider = provider
+	return s
+}
+
+func (s *Service) refreshSettings(ctx context.Context, revision control.Revision) error {
+	if s.provider == nil {
+		return nil
+	}
+	next, frozen, err := s.provider(ctx, revision)
+	if err != nil {
+		return err
+	}
+	previousHash, err := gateway.Fingerprint(s.settings)
+	if err != nil {
+		return err
+	}
+	nextHash, err := gateway.Fingerprint(next)
+	if err != nil {
+		return err
+	}
+	if previousHash != nextHash || s.frozen != frozen {
+		s.ready = false
+	}
+	s.settings, s.frozen = next, frozen
+	return nil
 }
 
 // Snapshot 是后台可读取的规则状态，不包括引擎原始配置和证书路径。
 type Snapshot struct {
-	Revision    uint64        `json:"revision"`
-	Rules       []routes.Rule `json:"rules"`
-	Pending     bool          `json:"pending"`
-	Directories []string      `json:"directories"`
+	Revision        uint64        `json:"revision"`
+	Rules           []routes.Rule `json:"rules"`
+	Pending         bool          `json:"pending"`
+	Directories     []string      `json:"directories"`
+	StandardIngress bool          `json:"standard_ingress"`
 }
 
 // NewService 只连接依赖；初始化失败会阻止业务修改但不影响独立登录入口。
@@ -59,6 +97,15 @@ func NewServiceWithCoordinator(store control.Store, engine Gateway, settings gat
 }
 
 func (s *Service) initialize(ctx context.Context) error {
+	if s.provider != nil {
+		j, err := s.store.Load(ctx)
+		if err != nil {
+			return err
+		}
+		if err = s.refreshSettings(ctx, j.Applied); err != nil {
+			return err
+		}
+	}
 	if s.ready {
 		return nil
 	}
@@ -89,7 +136,14 @@ func (s *Service) initialize(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if j.Applied.GatewaySettings != digest {
+	if err = s.refreshSettings(ctx, j.Applied); err != nil {
+		return err
+	}
+	digest, err = gateway.Fingerprint(s.settings)
+	if err != nil {
+		return err
+	}
+	if !s.frozen && j.Applied.GatewaySettings != digest {
 		// 部署设置或编译安全策略变化必须形成完整修订，不能在重启后被旧JSON覆盖。
 		var ruleset []routes.Rule
 		if j.Applied.Rules != "" {
@@ -111,7 +165,7 @@ func (s *Service) initialize(ctx context.Context) error {
 		j.Applied = next
 	}
 	// 网关独立重启后可能只加载部署文件，必须恢复数据库里的已提交配置。
-	if err = s.gateway.Apply(ctx, j.Applied.Gateway); err != nil {
+	if err = s.coordinator.ReconcileGateway(ctx); err != nil {
 		return err
 	}
 	s.ready = true
@@ -129,7 +183,7 @@ func (s *Service) List(ctx context.Context) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	state := Snapshot{Revision: j.Applied.Number, Rules: []routes.Rule{}, Pending: j.Pending != nil}
+	state := Snapshot{Revision: j.Applied.Number, Rules: []routes.Rule{}, Pending: j.Pending != nil || s.frozen, StandardIngress: s.settings.Ingress != nil}
 	state.Directories = []string{}
 	for id := range s.settings.Policy.Directories {
 		state.Directories = append(state.Directories, id)
@@ -147,9 +201,6 @@ func (s *Service) List(ctx context.Context) (Snapshot, error) {
 func (s *Service) Apply(ctx context.Context, expected uint64, ruleset []routes.Rule) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := routes.ValidateSet(ruleset, s.settings.Policy); err != nil {
-		return err
-	}
 	if err := s.initialize(ctx); err != nil {
 		return err
 	}
@@ -159,6 +210,15 @@ func (s *Service) Apply(ctx context.Context, expected uint64, ruleset []routes.R
 	}
 	if j.Applied.Number != expected {
 		return control.ErrRevisionConflict
+	}
+	if err = s.refreshSettings(ctx, j.Applied); err != nil {
+		return err
+	}
+	if s.frozen {
+		return ErrWriteFrozen
+	}
+	if err = routes.ValidateSet(ruleset, s.settings.Policy); err != nil {
+		return err
 	}
 	config, err := gateway.Compile(s.settings, ruleset)
 	if err != nil {
@@ -204,6 +264,15 @@ func (s *Service) PublicRule(ctx context.Context, id string) (routes.Rule, error
 func (s *Service) Reconcile(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.provider != nil {
+		j, err := s.store.Load(ctx)
+		if err != nil {
+			return err
+		}
+		if err = s.refreshSettings(ctx, j.Applied); err != nil {
+			return err
+		}
+	}
 	if s.ready {
 		j, err := s.store.Load(ctx)
 		if err != nil {

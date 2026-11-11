@@ -6,12 +6,22 @@ RUN go mod download
 COPY engines/gateway ./
 RUN go test ./... && go build -trimpath -ldflags="-s -w" -o /out/caddy .
 
+FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS entry
+WORKDIR /entry
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd/gateway-entry ./cmd/gateway-entry
+RUN go build -trimpath -ldflags="-s -w" -o /out/gateway-entry ./cmd/gateway-entry
+
 FROM alpine:3.22@sha256:365499d9dccb7c8cfaffef995a6c382e71174585e0556f6476ead1c5971c39fb
 RUN addgroup -g 10001 proxy && adduser -D -H -u 10001 -G proxy proxy && \
     mkdir -p /run/caddy /data /config /etc/caddy && chown 10001:10001 /run/caddy /data /config
 ENV XDG_DATA_HOME=/data XDG_CONFIG_HOME=/config
 COPY --from=build /out/caddy /usr/bin/caddy
+COPY --from=entry /out/gateway-entry /usr/local/bin/gateway-entry
 COPY engines/gateway/Caddyfile /etc/caddy/Caddyfile
 COPY engines/gateway /usr/share/gateway-source
-USER 10001:10001
+USER 0:10001
+ENTRYPOINT ["gateway-entry"]
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

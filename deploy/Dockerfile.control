@@ -13,6 +13,7 @@ FROM alpine:3.22@sha256:365499d9dccb7c8cfaffef995a6c382e71174585e0556f6476ead1c5
 RUN addgroup -g 10001 proxy && adduser -D -H -u 10001 -G proxy proxy
 COPY --from=build /out/control /usr/local/bin/control
 COPY --from=build /out/proxyctl /usr/local/bin/proxyctl
+COPY deploy/default.proxy.json /etc/trojan-proxy/proxy.json
 USER 10001:10001
 WORKDIR /data
 ENTRYPOINT ["control"]

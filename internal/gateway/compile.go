@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 3, Settings: settings})
+	}{Version: 4, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -73,7 +73,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		}
 		handles = append(handles, proxy)
 		listenPort := r.Port
-		if settings.Ingress != nil && settings.Domain != "" && r.Port == 80 {
+		if settings.Ingress != nil && settings.Domain != "" && !settings.Ingress.AwaitCertificate && settings.Ingress.Mode != "unavailable" && r.Port == 80 {
 			// 标准HTTP规则代表公开网站入口；域名模式实际由HTTPS承载。
 			listenPort = 443
 		}
@@ -84,7 +84,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		fallback := notFound()
 		if settings.Ingress != nil && (port == 80 || port == 443) {
 			var err error
-			fallback, err = welcomeRoute(settings.Domain)
+			fallback, err = welcomeForSettings(settings)
 			if err != nil {
 				return "", err
 			}

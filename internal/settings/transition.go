@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -45,10 +46,13 @@ func NewManager(store control.Store, coordinator *control.Coordinator, planner P
 
 // Snapshot 排除原始配置、密文和回滚路径，适合近期认证后的管理接口。
 type Snapshot struct {
-	Revision  uint64 `json:"revision"`
-	Site      Site   `json:"site"`
-	Candidate *Site  `json:"candidate,omitempty"`
-	Deadline  int64  `json:"deadline,omitempty"`
+	Revision        uint64   `json:"revision"`
+	Site            Site     `json:"site"`
+	Candidate       *Site    `json:"candidate,omitempty"`
+	Deadline        int64    `json:"deadline,omitempty"`
+	CurrentOrigin   string   `json:"current_origin"`
+	CandidateOrigin string   `json:"candidate_origin,omitempty"`
+	Mounts          []string `json:"mounts"`
 }
 
 func (m *Manager) load(ctx context.Context) (control.Journal, Document, error) {
@@ -71,11 +75,16 @@ func (m *Manager) Status(ctx context.Context) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	result := Snapshot{Revision: j.Applied.Number, Site: d.Site}
+	result := Snapshot{Revision: j.Applied.Number, Site: d.Site, CurrentOrigin: m.candidateOrigin(d.Site), Mounts: []string{}}
+	for id := range m.deployment.PublicDirectories {
+		result.Mounts = append(result.Mounts, id)
+	}
+	sort.Strings(result.Mounts)
 	if d.Pending != nil {
 		candidate := d.Pending.Candidate
 		result.Candidate = &candidate
 		result.Deadline = d.Pending.Deadline
+		result.CandidateOrigin = m.candidateOrigin(candidate)
 	}
 	return result, nil
 }
@@ -109,14 +118,14 @@ func (m *Manager) Propose(ctx context.Context, expected uint64, candidate Site) 
 		return ErrFrozen
 	}
 	if reflect.DeepEqual(d.Site, candidate) {
-		return errors.New("设置没有变化")
+		return &ValidationError{Cause: errors.New("设置没有变化")}
 	}
 	if err = (Document{Version: 1, Site: candidate}).Validate(m.deployment); err != nil {
-		return err
+		return &ValidationError{Cause: err}
 	}
 	// 入口确认时先更新网关再更新VPN，禁止新VPN抢占仍用于回滚的旧后台端口。
 	if candidate.VPNPort == d.Site.AdminPort {
-		return errors.New("VPN端口不能直接复用旧后台端口，请分两次调整")
+		return &ValidationError{Cause: errors.New("VPN端口不能直接复用旧后台端口，请分两次调整")}
 	}
 	plan, err := m.planner.Dual(ctx, d.Site, candidate, j.Applied)
 	if err != nil {

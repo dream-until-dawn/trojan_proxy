@@ -4,3 +4,5 @@ hr{border:0;border-top:1px solid #d4e1e9;margin:28px 0}.table-wrap{overflow-x:au
 #traffic-chart{display:block;width:100%;height:160px;background:#f3f6fa;border:1px solid #dbe3ed;border-radius:8px}#traffic-page{margin:0 12px}
 
 #traffic-table th,#traffic-table td:not(:first-child){white-space:nowrap}#traffic-table td:first-child{min-width:180px;max-width:260px;overflow-wrap:anywhere;font-family:ui-monospace,monospace}
+
+fieldset{border:1px solid #d4e1e9;border-radius:10px;margin:18px 0;padding:16px;min-width:0}legend,summary{font-weight:700}summary{cursor:pointer;padding:12px 0}details{margin:14px 0}textarea{font:inherit;width:100%;border:1px solid #b1c5d0;border-radius:7px;padding:12px;margin-top:8px;resize:vertical}.directory-binding{border:1px solid #d4e1e9;padding:12px;border-radius:8px;margin:12px 0}#settings-message,#certificate-message{color:#9c3e24;line-height:1.7}#site-candidate-link{overflow-wrap:anywhere}

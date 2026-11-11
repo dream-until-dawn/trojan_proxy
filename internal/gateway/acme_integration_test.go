@@ -52,7 +52,11 @@ func TestRealHTTP01AndRenewal(t *testing.T) {
 	if !roots.AppendCertsFromPEM(ca) {
 		t.Fatal("签发根无效")
 	}
-	settings := gateway.Settings{Domain: "probe.test", AdminPort: 8007, ControlPort: 18090, FilePort: 18091, Socket: "/run/caddy/admin.sock", Policy: routes.Policy{AdminPort: 8007, ControlPort: 18090, FilePort: 18091, VPNPort: 18443, AllowStandardPorts: true}, Ingress: &gateway.Ingress{Mode: "automatic"}}
+	manual, err := os.ReadFile("/fixture/manual.crt")
+	if err != nil || !roots.AppendCertsFromPEM(manual) {
+		t.Fatal("manual overlap fixture unavailable", err)
+	}
+	settings := gateway.Settings{Domain: "probe.test", AdminPort: 8007, ControlPort: 18090, FilePort: 18091, Socket: "/run/caddy/admin.sock", Policy: routes.Policy{AdminPort: 8007, ControlPort: 18090, FilePort: 18091, VPNPort: 18443, AllowStandardPorts: true}, Ingress: &gateway.Ingress{Mode: "automatic", AwaitCertificate: true}}
 	body, err := gateway.Compile(settings, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -62,6 +66,8 @@ func TestRealHTTP01AndRenewal(t *testing.T) {
 		t.Fatal(err)
 	}
 	automation := config["apps"].(map[string]any)["tls"].(map[string]any)["automation"].(map[string]any)
+	// 验证同域名旧证书仍加载时，显式automate确实签发新证书，不依赖推测。
+	config["apps"].(map[string]any)["tls"].(map[string]any)["certificates"].(map[string]any)["load_files"] = []any{map[string]any{"certificate": "/fixture/manual.crt", "key": "/fixture/manual.key"}}
 	automation["renew_interval"] = "1s"
 	policy := automation["policies"].([]any)[0].(map[string]any)
 	policy["renewal_window_ratio"] = 0.8
@@ -88,6 +94,17 @@ func TestRealHTTP01AndRenewal(t *testing.T) {
 	if err = engine.Apply(context.Background(), string(bodyBytes)); err != nil {
 		t.Fatal("自动配置加载失败", err)
 	}
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	req, _ := http.NewRequest("GET", "http://127.0.0.1/check?q=1", nil)
+	req.Host = "probe.test"
+	response, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != 200 || response.Header.Get("Location") != "" {
+		t.Fatal("HTTP redirected before certificate readiness", response.StatusCode)
+	}
 	var first certificates.Prepared
 	for _, phase := range []string{"issuance", "renewal"} {
 		deadline = time.Now().Add(35 * time.Second)
@@ -105,6 +122,16 @@ func TestRealHTTP01AndRenewal(t *testing.T) {
 		prepared, err := certificates.Prepare("/published", pair)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if phase == "issuance" {
+			delete(config["apps"].(map[string]any)["tls"].(map[string]any)["certificates"].(map[string]any), "load_files")
+			updated, err := json.Marshal(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = engine.Apply(context.Background(), string(updated)); err != nil {
+				t.Fatal("manual overlap removal failed", err)
+			}
 		}
 		// 缓存已更新并不意味着运行证书已更新；独立验证实际TLS握手指纹。
 		deadline = time.Now().Add(5 * time.Second)
@@ -124,15 +151,32 @@ func TestRealHTTP01AndRenewal(t *testing.T) {
 		}
 		if phase == "issuance" {
 			first = prepared
+			// 证书已独立验证，切换HTTP策略；保持隔离签发器，绝不接触公共CA。
+			settings.Ingress.AwaitCertificate = false
+			steady, err := gateway.Compile(settings, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var steadyConfig map[string]any
+			if err = json.Unmarshal([]byte(steady), &steadyConfig); err != nil {
+				t.Fatal(err)
+			}
+			config["apps"].(map[string]any)["http"].(map[string]any)["servers"] = steadyConfig["apps"].(map[string]any)["http"].(map[string]any)["servers"]
+			updated, err := json.Marshal(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = engine.Apply(context.Background(), string(updated)); err != nil {
+				t.Fatal("certificate-ready HTTP policy did not apply", err)
+			}
 		} else if prepared.Version == first.Version {
 			t.Fatal("续期未发布新版本")
 		}
 		t.Log("ACME阶段与实际握手通过:", phase)
 	}
-	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{Proxy: nil}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
-	req, _ := http.NewRequest("GET", "http://127.0.0.1/check?q=1", nil)
+	req, _ = http.NewRequest("GET", "http://127.0.0.1/check?q=1", nil)
 	req.Host = "probe.test"
-	response, err := client.Do(req)
+	response, err = client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
