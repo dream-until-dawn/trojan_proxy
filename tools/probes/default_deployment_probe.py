@@ -13,6 +13,7 @@ environment=dict(os.environ)
 for key,value in [('TROJAN_CONTROL_IMAGE','trojan-control:final'),('TROJAN_RUNNER_IMAGE','trojan-runner:final'),('TROJAN_GATEWAY_IMAGE','trojan-gateway:dev')]:environment.setdefault(key,value)
 report={'passed':False,'scope':'disposable isolated Compose; no real server or public CA','checks':{}}
 backend=None
+restore=None
 
 def command(args,timeout=60,allow_failure=False):
     result=subprocess.run([str(v) for v in args],cwd=root,env=environment,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=timeout)
@@ -76,6 +77,11 @@ with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
         ready()
         flow('verify')
         report['checks']['container_recreation_preserved_account_routes_settings']=True
+        restore=command(['docker','volume','create',prefix+'-restore']).stdout.strip()
+        command(['docker','run','--rm','--network','none','-v',restore+':/restore','alpine:3.22','sh','-c','chown 10001:10001 /restore && chmod 0700 /restore'])
+        command(['docker','run','--rm','--network','container:'+lab,'--user','10001:10001','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--memory','192m','--tmpfs','/tmp',
+            '-v',data+':/data','-v',restore+':/restore','-v',binary,'-e','TROJAN_DISPOSABLE_COMPOSE_TEST=1','--entrypoint','/probe',environment['TROJAN_CONTROL_IMAGE'],'-test.run','^TestDisposableLiveBackupAndColdRestoreGate$','-test.v','-test.timeout','30s'])
+        report['checks']['live_control_lock_online_backup_and_cold_restore_auth_gate']=True
         report['checks']['unprivileged_port_start_1024_nonroot_gateway']=True
         report['passed']=True
     except Exception as error:
@@ -83,6 +89,7 @@ with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
         report['logs']=command(compose+['logs','--no-color','--tail','30'],allow_failure=True).stdout[-6000:]
     finally:
         if backend:command(['docker','rm','-f',backend],allow_failure=True)
+        if restore:command(['docker','volume','rm',restore],allow_failure=True)
         cleanup=command(compose+['down','-v','--remove-orphans'],allow_failure=True)
         report['disposable_project_cleanup']=cleanup.returncode==0
 print(json.dumps(report,ensure_ascii=False,indent=2))

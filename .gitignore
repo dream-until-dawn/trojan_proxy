@@ -2,3 +2,15 @@
 *.test
 *.exe
 __pycache__/
+# 运行数据、私钥与恢复包不得进入公开仓库。
+deploy/data/
+deploy/run/
+deploy/certificates/
+deploy/caddy-data/
+*.db
+*.db-wal
+*.db-shm
+*.tgz
+*.tar.gz
+*.pem
+*.key

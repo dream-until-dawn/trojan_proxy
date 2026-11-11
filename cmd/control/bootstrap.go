@@ -18,6 +18,16 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
 )
 
+// verifyRecoveryReady 在任何监听启动前阻止还原后的旧认证材料重新提供登录。
+func verifyRecoveryReady(directory string) error {
+	if _, err := os.Lstat(filepath.Join(directory, "recovery-required")); err == nil {
+		return errors.New("冷还原后必须先通过SSH交互终端重新绑定管理员，再启动control")
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
 // prepareAdministrator 不为现有账户/未完成绑定静默生成替代密钥；新实例才创建主密钥。
 func prepareAdministrator(ctx context.Context, c config.Config, s *storage.JournalStore) ([]byte, error) {
 	ready, err := s.Initialized(ctx)

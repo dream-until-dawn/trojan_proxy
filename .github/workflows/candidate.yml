@@ -1,0 +1,62 @@
+name: Verify and publish candidate images
+on:
+  push:
+    branches: [codex/refactor-design]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: candidate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    # 普通阶段提交不构建公开镜像；该标记只触发候选发布，不等于正式版本验收。
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-candidate]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: '1.26.11'
+          cache: false
+      - name: Install the fixed binary scanner
+        run: |
+          mkdir -p .work/bin
+          GOBIN="$PWD/.work/bin" go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+      - name: Build an exact-commit offline bundle
+        run: python3 tools/release/build_candidate.py
+      - name: Verify packaged binaries, source and real positive/negative probes
+        run: python3 tools/release/gate.py --archive .work/candidate-images.tar.gz --output .work/candidate-gate.json
+      - name: Publish only the verified local images
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          for role in control runner gateway; do
+            case "$role" in
+              control) source=trojan-control:m6 ;;
+              runner) source=trojan-runner:dev ;;
+              gateway) source=trojan-gateway:dev ;;
+            esac
+            target="ghcr.io/dream-until-dawn/trojan-proxy-${role}:sha-${GITHUB_SHA}"
+            docker tag "$source" "$target"
+            docker push "$target"
+          done
+      - name: Save the verification report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: candidate-verification-${{ github.sha }}
+          path: .work/candidate-gate.json
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,4 +1,4 @@
-// proxyctl 提供初始化与只读部署诊断；业务凭据初始化在认证模块完成后接入。
+// proxyctl 提供部署诊断、一次令牌及仅限SSH终端的鉴权恢复工具。
 package main
 
 import (
@@ -13,15 +13,17 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/deployment"
 	"github.com/dream-until-dawn/trojan_proxy/internal/ports"
+	"github.com/dream-until-dawn/trojan_proxy/internal/recovery"
+	"path/filepath"
 )
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: proxyctl init|doctor --config <配置文件>")
+		return fmt.Errorf("用法: proxyctl init|doctor|setup-token|backup|restore|admin-reset --config <配置文件>")
 	}
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	defaultPath := "proxy.json"
-	if args[0] == "setup-token" || args[0] == "prepare" {
+	if args[0] == "setup-token" || args[0] == "prepare" || args[0] == "admin-reset" || args[0] == "backup" || args[0] == "restore" {
 		defaultPath = "/etc/trojan-proxy/proxy.json"
 	}
 	path := flags.String("config", defaultPath, "部署配置文件")
@@ -30,6 +32,9 @@ func run(args []string) error {
 	data := flags.String("data-dir", "./data", "数据目录")
 	certificate := flags.String("certificate", "/certs/fullchain.cer", "本地证书链路径，仅证书检查命令使用")
 	privateKey := flags.String("private-key", "/certs/private.key", "本地私钥路径，仅证书检查命令使用")
+	output := flags.String("output", "", "私有备份归档输出位置")
+	archive := flags.String("archive", "", "冷还原归档路径")
+	digest := flags.String("sha256", "", "从归档之外可信记录取得的SHA256")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -37,6 +42,36 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "admin-reset":
+		return resetAdministrator(*path)
+	case "backup":
+		c, err := config.Load(*path)
+		if err != nil {
+			return err
+		}
+		target := *output
+		if target == "" {
+			target = filepath.Join(c.DataDir, "backups", "proxy-"+time.Now().UTC().Format("20060102T150405Z")+".tgz")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		report, err := recovery.Backup(ctx, c, target)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(report)
+	case "restore":
+		c, err := config.Load(*path)
+		if err != nil {
+			return err
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err = recovery.Restore(ctx, c, *archive, *digest); err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stdout, "冷还原完成，旧管理凭据已锁定；请先交互运行admin-reset，核实主机域名/IP/目录挂载，再启动control")
+		return nil
 	case "prepare":
 		c, err := config.Load(*path)
 		if err != nil {

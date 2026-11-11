@@ -19,6 +19,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/files"
+	"github.com/dream-until-dawn/trojan_proxy/internal/maintenance"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
@@ -30,6 +31,14 @@ func run() error {
 	flag.Parse()
 	c, err := config.Load(*path)
 	if err != nil {
+		return err
+	}
+	maintenanceLock, err := maintenance.Acquire(c.DataDir, false)
+	if err != nil {
+		return err
+	}
+	defer maintenanceLock.Close()
+	if err = verifyRecoveryReady(c.DataDir); err != nil {
 		return err
 	}
 	s, err := storage.OpenJournal(context.Background(), filepath.Join(c.DataDir, "control.db"), control.Revision{Number: 1})

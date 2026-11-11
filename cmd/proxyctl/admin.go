@@ -12,6 +12,7 @@ import (
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
+	"github.com/dream-until-dawn/trojan_proxy/internal/maintenance"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
 	"golang.org/x/term"
@@ -23,9 +24,14 @@ func initializeAdmin(configPath string) error {
 	if err != nil {
 		return err
 	}
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
+	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		return fmt.Errorf("请在交互终端运行管理员初始化")
 	}
+	lock, err := maintenance.Acquire(c.DataDir, true)
+	if err != nil {
+		return err
+	}
+	defer lock.Close()
 	if err = os.MkdirAll(c.DataDir, 0700); err != nil {
 		return err
 	}
