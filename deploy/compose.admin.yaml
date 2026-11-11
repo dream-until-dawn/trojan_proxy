@@ -1,7 +1,7 @@
 # M3单独验收后台用，不是最终接管80/443的一键部署包。
 services:
   control:
-    image: trojan-control:m4
+    image: trojan-control:m6
     build:
       context: ..
       dockerfile: deploy/Dockerfile.control
@@ -15,6 +15,9 @@ services:
       - ./data:/data
       - ./run/caddy:/run/caddy:ro
       - ./public:/srv/public:ro
+      - ./run/vpn:/run/vpn:ro
+      - ./certificates/imported:/certs:ro
+      - ./certificates/published:/certificates
     tmpfs: [/tmp]
     mem_limit: 256m
     cpus: 0.5
@@ -26,6 +29,30 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}
+  vpn-runner:
+    image: trojan-runner:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.runner
+    network_mode: host
+    user: "10002:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: [--domain, qin-xin.top, --port, "18443", --own-addresses, "47.82.112.245"]
+    volumes:
+      - ./run/vpn:/run/vpn
+      - ./certificates/published:/certificates:ro
+    tmpfs:
+      - /run/vpn/private:uid=10002,gid=10001,mode=0700
+      - /tmp:uid=10002,gid=10001,mode=0700
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    restart: unless-stopped
     logging:
       driver: json-file
       options: {max-size: "5m", max-file: "3"}

@@ -124,8 +124,9 @@ func (c *Client) Status(ctx context.Context) (State, error) {
 
 // Component 将数据库密文转换为受限Unix命令，密钥只存在控制服务中。
 type Component struct {
-	Key    []byte
-	Runner *Client
+	Key              []byte
+	Runner           *Client
+	CertificateValid func(vpn.Desired) error
 }
 
 // Check 解密完整性失败时不发送任何执行器请求。
@@ -133,6 +134,11 @@ func (c *Component) Check(ctx context.Context, value string) error {
 	desired, err := vpn.Open(c.Key, value)
 	if err != nil {
 		return err
+	}
+	if desired.Enabled && c.CertificateValid != nil {
+		if err = c.CertificateValid(desired); err != nil {
+			return err
+		}
 	}
 	return c.Runner.Check(ctx, desired)
 }
@@ -142,6 +148,11 @@ func (c *Component) Apply(ctx context.Context, value string) error {
 	desired, err := vpn.Open(c.Key, value)
 	if err != nil {
 		return err
+	}
+	if desired.Enabled && c.CertificateValid != nil && c.CertificateValid(desired) != nil {
+		// 已提交配置的证书可能在停机期间到期。恢复旧修订时保持安全停用，
+		// 允许日志完成回滚，避免永远卡在无法重新启动的过期配置上。
+		return c.Runner.Apply(ctx, vpn.Desired{})
 	}
 	return c.Runner.Apply(ctx, desired)
 }

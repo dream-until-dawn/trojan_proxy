@@ -9,6 +9,10 @@
 <button id="submit" type="submit">安全登录</button></form><p id="message" role="status" aria-live="polite"></p>
 <p class="hint">首次使用请在服务器终端运行管理员初始化，完成验证器绑定并保存恢复码。这里不提供注册入口。</p></section>
 <section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><button id="logout" type="button">退出登录</button>
+<hr><h2>Trojan VPN</h2><p id="vpn-status">正在读取状态…</p><p id="vpn-endpoint"></p><p id="vpn-certificate" class="hint"></p>
+<label class="checkbox"><input id="vpn-ack-change" type="checkbox"> 我确认启停或轮换口令会影响VPN连接，轮换后需重新导入配置</label>
+<button id="vpn-enable" type="button" disabled>启用Trojan</button><button id="vpn-disable" type="button" disabled>停止VPN</button><button id="vpn-rotate" type="button" disabled>轮换随机口令</button><button id="vpn-refresh" class="secondary" type="button">刷新VPN状态</button>
+<label class="checkbox"><input id="vpn-ack-secret" type="checkbox"> 下载文件包含VPN口令，我会妥善保管，不分享给他人</label><button id="vpn-export" type="button" disabled>下载Clash配置</button><p id="vpn-message" role="status" aria-live="polite"></p>
 <hr><h2>反向代理与公开目录</h2><p id="revision"></p><p class="hint">当前阶段开放自定义HTTP端口。80/443仍由旧服务持有，完整接管后再开放。此处的业务发布默认无需管理员登录。</p>
 <div class="table-wrap"><table><thead><tr><th>名称</th><th>入口</th><th>目标</th><th>草稿操作</th></tr></thead><tbody id="route-rows"></tbody></table></div>
 <form id="route-form"><h3>添加到草稿</h3>

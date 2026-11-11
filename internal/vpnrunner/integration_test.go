@@ -123,6 +123,31 @@ func TestRealRunnerLifecycle(t *testing.T) {
 		if err != nil || !state.Running || state.Fingerprint != vpn.CommandFingerprint(desired) {
 			t.Fatal("启动失败未回退旧VPN", state, err)
 		}
+		key := make([]byte, 32)
+		component := &Component{Key: key, Runner: client, CertificateValid: func(d vpn.Desired) error {
+			if d.CertificateVersion == expired.CertificateVersion {
+				return os.ErrInvalid
+			}
+			return nil
+		}}
+		sealed, err := vpn.Seal(key, expired)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = component.Check(ctx, sealed); err == nil {
+			t.Fatal("新修订允许激活已过期证书")
+		}
+		if err = component.Apply(ctx, sealed); err != nil {
+			t.Fatal("旧修订恢复无法安全停用过期VPN", err)
+		}
+		state, err = client.Status(ctx)
+		if err != nil || state.Running {
+			t.Fatal("过期修订恢复未安全停用", state, err)
+		}
+		if err = client.Apply(ctx, desired); err != nil {
+			t.Fatal("有效证书不能从安全暂停恢复", err)
+		}
+		assertRunnerCertificate(t, desired.CertificateVersion)
 	case "crash":
 		if !state.Enabled || state.Running {
 			t.Fatal("引擎崩溃未反映实际状态", state)

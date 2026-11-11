@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/ports"
 )
@@ -20,6 +22,8 @@ func run(args []string) error {
 	domain := flags.String("domain", "", "域名；留空为HTTP-only")
 	admin := flags.Int("admin-port", 8007, "后台端口")
 	data := flags.String("data-dir", "./data", "数据目录")
+	certificate := flags.String("certificate", "/certs/fullchain.cer", "本地证书链路径，仅证书检查命令使用")
+	privateKey := flags.String("private-key", "/certs/private.key", "本地私钥路径，仅证书检查命令使用")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -27,6 +31,16 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "certificate-check":
+		c, err := config.Load(*path)
+		if err != nil {
+			return err
+		}
+		pair, err := certificates.ReadPairFiles(*certificate, *privateKey, c.Domain, time.Now(), nil)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(pair.Metadata())
 	case "admin-init":
 		return initializeAdmin(*path)
 	case "init":

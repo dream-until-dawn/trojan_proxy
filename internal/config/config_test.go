@@ -45,3 +45,27 @@ func TestStrictJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestVPNDeploymentBoundary(t *testing.T) {
+	c := valid()
+	c.VPNManagement = true
+	if c.Validate() == nil {
+		t.Fatal("VPN缺少自身IP仍可启用管理")
+	}
+	c.VPNAddresses = []string{"47.82.112.245"}
+	c.VPNResolver = "9.9.9.9:53"
+	if err := c.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, resolver := range []string{"localhost:53", "9.9.9.9:0", "https://dns.google/dns-query"} {
+		c.VPNResolver = resolver
+		if c.Validate() == nil {
+			t.Fatal("非法解析器未拒绝", resolver)
+		}
+	}
+	c.VPNResolver = ""
+	c.VPNAddresses = []string{"fe80::1%eth0"}
+	if c.Validate() == nil {
+		t.Fatal("带zone的自身IP未拒绝")
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net/netip"
 	"os"
 	"path"
 	"regexp"
@@ -20,6 +21,9 @@ type Config struct {
 	VPNPort           int               `json:"vpn_port"`
 	DataDir           string            `json:"data_dir"`
 	PublicDirectories map[string]string `json:"public_directories,omitempty"`
+	VPNManagement     bool              `json:"vpn_management,omitempty"`
+	VPNAddresses      []string          `json:"vpn_own_addresses,omitempty"`
+	VPNResolver       string            `json:"vpn_resolver,omitempty"`
 }
 
 var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
@@ -28,6 +32,21 @@ var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
 func (c Config) Validate() error {
 	if c.Version != 1 {
 		return errors.New("配置版本必须为1")
+	}
+	if c.VPNManagement && (len(c.VPNAddresses) == 0 || len(c.VPNAddresses) > 64) {
+		return errors.New("VPN管理必须明确服务器自身IP地址，最多64个")
+	}
+	for _, value := range c.VPNAddresses {
+		address, err := netip.ParseAddr(value)
+		if err != nil || address.Zone() != "" {
+			return errors.New("VPN服务器自身IP格式错误")
+		}
+	}
+	if c.VPNResolver != "" {
+		resolver, err := netip.ParseAddrPort(c.VPNResolver)
+		if err != nil || resolver.Port() == 0 || resolver.Addr().Zone() != "" {
+			return errors.New("VPN解析器必须使用IP:端口")
+		}
 	}
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("必须指定数据目录")

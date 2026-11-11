@@ -69,8 +69,19 @@ document.querySelector("#apply-routes").addEventListener("click", async () => {
   if (!document.querySelector("#ack-public").checked) { message.textContent = "请先确认公开访问范围。"; return; }
   const button = document.querySelector("#apply-routes"); button.disabled = true;
   try {
+    const before = revision;
     await request("/api/routes/apply", { revision, rules });
+    document.dispatchEvent(new CustomEvent("configuration-changed", { detail: { kind: "routes", before, after: before + 1 } }));
     await refreshRoutes(); message.textContent = "配置已生效，已核对网关快照。";
   } catch (error) { message.textContent = error.message; }
   finally { button.disabled = false; }
+});
+
+// VPN只改变其自身配置；仅在基线修订一致时推进编号，保留当前反代草稿。
+document.addEventListener("configuration-changed", (event) => {
+  const change = event.detail;
+  if (change.kind === "vpn" && revision === change.before) {
+    revision = change.after; render();
+    message.textContent = "VPN修订已更新，当前反代草稿已保留。";
+  }
 });

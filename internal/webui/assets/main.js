@@ -1,5 +1,6 @@
 import { login, logout, request } from "./auth.js";
 import { refreshRoutes } from "./routes.js";
+import { refreshVPN } from "./vpn.js";
 
 const form = document.querySelector("#login-form");
 const message = document.querySelector("#message");
@@ -9,6 +10,7 @@ function showLogin() {
   document.querySelector("#login-panel").hidden = false;
   document.querySelector("#dashboard").hidden = true;
   document.querySelector("#password").focus();
+  for (const id of ["ack-public", "vpn-ack-change", "vpn-ack-secret"]) document.querySelector(`#${id}`).checked = false;
 }
 
 form.addEventListener("submit", async (event) => {
@@ -18,11 +20,13 @@ form.addEventListener("submit", async (event) => {
       document.querySelector("#method").value,
       document.querySelector("#verification").value.trim());
     form.reset();
+    for (const id of ["ack-public", "vpn-ack-change", "vpn-ack-secret"]) document.querySelector(`#${id}`).checked = false;
     const status = await request("/api/status");
     document.querySelector("#status").textContent = status.scope;
     document.querySelector("#login-panel").hidden = true;
     document.querySelector("#dashboard").hidden = false;
 	await refreshRoutes();
+	await refreshVPN();
     message.textContent = "";
   } catch (error) { message.textContent = error.message; }
   finally { submit.disabled = false; }

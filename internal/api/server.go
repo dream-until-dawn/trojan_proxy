@@ -12,6 +12,7 @@ import (
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
+	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
 )
 
 // Authentication 允许独立验证权限边界，生产实现必须同时支持会话与近期MFA校验。
@@ -22,12 +23,20 @@ type Authentication interface {
 	Logout(string)
 }
 
+// VPNManagement 让HTTP权限测试独立于真实子进程；生产实现使用vpnservice.Service。
+type VPNManagement interface {
+	Status(context.Context) (vpnservice.Status, error)
+	Apply(context.Context, uint64, bool, bool) error
+	Export(context.Context) ([]byte, error)
+}
+
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
 	Auth    Authentication
 	Origins map[string]bool
 	Static  http.Handler
 	Routes  *routing.Service
+	VPN     VPNManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -50,6 +59,9 @@ func (s *Server) Handler() http.Handler {
 	}))
 	mux.HandleFunc("POST /api/routes/list", s.protected(s.listRoutes))
 	mux.HandleFunc("POST /api/routes/apply", s.protected(s.applyRoutes))
+	mux.HandleFunc("POST /api/vpn/status", s.protected(s.vpnStatus))
+	mux.HandleFunc("POST /api/vpn/apply", s.protected(s.vpnApply))
+	mux.HandleFunc("POST /api/vpn/export", s.protected(s.vpnExport))
 	if s.Static != nil {
 		mux.Handle("/", s.Static)
 	}

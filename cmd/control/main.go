@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/api"
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
+	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/files"
 	"github.com/dream-until-dawn/trojan_proxy/internal/gateway"
@@ -25,6 +27,9 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
+	"github.com/dream-until-dawn/trojan_proxy/internal/vpn"
+	"github.com/dream-until-dawn/trojan_proxy/internal/vpnrunner"
+	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
 	"github.com/dream-until-dawn/trojan_proxy/internal/webui"
 )
 
@@ -63,7 +68,30 @@ func run() error {
 	filePort := c.ControlPort + 1
 	settings := gateway.Settings{Domain: c.Domain, AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: filePort, Socket: "/run/caddy/admin.sock",
 		Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: filePort, VPNPort: c.VPNPort, Directories: c.PublicDirectories}}
-	router := routing.NewService(s, gateway.NewClient(settings.Socket), settings)
+	engine := gateway.NewClient(settings.Socket)
+	var vpnManager *vpnservice.Service
+	var router *routing.Service
+	if c.VPNManagement {
+		resolver := c.VPNResolver
+		if resolver == "" {
+			resolver = "9.9.9.9:53"
+		}
+		vpnSettings := vpn.Settings{Domain: c.Domain, Port: c.VPNPort, Resolver: netip.MustParseAddrPort(resolver)}
+		for _, value := range c.VPNAddresses {
+			vpnSettings.OwnAddresses = append(vpnSettings.OwnAddresses, netip.MustParseAddr(value))
+		}
+		runner := vpnrunner.NewClient("/run/vpn/control.sock")
+		component := &vpnrunner.Component{Key: key, Runner: runner}
+		coordinator := control.NewCoordinator(s, engine, component)
+		vpnManager = vpnservice.NewService(s, coordinator, runner, vpnservice.Options{Settings: vpnSettings, Key: key, PublishedDirectory: "/certificates", Source: func() (certificates.Pair, error) {
+			// 阶段性并行部署使用导入的有效证书；公共ACME接管后改用托管缓存来源。
+			return certificates.ReadPairFiles("/certs/fullchain.cer", "/certs/private.key", c.Domain, time.Now(), nil)
+		}})
+		component.CertificateValid = vpnManager.CertificateValid
+		router = routing.NewServiceWithCoordinator(s, engine, settings, coordinator)
+	} else {
+		router = routing.NewService(s, engine, settings)
+	}
 	roots := map[string]*files.Root{}
 	defer func() {
 		for _, root := range roots {
@@ -77,7 +105,11 @@ func run() error {
 		}
 		roots[id] = root
 	}
-	handler := (&api.Server{Auth: auth.NewService(s, key), Origins: origins, Static: webui.Handler(), Routes: router}).Handler()
+	var vpnAPI api.VPNManagement
+	if vpnManager != nil {
+		vpnAPI = vpnManager
+	}
+	handler := (&api.Server{Auth: auth.NewService(s, key), Origins: origins, Static: webui.Handler(), Routes: router, VPN: vpnAPI}).Handler()
 	server := &http.Server{Addr: net.JoinHostPort("127.0.0.1", strconv.Itoa(c.ControlPort)), Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 8192}
 	fileServer := &http.Server{Addr: net.JoinHostPort("127.0.0.1", strconv.Itoa(filePort)), Handler: &files.Handler{Roots: roots, Resolver: router}, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
 	adminListener, err := net.Listen("tcp4", server.Addr)
@@ -110,6 +142,13 @@ func run() error {
 				log.Print("网关尚未收敛，业务配置修改暂停")
 			}
 			cancel()
+			if vpnManager != nil {
+				check, cancel := context.WithTimeout(ctx, 35*time.Second)
+				if err := vpnManager.Reconcile(check); err != nil && ctx.Err() == nil {
+					log.Print("VPN尚未收敛，请核实证书和执行器状态")
+				}
+				cancel()
+			}
 			select {
 			case <-ctx.Done():
 				return

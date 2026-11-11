@@ -5,5 +5,12 @@
   "control_port": 18090,
   "vpn_port": 18443,
   "data_dir": "/data",
-  "public_directories": {"demo": "/srv/public/demo"}
+  "public_directories": {
+    "demo": "/srv/public/demo"
+  },
+  "vpn_management": true,
+  "vpn_own_addresses": [
+    "47.82.112.245"
+  ],
+  "vpn_resolver": "9.9.9.9:53"
 }
