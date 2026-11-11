@@ -9,6 +9,7 @@ export async function request(path, body = {}) {
     credentials: "omit", cache: "no-store", redirect: "error",
   });
   const result = await response.json();
+  if (response.status === 401 && token) { token = ""; document.dispatchEvent(new Event("authentication-expired")); }
   if (!response.ok) throw new Error(result.error || "请求失败，请稍后重试");
   return result;
 }

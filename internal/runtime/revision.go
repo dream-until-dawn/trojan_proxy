@@ -18,6 +18,7 @@ type Revision struct {
 	VPN             string `json:"vpn"`
 	Rules           string `json:"rules,omitempty"`
 	GatewaySettings string `json:"gateway_settings,omitempty"`
+	Settings        string `json:"settings,omitempty"`
 }
 
 // Journal 保留旧快照直到两个组件都应用成功。

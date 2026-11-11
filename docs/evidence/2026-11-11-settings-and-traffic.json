@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-11",
+  "scope": "Settings migration/transition foundations and full local traffic-recording pipeline; no server upgrade performed",
+  "checks": {
+    "three_modules_test_vet": "passed",
+    "root_linux_race": "passed",
+    "engine_linux_integration_race": "passed",
+    "settings_import_once_account_preservation_and_schema_guard": "passed",
+    "new_origin_certificate_deadline_and_pending_write_guards": "passed",
+    "real_gateway_dual_ports_dual_domains_and_old_listener_closure": "passed",
+    "settings_mutations": "8 expected specific failures observed",
+    "real_mihomo_tcp_udp_to_unix_sampler_to_traffic_database": "passed",
+    "wrong_trojan_password_and_untrusted_ca": "rejected",
+    "30_day_query_target_and_physical_purge": "passed",
+    "batch_dedup_gap_and_actual_sampling_duration": "passed",
+    "clear_does_not_resurrect_buffered_history": "passed",
+    "traffic_mutations": "6 expected specific failures observed",
+    "passive_polling_does_not_extend_idle_authentication": "passed",
+    "traffic_authentication_and_recent_mfa_for_clear": "passed",
+    "local_ui_fixture_curve_ipv6_and_logout_cleanup": "passed"
+  },
+  "root_linux_test_image_config": "sha256:76bfe98a7b1e3dc2beb6eb5646ea8360cf53764cb5908d67a4df8ec199503a7b",
+  "local_pipeline_runner_config": "sha256:6c9be4afbc1b97881b555609aa744e965e74c744c40983ec21d981029c159098",
+  "local_pipeline_runner_manifest": "sha256:aa7f4d9188da38512b630152cdd311380b162dc16d072ff4557f1c7289eaeb84",
+  "limits": [
+    "Settings interfaces and transition manager are not yet wired into the production control startup; current deployment JSON remains authoritative there.",
+    "Normal stop/crash may lose the last uncollected sampling window; engine-instance changes and sequence gaps are shown as incomplete coverage.",
+    "Final default Compose, certificate/global settings UI, public 80/443 handoff, backup/restore tools and long-run release acceptance remain outstanding.",
+    "The screenshot contains only synthetic fixture data; it is not evidence of production traffic."
+  ]
+}

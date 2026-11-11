@@ -194,6 +194,7 @@ func TestRealGatewayLifecycle(t *testing.T) {
 	}
 	testRejectTLSReservation(t, engine, settings)
 	testStandardIngress(t, engine, settings, backendPort)
+	testAdminEntryTransition(t, engine, settings, ruleset)
 	testLegacySettingsMigration(t, engine, settings, backendPort)
 }
 

@@ -60,3 +60,58 @@ func TestSetupAcrossConnectionsAndReopen(t *testing.T) {
 		t.Fatal("account changed after replay", err)
 	}
 }
+
+func TestGatewayBootstrapDoesNotOverwriteBusinessSettings(t *testing.T) {
+	ctx := context.Background()
+	initial := control.Revision{Number: 1, Settings: "existing-settings"}
+	db, err := OpenJournal(ctx, filepath.Join(t.TempDir(), "state.db"), initial)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	changed := initial
+	changed.Gateway = "initial-gateway"
+	changed.Rules = "[]"
+	changed.Settings = "replaced-settings"
+	if err = db.Save(ctx, control.Journal{Applied: changed}); err == nil {
+		t.Fatal("gateway bootstrap bypassed settings revision protection")
+	}
+}
+
+func TestSettingsRequireSchemaThreeWithoutDowngradeOnReopen(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "state.db")
+	db, err := OpenJournal(ctx, path, control.Revision{Number: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var version int
+	if err = db.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version != 2 {
+		t.Fatal("legacy schema changed before settings write", version, err)
+	}
+	journal, err := db.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := journal.Applied
+	next.Number++
+	next.Settings = "settings-v1"
+	journal.Pending = &next
+	if err = db.Save(ctx, journal); err != nil {
+		t.Fatal(err)
+	}
+	if err = db.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version != 3 {
+		t.Fatal("new settings did not reject old schema readers", version, err)
+	}
+	if err = db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	db, err = OpenJournal(ctx, path, control.Revision{Number: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err = db.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version != 3 {
+		t.Fatal("database reopen downgraded schema", version, err)
+	}
+}

@@ -62,7 +62,7 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 2 {
+	if version > 3 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if _, err := s.db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {
@@ -93,7 +93,22 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if _, err = tx.ExecContext(ctx, "INSERT INTO revision_journal(id,body) VALUES(1,?) ON CONFLICT(id) DO NOTHING", string(b)); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, "PRAGMA user_version=2"); err != nil {
+	var currentRaw string
+	if err = tx.QueryRowContext(ctx, "SELECT body FROM revision_journal WHERE id=1").Scan(&currentRaw); err != nil {
+		return err
+	}
+	var current control.Journal
+	if err = json.Unmarshal([]byte(currentRaw), &current); err != nil {
+		return err
+	}
+	if version < 2 {
+		version = 2
+	}
+	// 写入可变业务设置后拒绝旧程序打开，避免旧Revision结构丢弃未知字段后回写。
+	if current.Applied.Settings != "" || (current.Pending != nil && current.Pending.Settings != "") {
+		version = 3
+	}
+	if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", version)); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -145,7 +160,7 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 			return control.ErrRevisionConflict
 		}
 	} else if j.Applied != previous.Applied {
-		bootstrap := previous.Applied.Gateway == "" && j.Applied.Number == previous.Applied.Number && j.Applied.VPN == previous.Applied.VPN && (j.Applied.Rules == "[]" || j.Applied.Rules == "")
+		bootstrap := previous.Applied.Gateway == "" && j.Applied.Number == previous.Applied.Number && j.Applied.VPN == previous.Applied.VPN && j.Applied.Settings == previous.Applied.Settings && (j.Applied.Rules == "[]" || j.Applied.Rules == "")
 		if !bootstrap {
 			return control.ErrRevisionConflict
 		}
@@ -178,6 +193,11 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 	}
 	if n != 1 {
 		return errors.New("修订日志缺失")
+	}
+	if j.Applied.Settings != "" || (j.Pending != nil && j.Pending.Settings != "") {
+		if _, err = tx.ExecContext(ctx, "PRAGMA user_version=3"); err != nil {
+			return err
+		}
 	}
 	if _, err = tx.ExecContext(ctx, "INSERT INTO config_events(created_utc,revision,state,summary) VALUES(strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,?,?)", revision, state, fmt.Sprintf("已提交%d条业务规则", len(rules))); err != nil {
 		return err

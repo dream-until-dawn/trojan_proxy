@@ -72,7 +72,15 @@ func run(args []string) error {
 	if err != nil || len(body) > 65536 {
 		return errors.New("引擎配置过大或不可读")
 	}
-	ctx, cancel := context.WithCancel(registryContext())
+	var sampler *telemetry.Sampler
+	var recorder telemetry.Recorder
+	if args[0] == "run" {
+		sampler, _ = telemetry.NewSampler(256, 60)
+		if sampler != nil {
+			recorder = sampler
+		}
+	}
+	ctx, cancel := context.WithCancel(registryContextWithRecorder(recorder))
 	defer cancel()
 	options, err := json.UnmarshalExtendedContext[option.Options](ctx, body)
 	if err != nil {
@@ -89,6 +97,16 @@ func run(args []string) error {
 	defer instance.Close()
 	if args[0] == "check" {
 		return nil
+	}
+	if sampler != nil {
+		// 统计失效不能阻断代理；固定路径只在runner专属共享目录创建，不开放TCP接口。
+		if listener, err := telemetry.ListenUnix("/run/vpn/telemetry.sock"); err == nil {
+			if exporter, err := telemetry.Serve(listener, sampler); err == nil {
+				defer exporter.Close()
+			} else {
+				listener.Close()
+			}
+		}
 	}
 	if err = instance.Start(); err != nil {
 		return errors.New("引擎启动失败")

@@ -8,8 +8,8 @@ repo=Path(__file__).resolve().parents[2]
 target=repo/'.work/auth-mutations'
 target.mkdir(parents=True,exist_ok=True)
 cases=[
-    ('authentication','server.go','if !s.Auth.Validate(bearer(r)) {','if false {','未认证读取未拒绝: 200'),
-    ('origin','server.go','if strings.HasPrefix(r.URL.Path, "/api/") && !s.Origins[r.Header.Get("Origin")] {','if false {','跨来源未拒绝:'),
+    ('authentication','server.go','if !valid {','if !valid && false {','未认证读取未拒绝: 200'),
+    ('origin','server.go','if strings.HasPrefix(r.URL.Path, "/api/") && !origins[r.Header.Get("Origin")] {','if false {','跨来源未拒绝:'),
     ('recent_mfa','routes.go','if !s.Auth.Recent(bearer(r)) {','if false {','近期双因素保护未拒绝: 200'),
     ('vpn_recent_mfa','vpn.go','if !s.Auth.Recent(bearer(r)) {','if false {','VPN近期MFA未拒绝 /api/vpn/apply: 200'),
     ('vpn_export_mfa','vpn.go','if !s.Auth.Recent(bearer(r)) {','if false {','VPN近期MFA未拒绝 /api/vpn/export: 200')

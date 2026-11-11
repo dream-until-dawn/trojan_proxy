@@ -51,7 +51,7 @@ func (s *Service) Handler(port int, completed func()) http.Handler {
 			reply(w, 400, map[string]string{"error": "绑定未完成：请确认恢复码已保存并输入当前验证码；过期或多次失败请从本机重新开始"})
 			return
 		}
-		reply(w, 200, map[string]bool{"ok": true})
+		reply(w, 200, map[string]any{"ok": true, "login_url": "http://127.0.0.1:" + strconv.Itoa(port-2)})
 		if completed != nil {
 			completed()
 		}

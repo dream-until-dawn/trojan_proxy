@@ -7,12 +7,13 @@ import tempfile
 import uuid
 from gateway_probe import command
 
-SERVER='trojan-runner:dev'
+SERVER=os.environ.get('TROJAN_RUNNER_IMAGE','trojan-runner:dev')
 CLIENT='metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c'
 prefix='trojan-egress-'+uuid.uuid4().hex[:10]
 network=None
 containers=[]
 client=None
+statistics=None
 report={'checks':{},'server_image':SERVER,'client_image':CLIENT,'limitations':['未替代Clash Verge/Clash Mi图形客户端验收。']}
 mutation=os.environ.get('TROJAN_EGRESS_MUTATION')=='1'
 def logs(cid):
@@ -42,6 +43,8 @@ try:
         (version/'private.key').write_bytes((root/'trusted.key').read_bytes())
         command(['docker','run','--rm','--network','none','-v',mount,'-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'check','-c','/fixture/server.json'])
         network=command(['docker','network','create','--internal','--subnet','198.51.100.0/24',prefix])
+        statistics=command(['docker','volume','create',prefix+'-statistics'])
+        command(['docker','run','--rm','--network','none','-v',statistics+':/statistics','alpine:3.22','sh','-c','chown 10002:10001 /statistics && chmod 0770 /statistics'])
         # 文档保留网段仅用于隔离Docker夹具，避免给产品引入任何私网白名单。
         backend_code='''import http.server,socket,threading
 class H(http.server.BaseHTTPRequestHandler):
@@ -74,15 +77,15 @@ while True:
 '''
         dns=command(['docker','run','-d','--name',prefix+'-dns','--network',network,'--ip','198.51.100.53','--memory','64m','python:3.12-slim','python','-c',dns_code]);containers.append(dns)
         server=command(['docker','run','-d','--name',prefix+'-server','--network',network,'--network-alias','vpn.test','--ip','198.51.100.10',
-            '--memory','128m','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'run','-c','/fixture/server.json']);containers.append(server)
+            '--memory','128m','--cap-drop','ALL','--security-opt','no-new-privileges','--mount','type=volume,source='+statistics+',target=/run/vpn,volume-nocopy','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'run','-c','/fixture/server.json']);containers.append(server)
         sentinel=command(['docker','run','-d','--name',prefix+'-private-sentinel','--network','container:'+server,'--memory','64m','python:3.12-slim','python','-c',backend_code]);containers.append(sentinel)
         for phase,password,trust in [('good','fixture-only-password-0123456789abcdef','trusted'),('bad-password','incorrect-password','trusted'),('bad-ca','fixture-only-password-0123456789abcdef','untrusted')]:
             config={'mixed-port':7890,'allow-lan':True,'bind-address':'0.0.0.0','mode':'rule','proxies':[{'name':'probe','type':'trojan','server':'vpn.test','port':18443,'sni':'vpn.test','password':password,'skip-cert-verify':False,'udp':True}],'rules':['MATCH,probe']}
             (root/'client.json').write_text(json.dumps(config),encoding='utf-8')
             client=command(['docker','run','-d','--name',prefix+'-client-'+phase,'--network',network,'--memory','128m','--cap-drop','ALL',
                 '-e','SSL_CERT_FILE=/fixture/'+trust+'.crt','-v',mount+':ro',CLIENT,'-f','/fixture/client.json','-d','/tmp']);containers.append(client)
-            result=subprocess.run(['docker','run','--rm','--network','container:'+client,'--memory','128m','--cap-drop','ALL','--read-only','-v',binary,
-                '-e','TROJAN_VPN_PHASE='+phase,'--entrypoint','/probe','trojan-control:m4','-test.run','^TestRealTrojanEgressAndUDP$','-test.v','-test.timeout','45s'],
+            result=subprocess.run(['docker','run','--rm','--network','container:'+client,'--memory','128m','--cap-drop','ALL','--read-only','--tmpfs','/tmp:uid=10001,gid=10001,mode=0700','--mount','type=volume,source='+statistics+',target=/run/vpn,readonly,volume-nocopy','-v',binary,
+                '-e','TROJAN_VPN_PHASE='+phase,'-e','TROJAN_STATISTICS_TEST=1','--entrypoint','/probe','trojan-control:m4','-test.run','^TestRealTrojanEgressAndUDP$','-test.v','-test.timeout','45s'],
                 stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=60)
             report['checks'][phase]={'exit_code':result.returncode,'output':result.stdout}
             if mutation:
@@ -98,6 +101,7 @@ except Exception as error:
 finally:
     for cid in reversed(containers):command(['docker','rm','-f',cid])
     if network:command(['docker','network','rm',network])
+    if statistics:command(['docker','volume','rm',statistics])
 report['passed']='error' not in report
 print(json.dumps(report,ensure_ascii=False,indent=2))
 raise SystemExit(0 if report['passed'] else 1)

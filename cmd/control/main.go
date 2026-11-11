@@ -26,6 +26,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
+	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpn"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnrunner"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
@@ -95,7 +96,11 @@ func run() error {
 	if vpnManager != nil {
 		vpnAPI = vpnManager
 	}
-	handler := (&api.Server{Auth: auth.NewService(s, key), Origins: origins, Static: webui.Handler(), Routes: router, VPN: vpnAPI}).Handler()
+	statistics := traffic.NewService(filepath.Join(c.DataDir, "traffic.db"), traffic.NewClient("/run/vpn/telemetry.sock"))
+	statisticsDone := make(chan struct{})
+	go func() { defer close(statisticsDone); statistics.Run(ctx) }()
+	defer func() { stop(); <-statisticsDone }()
+	handler := (&api.Server{Auth: auth.NewService(s, key), Origins: origins, Static: webui.Handler(), Routes: router, VPN: vpnAPI, Traffic: statistics}).Handler()
 	server := &http.Server{Addr: net.JoinHostPort("127.0.0.1", strconv.Itoa(c.ControlPort)), Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 8192}
 	fileServer := &http.Server{Addr: net.JoinHostPort("127.0.0.1", strconv.Itoa(filePort)), Handler: &files.Handler{Roots: roots, Resolver: router}, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8192}
 	adminListener, err := net.Listen("tcp4", server.Addr)

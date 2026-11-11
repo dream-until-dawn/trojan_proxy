@@ -4,6 +4,7 @@ package vpn
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"io"
 	"net"
@@ -11,9 +12,12 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 )
 
 // TestWriteEngineFixture 仅生成临时测试配置，秘密是固定测试材料，不能部署使用。
@@ -73,6 +77,49 @@ func TestRealTrojanEgressAndUDP(t *testing.T) {
 	}
 	if body, err := udpViaSOCKS("127.0.0.1:8001"); err == nil {
 		t.Fatal("UDP目的地址保护失效", string(body))
+	}
+	if os.Getenv("TROJAN_STATISTICS_TEST") == "1" {
+		verifyRealTrafficStatistics(t)
+	}
+}
+
+func verifyRealTrafficStatistics(t *testing.T) {
+	t.Helper()
+	ctx := context.Background()
+	store, err := traffic.Open(ctx, filepath.Join(t.TempDir(), "traffic.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	collector := traffic.NewCollector(store, traffic.NewClient("/run/vpn/telemetry.sock"))
+	deadline := time.Now().Add(8 * time.Second)
+	for {
+		err = collector.Poll(ctx)
+		now := time.Now()
+		totals, queryErr := store.Summary(ctx, now.Add(-time.Hour), now, now)
+		if err == nil && queryErr == nil && totals.Upload > 0 && totals.Download > 0 {
+			targets, err := store.Targets(ctx, now.Add(-time.Hour), now, now, 100, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, target := range targets {
+				if target.IP == "198.51.100.20" {
+					found = true
+				}
+				if target.IP == "127.0.0.1" || target.IP == "198.51.100.10" {
+					t.Fatal("statistics recorded a blocked private/own destination", target)
+				}
+			}
+			if !found {
+				t.Fatal("real Trojan destination missing from statistics", targets)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("Trojan-to-statistics pipeline unavailable", err, queryErr, totals)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

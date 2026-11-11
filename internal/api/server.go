@@ -12,6 +12,8 @@ import (
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
+	"github.com/dream-until-dawn/trojan_proxy/internal/settings"
+	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
 )
 
@@ -30,13 +32,31 @@ type VPNManagement interface {
 	Export(context.Context) ([]byte, error)
 }
 
+// SettingsManagement 不向HTTP层暴露回滚JSON和加密VPN配置。
+type SettingsManagement interface {
+	Status(context.Context) (settings.Snapshot, error)
+	Propose(context.Context, uint64, settings.Site) error
+	Confirm(context.Context, uint64, string) error
+	Cancel(context.Context, uint64) error
+}
+
+type TrafficManagement interface {
+	State() traffic.Live
+	Dashboard(context.Context, int, int) (traffic.Dashboard, error)
+	Clear(context.Context) error
+}
+
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
-	Auth    Authentication
-	Origins map[string]bool
-	Static  http.Handler
-	Routes  *routing.Service
-	VPN     VPNManagement
+	Auth           Authentication
+	Origins        map[string]bool
+	Static         http.Handler
+	Routes         *routing.Service
+	VPN            VPNManagement
+	Settings       SettingsManagement
+	OriginProvider func() map[string]bool
+	WriteGuard     func(context.Context) error
+	Traffic        TrafficManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -62,12 +82,23 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/vpn/status", s.protected(s.vpnStatus))
 	mux.HandleFunc("POST /api/vpn/apply", s.protected(s.vpnApply))
 	mux.HandleFunc("POST /api/vpn/export", s.protected(s.vpnExport))
+	mux.HandleFunc("POST /api/settings/status", s.protected(s.settingsStatus))
+	mux.HandleFunc("POST /api/settings/propose", s.protected(s.settingsPropose))
+	mux.HandleFunc("POST /api/settings/confirm", s.protected(s.settingsConfirm))
+	mux.HandleFunc("POST /api/settings/cancel", s.protected(s.settingsCancel))
+	mux.HandleFunc("POST /api/traffic/live", s.protected(s.trafficLive))
+	mux.HandleFunc("POST /api/traffic/dashboard", s.protected(s.trafficDashboard))
+	mux.HandleFunc("POST /api/traffic/clear", s.protected(s.trafficClear))
 	if s.Static != nil {
 		mux.Handle("/", s.Static)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origins := s.Origins
+		if s.OriginProvider != nil {
+			origins = s.OriginProvider()
+		}
 		hostAllowed := false
-		for origin := range s.Origins {
+		for origin := range origins {
 			u, err := url.Parse(origin)
 			if err == nil && u.Host == r.Host {
 				hostAllowed = true
@@ -83,7 +114,7 @@ func (s *Server) Handler() http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
-		if strings.HasPrefix(r.URL.Path, "/api/") && !s.Origins[r.Header.Get("Origin")] {
+		if strings.HasPrefix(r.URL.Path, "/api/") && !origins[r.Header.Get("Origin")] {
 			respond(w, 403, map[string]string{"error": "请求来源不被允许"})
 			return
 		}
@@ -101,7 +132,13 @@ func bearer(r *http.Request) string {
 
 func (s *Server) protected(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !s.Auth.Validate(bearer(r)) {
+		valid := false
+		if passive, ok := s.Auth.(interface{ ValidatePassive(string) bool }); ok && r.URL.Path == "/api/traffic/live" {
+			valid = passive.ValidatePassive(bearer(r))
+		} else {
+			valid = s.Auth.Validate(bearer(r))
+		}
+		if !valid {
 			respond(w, 401, map[string]string{"error": "请重新登录"})
 			return
 		}

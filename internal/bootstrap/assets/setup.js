@@ -26,8 +26,9 @@ $('begin').addEventListener('submit', (event) => {
 $('finish').addEventListener('submit', (event) => {
   event.preventDefault();
   lock(event.currentTarget, async () => {
-    await submit('/api/setup/finish', { session, otp: $('otp').value, saved: $('saved').checked });
+    const result = await submit('/api/setup/finish', { session, otp: $('otp').value, saved: $('saved').checked });
     session = ''; $('materials').hidden = true; $('secret').textContent = ''; $('uri').textContent = ''; $('codes').textContent = ''; $('finish').reset();
     $('message').textContent = '绑定完成，初始化入口将关闭。请通过正常后台入口登录；绑定验证码已消费，请等待下一组验证码。';
+    const next = document.createElement('a'); next.href = result.login_url; next.textContent = '打开后台登录'; $('message').append(document.createElement('br'), next);
   });
 });

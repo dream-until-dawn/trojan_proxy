@@ -76,6 +76,35 @@ func TestPersistentLoginAndReplay(t *testing.T) {
 	}
 }
 
+func TestPassivePollingDoesNotExtendIdleSession(t *testing.T) {
+	now := time.Unix(1800000000, 0)
+	start := now
+	service := NewService(nil, make([]byte, 32))
+	service.now = func() time.Time { return now }
+	token, err := RandomToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.sessions[TokenHash(token)] = session{created: start, last: start}
+	now = start.Add(29 * time.Minute)
+	if !service.ValidatePassive(token) {
+		t.Fatal("passive read rejected valid session")
+	}
+	now = start.Add(30 * time.Minute)
+	if service.ValidatePassive(token) {
+		t.Fatal("background polling extended idle session")
+	}
+	service.sessions[TokenHash(token)] = session{created: now, last: now}
+	now = now.Add(29 * time.Minute)
+	if !service.Validate(token) {
+		t.Fatal("active request failed")
+	}
+	now = now.Add(2 * time.Minute)
+	if !service.ValidatePassive(token) {
+		t.Fatal("active request did not extend idle deadline")
+	}
+}
+
 func TestVaultIntegrity(t *testing.T) {
 	key := make([]byte, 32)
 	encrypted, err := EncryptSecret(key, "test-secret")

@@ -58,6 +58,6 @@ func issueSetupToken(path string) error {
 	}
 	port := c.ControlPort + 2
 	fmt.Fprintln(os.Stdout, "一次性初始化令牌（10分钟有效，勿分享）：", token)
-	fmt.Fprintf(os.Stdout, "在自己的电脑建立隧道：ssh -L %d:127.0.0.1:%d <用户@服务器>\n然后访问 http://127.0.0.1:%d ，在网页填写令牌。\n", port, port, port)
+	fmt.Fprintf(os.Stdout, "在自己的电脑建立隧道：ssh -L %d:127.0.0.1:%d -L %d:127.0.0.1:%d <用户@服务器>\n然后访问 http://127.0.0.1:%d ，在网页填写令牌。\n", port, port, c.ControlPort, c.ControlPort, port)
 	return nil
 }

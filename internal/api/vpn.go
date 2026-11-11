@@ -27,6 +27,9 @@ func (s *Server) vpnApply(w http.ResponseWriter, r *http.Request) {
 		respond(w, 403, map[string]string{"error": "启停或轮换VPN需要最近五分钟内的双因素登录，请重新登录"})
 		return
 	}
+	if !s.businessWriteAllowed(w, r) {
+		return
+	}
 	if s.VPN == nil {
 		respond(w, 503, map[string]string{"error": "VPN管理尚未启用"})
 		return

@@ -110,6 +110,13 @@ func (s *Service) Login(ctx context.Context, password, otp, recovery string) (st
 
 // Validate 检查并滑动空闲期限，最长12小时不滑动。
 func (s *Service) Validate(token string) bool {
+	return s.validate(token, true)
+}
+
+// ValidatePassive 用于后台自动轮询，不把无人操作的页面永久续成活跃会话。
+func (s *Service) ValidatePassive(token string) bool { return s.validate(token, false) }
+
+func (s *Service) validate(token string, touch bool) bool {
 	if len(token) != 43 {
 		return false
 	}
@@ -125,8 +132,10 @@ func (s *Service) Validate(token string) bool {
 		delete(s.sessions, hash)
 		return false
 	}
-	state.last = now
-	s.sessions[hash] = state
+	if touch {
+		state.last = now
+		s.sessions[hash] = state
+	}
 	return true
 }
 

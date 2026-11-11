@@ -28,6 +28,9 @@ func (s *Server) applyRoutes(w http.ResponseWriter, r *http.Request) {
 		respond(w, 403, map[string]string{"error": "修改公开路由需要最近五分钟内的双因素登录，请重新登录"})
 		return
 	}
+	if !s.businessWriteAllowed(w, r) {
+		return
+	}
 	if s.Routes == nil {
 		respond(w, 503, map[string]string{"error": "反代管理尚未连接网关"})
 		return

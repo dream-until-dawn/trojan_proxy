@@ -108,9 +108,6 @@ func wrapConn(conn net.Conn, network string, recorder Recorder) net.Conn {
 		return conn
 	}
 	address := target(conn.RemoteAddr())
-	if !address.IsValid() {
-		return conn
-	}
 	if len(network) >= 3 {
 		network = network[:3]
 	}
