@@ -188,6 +188,10 @@ func (e *Engine) start(ctx context.Context, d vpn.Desired, body string) error {
 }
 
 func (e *Engine) waitReady(ctx context.Context, d vpn.Desired, p *process) error {
+	settings, err := vpn.EffectiveSettings(e.settings, d)
+	if err != nil {
+		return err
+	}
 	// 使用已发布的确切叶证书作为信任锚，核对实际监听者，避免把别的占端口进程当成功。
 	file, err := os.Open(filepath.Join("/certificates", d.CertificateVersion, "fullchain.pem"))
 	if err != nil {
@@ -216,8 +220,8 @@ func (e *Engine) waitReady(ctx context.Context, d vpn.Desired, p *process) error
 		if !alive(p) {
 			return errors.New("VPN进程在启动期间退出")
 		}
-		dialer := tls.Dialer{NetDialer: &net.Dialer{Timeout: 300 * time.Millisecond}, Config: &tls.Config{RootCAs: roots, ServerName: e.settings.Domain, MinVersion: tls.VersionTLS12}}
-		connection, err := dialer.DialContext(bounded, "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(e.settings.Port)))
+		dialer := tls.Dialer{NetDialer: &net.Dialer{Timeout: 300 * time.Millisecond}, Config: &tls.Config{RootCAs: roots, ServerName: settings.Domain, MinVersion: tls.VersionTLS12}}
+		connection, err := dialer.DialContext(bounded, "tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.Port)))
 		if err == nil {
 			actual := connection.(*tls.Conn).ConnectionState().PeerCertificates
 			connection.Close()
@@ -248,11 +252,17 @@ func (e *Engine) waitReady(ctx context.Context, d vpn.Desired, p *process) error
 func (e *Engine) Apply(ctx context.Context, d vpn.Desired) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if d.Profile != nil {
+		// 调用者之后修改草稿，不能改变已接受命令的指纹或失败恢复参数。
+		profile := *d.Profile
+		profile.OwnAddresses = append([]string(nil), profile.OwnAddresses...)
+		d.Profile = &profile
+	}
 	body, err := e.check(ctx, d)
 	if err != nil {
 		return err
 	}
-	if e.current == d && (!d.Enabled || alive(e.child)) {
+	if vpn.CommandFingerprint(e.current) == vpn.CommandFingerprint(d) && (!d.Enabled || alive(e.child)) {
 		return nil
 	}
 	previous := e.current

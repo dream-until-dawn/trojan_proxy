@@ -1,0 +1,22 @@
+{
+  "scope": "local candidate only; not deployed",
+  "checks": {
+    "three_modules_test_vet": true,
+    "legacy_wire_encoding_unchanged": true,
+    "encrypted_profile_round_trip": true,
+    "protected_addresses_union": true,
+    "reserved_ports_rejected": true,
+    "native_runner_profile_listener": true,
+    "native_wrong_domain_rejected_and_previous_profile_restored": true,
+    "native_occupied_port_rejected_and_previous_profile_restored": true,
+    "native_process_crash_and_container_restart": true,
+    "four_targeted_mutations": true
+  },
+  "candidate_runner_config_id": "sha256:10380ea37bac132165d76852a279f3f31d76a9e1140a6c04bb16d7432ddf98e9",
+  "remaining": [
+    "production profile source and settings planner integration",
+    "global settings UI",
+    "certificate lifecycle and readiness-driven standard ingress",
+    "default deployment and recovery tooling"
+  ]
+}

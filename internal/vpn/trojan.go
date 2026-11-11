@@ -26,19 +26,21 @@ func TrojanCapabilities() Capabilities {
 	return Capabilities{Protocol: "trojan", TCP: true, UDP: true, Certificate: true, ClashExport: true}
 }
 
-// Settings 由部署产生；服务器自身地址和解析器不能由Web请求改变。
+// Settings 保存部署底线；有运行快照时，合并可变参数但保留保护端口和自身地址。
 type Settings struct {
-	Domain       string
-	Port         int
-	OwnAddresses []netip.Addr
-	Resolver     netip.AddrPort
+	Domain        string
+	Port          int
+	OwnAddresses  []netip.Addr
+	Resolver      netip.AddrPort
+	ReservedPorts []int
 }
 
 // Desired 的密码只参与内存配置生成和受控导出，普通JSON状态不包含它。
 type Desired struct {
-	Enabled            bool   `json:"enabled"`
-	Password           string `json:"-"`
-	CertificateVersion string `json:"certificate_version"`
+	Enabled            bool     `json:"enabled"`
+	Password           string   `json:"-"`
+	CertificateVersion string   `json:"certificate_version"`
+	Profile            *Profile `json:"-"`
 }
 
 var certificateVersion = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -88,6 +90,11 @@ func CompileTrojan(s Settings, d Desired) (string, error) {
 	if !d.Enabled {
 		return "", nil
 	}
+	var err error
+	s, err = EffectiveSettings(s, d)
+	if err != nil {
+		return "", err
+	}
 	if err := validate(s, d); err != nil {
 		return "", err
 	}
@@ -122,6 +129,11 @@ func CompileTrojan(s Settings, d Desired) (string, error) {
 func ExportClash(s Settings, d Desired) ([]byte, error) {
 	if !d.Enabled {
 		return nil, errors.New("VPN未启用")
+	}
+	var err error
+	s, err = EffectiveSettings(s, d)
+	if err != nil {
+		return nil, err
 	}
 	if err := validate(s, d); err != nil {
 		return nil, err

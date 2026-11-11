@@ -62,7 +62,7 @@ func (s *Service) readPublished(d vpn.Desired) (certificates.Pair, error) {
 	if s.options.ReadPublished != nil {
 		pair, err := s.options.ReadPublished(d)
 		if err == nil {
-			err = s.validateMetadata(pair)
+			err = s.validateMetadata(pair, d)
 		}
 		return pair, err
 	}
@@ -74,13 +74,21 @@ func (s *Service) readPublished(d vpn.Desired) (certificates.Pair, error) {
 		return certificates.Pair{}, err
 	}
 	root := filepath.Join(s.options.PublishedDirectory, d.CertificateVersion)
-	return certificates.ReadPairFiles(filepath.Join(root, "fullchain.pem"), filepath.Join(root, "private.key"), s.options.Settings.Domain, time.Now(), nil)
+	settings, err := vpn.EffectiveSettings(s.options.Settings, d)
+	if err != nil {
+		return certificates.Pair{}, err
+	}
+	return certificates.ReadPairFiles(filepath.Join(root, "fullchain.pem"), filepath.Join(root, "private.key"), settings.Domain, time.Now(), nil)
 }
 
-func (s *Service) validateMetadata(pair certificates.Pair) error {
+func (s *Service) validateMetadata(pair certificates.Pair, d vpn.Desired) error {
+	settings, err := vpn.EffectiveSettings(s.options.Settings, d)
+	if err != nil {
+		return err
+	}
 	info := pair.Metadata()
 	now := time.Now()
-	if info.Domain != s.options.Settings.Domain || now.Before(info.NotBefore) || !now.Before(info.NotAfter) {
+	if info.Domain != settings.Domain || now.Before(info.NotBefore) || !now.Before(info.NotAfter) {
 		return errors.New("证书域名或有效期不符合VPN部署")
 	}
 	return nil
@@ -101,7 +109,11 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	status := Status{Revision: j.Applied.Number, Enabled: d.Enabled, Pending: j.Pending != nil, Domain: s.options.Settings.Domain, Port: s.options.Settings.Port, Capabilities: vpn.TrojanCapabilities(), Message: "VPN未启用"}
+	settings, err := vpn.EffectiveSettings(s.options.Settings, d)
+	if err != nil {
+		return Status{}, err
+	}
+	status := Status{Revision: j.Applied.Number, Enabled: d.Enabled, Pending: j.Pending != nil, Domain: settings.Domain, Port: settings.Port, Capabilities: vpn.TrojanCapabilities(), Message: "VPN未启用"}
 	var pair certificates.Pair
 	if d.Enabled {
 		pair, err = s.readPublished(d)
@@ -155,7 +167,7 @@ func (s *Service) Apply(ctx context.Context, expected uint64, enabled, rotate bo
 		if err != nil {
 			return errors.New("尚无匹配且可信的有效证书")
 		}
-		if err = s.validateMetadata(pair); err != nil {
+		if err = s.validateMetadata(pair, d); err != nil {
 			return err
 		}
 		prepared, err := certificates.Prepare(s.options.PublishedDirectory, pair)
@@ -231,7 +243,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		return err
 	}
 	if d.Enabled && s.options.Source != nil {
-		if pair, sourceErr := s.options.Source(); sourceErr == nil && s.validateMetadata(pair) == nil {
+		if pair, sourceErr := s.options.Source(); sourceErr == nil && s.validateMetadata(pair, d) == nil {
 			prepared, err := certificates.Prepare(s.options.PublishedDirectory, pair)
 			if err != nil {
 				return err

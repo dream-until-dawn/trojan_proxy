@@ -15,14 +15,15 @@ import (
 
 // commandWire 仅用于加密前和权限受限的Unix传输，不能作为普通状态响应。
 type commandWire struct {
-	Enabled            bool   `json:"enabled"`
-	Password           string `json:"password"`
-	CertificateVersion string `json:"certificate_version"`
+	Enabled            bool     `json:"enabled"`
+	Password           string   `json:"password"`
+	CertificateVersion string   `json:"certificate_version"`
+	Profile            *Profile `json:"profile,omitempty"`
 }
 
 // EncodeCommand 返回含秘密的命令，只能交给加密器或受限runner，不得打印日志。
 func EncodeCommand(d Desired) ([]byte, error) {
-	return json.Marshal(commandWire{d.Enabled, d.Password, d.CertificateVersion})
+	return json.Marshal(commandWire{Enabled: d.Enabled, Password: d.Password, CertificateVersion: d.CertificateVersion, Profile: d.Profile})
 }
 
 // DecodeCommand 严格限制执行器的输入，不接受原生引擎JSON和额外字段。
@@ -39,10 +40,10 @@ func DecodeCommand(body []byte) (Desired, error) {
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return Desired{}, errors.New("VPN命令必须只有一个对象")
 	}
-	if !wire.Enabled && (wire.Password != "" || wire.CertificateVersion != "") {
+	if !wire.Enabled && (wire.Password != "" || wire.CertificateVersion != "" || wire.Profile != nil) {
 		return Desired{}, errors.New("停止命令不得携带秘密或证书")
 	}
-	return Desired{Enabled: wire.Enabled, Password: wire.Password, CertificateVersion: wire.CertificateVersion}, nil
+	return Desired{Enabled: wire.Enabled, Password: wire.Password, CertificateVersion: wire.CertificateVersion, Profile: wire.Profile}, nil
 }
 
 // CommandFingerprint 只用于确认运行态与目标一致，不包含原始秘密。

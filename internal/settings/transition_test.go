@@ -26,6 +26,29 @@ func (e *entryEngine) Apply(_ context.Context, value string) error {
 
 type entryPlanner struct{ ready bool }
 
+func TestTransitionRejectsVPNReuseOfRollbackAdminPort(t *testing.T) {
+	m, store, engine, _, _ := transitionFixture(t)
+	ctx := context.Background()
+	j, err := store.Load(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := Decode(j.Applied.Settings, m.deployment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidate := document.Site
+	candidate.AdminPort--
+	candidate.VPNPort = document.Site.AdminPort
+	if err = m.Propose(ctx, j.Applied.Number, candidate); err == nil {
+		t.Fatal("transition allowed VPN to occupy rollback admin port")
+	}
+	after, err := store.Load(ctx)
+	if err != nil || after.Applied.Number != j.Applied.Number || engine.value != "old-entry" {
+		t.Fatal("rejected port exchange changed active revision", after.Applied.Number, err)
+	}
+}
+
 func (p *entryPlanner) Dual(_ context.Context, _, _ Site, revision control.Revision) (Plan, error) {
 	return Plan{Gateway: "dual-entry", VPN: revision.VPN, Fingerprint: "dual-fingerprint"}, nil
 }

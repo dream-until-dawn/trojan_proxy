@@ -18,7 +18,7 @@ func SettingsFromConfig(c config.Config) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	s := Settings{Domain: c.Domain, Port: c.VPNPort, Resolver: address}
+	s := Settings{Domain: c.Domain, Port: c.VPNPort, Resolver: address, ReservedPorts: []int{80, 443, c.ControlPort, c.ControlPort + 1, c.ControlPort + 2}}
 	for _, value := range c.VPNAddresses {
 		address, err := netip.ParseAddr(value)
 		if err != nil {

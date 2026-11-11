@@ -1,0 +1,41 @@
+{
+  "commit": "5faf4edcb1dd6413d771b1141cf8e29e1dc4d7f4",
+  "passed": true,
+  "backup": "/opt/trojan-proxy-refactor/backups/before-traffic-20261111T115948Z",
+  "revision": 4,
+  "schema": 2,
+  "vpn_running": true,
+  "statistics_persisted": true,
+  "telemetry_socket_mode": "0o660",
+  "other_containers_unchanged": true,
+  "vpn_credentials_preserved": true,
+  "images_loaded": {
+    "trojan-control:m6": "sha256:b9e1e218870479805fcfb9d99774601e23af069a9c3b5886d6f5a879c8cd4354",
+    "trojan-runner:dev": "sha256:fd3d48a41ba01e4640897689e3aeef59b6557f0e1593ecb0f717a9a880875b49",
+    "trojan-gateway:dev": "sha256:f215d264faf7ee9ec5f77358cd59f2574672c3accf2a1b1eb2fb9d0a92f57207"
+  },
+  "gateway_container_recreated": false,
+  "followup": {
+    "google_https_via_trojan": "HTTP/1.1 204 No Content",
+    "inner_tls_verified": true,
+    "wrong_password_rejected": true,
+    "public_admin_probe_passed": true
+  },
+  "statistics_readonly_verification": {
+    "integrity": "ok",
+    "global_upload_bytes": 832,
+    "global_download_bytes": 3908,
+    "minute_buckets": 4,
+    "detail_rows": 3,
+    "database_mode": "0600",
+    "ips_omitted": true
+  },
+  "public_statistics_negative_checks": {
+    "unauthenticated_live": 401,
+    "unauthenticated_dashboard": 401,
+    "unauthenticated_clear": 401,
+    "wrong_origin_dashboard": 403,
+    "no_store": true,
+    "noindex": true
+  }
+}

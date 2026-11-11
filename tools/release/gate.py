@@ -97,7 +97,7 @@ try:
         report['checks'][name+'_linux_source_scan']='passed'
     for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner')]:
         command(['go','test','-c','-tags','integration','-o','.work/'+name+'-integration.test','./internal/'+package],env=linux,log=name+'-build.log')
-    probes=['gateway_lifecycle','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation']
+    probes=['gateway_lifecycle','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation']
     for name in probes:
         progress('真实探针 '+name)
         output=command([sys.executable,'tools/probes/'+name+'_probe.py'],log=name+'.json')

@@ -114,6 +114,10 @@ func (m *Manager) Propose(ctx context.Context, expected uint64, candidate Site) 
 	if err = (Document{Version: 1, Site: candidate}).Validate(m.deployment); err != nil {
 		return err
 	}
+	// 入口确认时先更新网关再更新VPN，禁止新VPN抢占仍用于回滚的旧后台端口。
+	if candidate.VPNPort == d.Site.AdminPort {
+		return errors.New("VPN端口不能直接复用旧后台端口，请分两次调整")
+	}
 	plan, err := m.planner.Dual(ctx, d.Site, candidate, j.Applied)
 	if err != nil {
 		return err

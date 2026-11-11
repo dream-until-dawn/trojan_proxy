@@ -158,6 +158,39 @@ func TestRealRunnerLifecycle(t *testing.T) {
 			t.Fatal("有效证书不能从安全暂停恢复", err)
 		}
 		assertRunnerCertificate(t, desired.CertificateVersion)
+		// 新运行参数必须真正改变监听；失败恢复也必须使用旧命令自己的端口。
+		profile := desired
+		profile.Profile = &vpn.Profile{Version: 1, Domain: "probe.test", Port: 19443, AdminPort: 8007, OwnAddresses: []string{"47.82.112.245"}, Resolver: "9.9.9.9:53"}
+		if err = client.Apply(ctx, profile); err != nil {
+			t.Fatal("runtime profile listener did not start", err)
+		}
+		assertRunnerCertificateAt(t, profile.CertificateVersion, "127.0.0.1:19443")
+		badDomain := profile
+		badProfile := *profile.Profile
+		badProfile.Domain = "wrong.example"
+		badDomain.Profile = &badProfile
+		if err = client.Apply(ctx, badDomain); err == nil {
+			t.Fatal("runtime TLS readiness ignored profile domain")
+		}
+		assertRunnerCertificateAt(t, profile.CertificateVersion, "127.0.0.1:19443")
+		occupied, err := net.Listen("tcp4", "127.0.0.1:19555")
+		if err != nil {
+			t.Fatal(err)
+		}
+		badPort := profile
+		portProfile := *profile.Profile
+		portProfile.Port = 19555
+		badPort.Profile = &portProfile
+		err = client.Apply(ctx, badPort)
+		occupied.Close()
+		if err == nil {
+			t.Fatal("occupied runtime port accepted")
+		}
+		assertRunnerCertificateAt(t, profile.CertificateVersion, "127.0.0.1:19443")
+		if err = client.Apply(ctx, desired); err != nil {
+			t.Fatal("legacy listener could not be restored", err)
+		}
+		assertRunnerCertificate(t, desired.CertificateVersion)
 	case "crash":
 		if !state.Enabled || state.Running {
 			t.Fatal("引擎崩溃未反映实际状态", state)
@@ -181,6 +214,11 @@ func TestRealRunnerLifecycle(t *testing.T) {
 
 func assertRunnerCertificate(t *testing.T, version string) {
 	t.Helper()
+	assertRunnerCertificateAt(t, version, "127.0.0.1:18443")
+}
+
+func assertRunnerCertificateAt(t *testing.T, version, address string) {
+	t.Helper()
 	certificate, err := os.ReadFile("/certificates/" + version + "/fullchain.pem")
 	if err != nil {
 		t.Fatal(err)
@@ -195,7 +233,7 @@ func assertRunnerCertificate(t *testing.T, version string) {
 	}
 	roots := x509.NewCertPool()
 	roots.AddCert(leaf)
-	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", "127.0.0.1:18443", &tls.Config{RootCAs: roots, ServerName: "probe.test", MinVersion: tls.VersionTLS12})
+	conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", address, &tls.Config{RootCAs: roots, ServerName: "probe.test", MinVersion: tls.VersionTLS12})
 	if err != nil {
 		t.Fatal("实际TLS握手不匹配发布版本", err)
 	}

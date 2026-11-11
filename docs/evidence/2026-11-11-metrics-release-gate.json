@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "checks": {
+    "packaged_binaries_and_local_images": "passed",
+    "three_modules_test_vet": "passed",
+    "linux_race": "passed",
+    "control_linux_source_scan": "passed",
+    "trojan_linux_source_scan": "passed",
+    "gateway_linux_source_scan": "passed",
+    "gateway_lifecycle": "passed",
+    "acme_lifecycle": "passed",
+    "certificate_cache": "passed",
+    "vpn_egress": "passed",
+    "runner_lifecycle": "passed",
+    "auth_mutation": "passed",
+    "certificate_mutation": "passed",
+    "bootstrap_mutation": "passed",
+    "welcome_mutation": "passed",
+    "settings_mutation": "passed",
+    "telemetry": "passed",
+    "telemetry_mutation": "passed",
+    "traffic_mutation": "passed",
+    "vpn_egress_mutation": "passed"
+  },
+  "images": {
+    "trojan-control:m6": "sha256:b9e1e218870479805fcfb9d99774601e23af069a9c3b5886d6f5a879c8cd4354",
+    "trojan-runner:dev": "sha256:fd3d48a41ba01e4640897689e3aeef59b6557f0e1593ecb0f717a9a880875b49",
+    "trojan-gateway:dev": "sha256:f215d264faf7ee9ec5f77358cd59f2574672c3accf2a1b1eb2fb9d0a92f57207"
+  },
+  "binaries": {
+    "trojan-control-m6-control": {
+      "sha256": "a412ac1199aa3435de23458eb724bca350204be484986b131aeb4132f5b7f31b",
+      "bytes": 13885602,
+      "scan": "passed"
+    },
+    "trojan-control-m6-proxyctl": {
+      "sha256": "69655f83b6620e6e13649c03dec3369da886b3c8227c0d847c30230a3d228d9b",
+      "bytes": 9560226,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-trojan-engine": {
+      "sha256": "2d8a4927ff88179bf2c7fb43cd234cb592edaa1a6e36b4ee6c0f2fe55274bf31",
+      "bytes": 16859298,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-vpnrunner": {
+      "sha256": "e3ee84fe40f2b61b5a89d9241144f590564937060479eb312c86010f8b9716ce",
+      "bytes": 6566050,
+      "scan": "passed"
+    },
+    "trojan-gateway-dev-caddy": {
+      "sha256": "d5fe590df861eeceabfed9a958006577aac10e860683981d28e4f89806a505f9",
+      "bytes": 48160930,
+      "scan": "passed"
+    }
+  },
+  "created_utc": "2026-11-11T11:47:01.166822+00:00",
+  "commit": "5faf4edcb1dd6413d771b1141cf8e29e1dc4d7f4",
+  "archive_sha256": "c3d0ad80867e219a14cfed7c56f997ce9ab2444542260742e1658334e00eb724",
+  "scanner": "Go: go1.26.11\nScanner: govulncheck@v1.9.0\nDB: https://vuln.go.dev\nDB updated: 2026-11-11 02:51:11 +0000 UTC"
+}
