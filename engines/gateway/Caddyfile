@@ -1,0 +1,4 @@
+{
+	admin unix//run/caddy/admin.sock|0660
+	auto_https off
+}

@@ -8,36 +8,32 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/netip"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpn"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnrunner"
 )
 
 func run() error {
-	domain := flag.String("domain", "", "授权域名")
-	port := flag.Int("port", 18443, "Trojan独立端口")
-	own := flag.String("own-addresses", "", "服务器自身IP，逗号分隔")
-	resolver := flag.String("resolver", "9.9.9.9:53", "DNS解析器IP:端口")
+	path := flag.String("config", "/etc/trojan-proxy/proxy.json", "统一部署配置")
 	flag.Parse()
-	address, err := netip.ParseAddrPort(*resolver)
-	if err != nil {
-		return errors.New("DNS解析器格式错误")
+	if flag.NArg() != 0 {
+		return errors.New("存在未知执行器参数")
 	}
-	settings := vpn.Settings{Domain: *domain, Port: *port, Resolver: address}
-	if *own != "" {
-		for _, value := range strings.Split(*own, ",") {
-			ip, err := netip.ParseAddr(value)
-			if err != nil {
-				return errors.New("服务器自身IP格式错误")
-			}
-			settings.OwnAddresses = append(settings.OwnAddresses, ip)
-		}
+	c, err := config.Load(*path)
+	if err != nil {
+		return err
+	}
+	if !c.VPNManagement {
+		return errors.New("部署配置尚未启用VPN管理")
+	}
+	settings, err := vpn.SettingsFromConfig(c)
+	if err != nil {
+		return err
 	}
 	engine, err := vpnrunner.NewEngine(settings, "/usr/local/bin/trojan-engine", "/run/vpn/private")
 	if err != nil {

@@ -13,10 +13,11 @@ var ErrRevisionConflict = errors.New("修订号冲突")
 
 // Revision 是一次完整配置快照；编号由持久化存储层分配。
 type Revision struct {
-	Number  uint64 `json:"number"`
-	Gateway string `json:"gateway"`
-	VPN     string `json:"vpn"`
-	Rules   string `json:"rules,omitempty"`
+	Number          uint64 `json:"number"`
+	Gateway         string `json:"gateway"`
+	VPN             string `json:"vpn"`
+	Rules           string `json:"rules,omitempty"`
+	GatewaySettings string `json:"gateway_settings,omitempty"`
 }
 
 // Journal 保留旧快照直到两个组件都应用成功。

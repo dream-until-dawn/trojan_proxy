@@ -4,11 +4,14 @@ from pathlib import Path
 import subprocess
 import uuid
 from gateway_probe import command
+from images import gateway_image, container_logs
 
 prefix='trojan-gateway-lifecycle-'+uuid.uuid4().hex[:10]
 volumes=[]
 gateway=None
 report={'phases':{},'limitations':['测试使用临时证书和临时数据，不等于生产证书续期验收。']}
+gateway_target=gateway_image()
+report['gateway_image']=gateway_target
 try:
     for kind in ('socket','certs','state','public'):
         volumes.append(command(['docker','volume','create',prefix+'-'+kind]))
@@ -20,9 +23,9 @@ try:
         '-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,DNS:localhost.test','-keyout','/certs/private.key','-out','/certs/fullchain.cer'])
     gateway=command(['docker','run','-d','--name',prefix+'-caddy','--user','0:10001','--read-only','--cap-drop','ALL',
         '--security-opt','no-new-privileges','--memory','128m','--cpus','0.5',
-        '-v',sock+':/run/caddy','-v',certs+':/certs:ro','-v',certs+':/certificates/test:ro','--tmpfs','/data','--tmpfs','/config',
+        '--mount','type=volume,source='+sock+',target=/run/caddy,volume-nocopy','-v',certs+':/certs:ro','-v',certs+':/certificates/test:ro','--tmpfs','/data','--tmpfs','/config',
         '-e','CADDY_ADMIN=unix//run/caddy/admin.sock|0660',
-        'caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9','caddy','run'])
+        gateway_target,'caddy','run'])
     binary=str(Path('.work/gateway-integration.test').resolve())+':/probe:ro'
     for phase in ('first','restart'):
         if phase=='restart':command(['docker','restart',gateway])
@@ -36,7 +39,7 @@ try:
         if result.returncode:raise RuntimeError('生命周期阶段失败: '+phase)
 except Exception as error:
     report['error']=str(error)
-    if gateway:report['gateway_logs']=command(['docker','logs',gateway])[-4000:]
+    if gateway:report['gateway_logs']=container_logs(gateway)[-4000:]
 finally:
     if gateway:command(['docker','rm','-f',gateway])
     for volume in reversed(volumes):command(['docker','volume','rm',volume])

@@ -14,7 +14,7 @@ import urllib.request
 
 root='/opt/trojan-proxy-refactor'
 compose=['docker','compose','-p','trojan-refactor','-f',os.path.join(root,'compose.admin.yaml')]
-report={}
+report={'source_commit':payload['commit']}
 old={}
 changed=False
 
@@ -28,8 +28,8 @@ def untouched():
     result={}
     for container in json.loads(run(['docker','inspect']+ids)) if ids else []:
         labels=container['Config'].get('Labels',{})
-        # 旧Trojan、其他业务，以及当前Caddy后台网关都必须保持原进程。
-        if labels.get('com.docker.compose.project')!='trojan-refactor' or labels.get('com.docker.compose.service')=='admin-gateway':
+        # 本次明确更新本项目Caddy安全构建；旧Trojan和其他业务必须保持原进程。
+        if labels.get('com.docker.compose.project')!='trojan-refactor':
             result[container['Id']]=container['State']['StartedAt']
     return result
 
@@ -104,9 +104,10 @@ try:
         if len(body)>1024*1024:raise RuntimeError('导入证书材料过大')
         path=os.path.join(imported,target);write_file(path,body,0o640);os.chown(path,0,10001)
     changed=True
-    for name,body in payload['files'].items():write_file(os.path.join(root,name),body.encode('utf-8'))
+    # 部署配置不含秘密，须能由非root控制服务读取；备份与主密钥仍严格0600。
+    for name,body in payload['files'].items():write_file(os.path.join(root,name),body.encode('utf-8'),0o644)
     run(compose+['config','--quiet'])
-    run(compose+['up','-d','--no-deps','vpn-runner','control'])
+    run(compose+['up','-d','--no-deps','vpn-runner','admin-gateway','control'])
     healthy()
     control_id=run(compose+['ps','-q','control'])
     runner_id=run(compose+['ps','-q','vpn-runner'])
@@ -116,11 +117,20 @@ try:
     response=http.client.HTTPResponse(connection);response.begin()
     if response.status!=200:raise RuntimeError('VPN执行器状态不可读')
     report['runner']=json.loads(response.read().decode('utf-8'));connection.close()
-    db=sqlite3.connect('file:'+os.path.join(root,'data/control.db')+'?mode=ro',uri=True)
-    journal=json.loads(db.execute('SELECT body FROM revision_journal WHERE id=1').fetchone()[0]);db.close()
-    if journal.get('pending') is not None:raise RuntimeError('升级后存在待恢复修订')
+    deadline=time.time()+30
+    while True:
+        db=sqlite3.connect('file:'+os.path.join(root,'data/control.db')+'?mode=ro',uri=True)
+        journal=json.loads(db.execute('SELECT body FROM revision_journal WHERE id=1').fetchone()[0]);db.close()
+        connection=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM);connection.settimeout(5);connection.connect(os.path.join(root,'run/caddy/admin.sock'))
+        connection.sendall(b'GET /config/ HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n')
+        response=http.client.HTTPResponse(connection);response.begin();actual=json.loads(response.read().decode('utf-8'));connection.close()
+        if journal.get('pending') is None and journal['applied'].get('gateway_settings') and actual==json.loads(journal['applied']['gateway']):break
+        if time.time()>deadline:raise RuntimeError('升级后网关安全策略迁移未收敛')
+        time.sleep(.5)
+    if any(server.get('protocols')!=['h1','h2'] for server in actual['apps']['http']['servers'].values()):raise RuntimeError('实际网关仍开放非首版协议')
+    report['gateway_reconciled']=True
     report['revision']=journal['applied']['number']
-    if untouched()!=before:raise RuntimeError('其他业务或Caddy后台网关进程发生变化')
+    if untouched()!=before:raise RuntimeError('其他业务或旧Trojan进程发生变化')
     report['untouched_containers_verified']=True
     report['containers']={'control':control_id,'runner':runner_id}
     report['images']=payload['images']
@@ -134,8 +144,8 @@ except Exception as error:
             journal=json.loads(db.execute('SELECT body FROM revision_journal WHERE id=1').fetchone()[0]);db.close()
             if journal['applied'].get('vpn') or journal.get('pending'):raise RuntimeError('已有新版VPN修订，保留新服务与备份，须按当前修订修复')
             run(compose+['stop','vpn-runner']);run(compose+['rm','-f','vpn-runner'])
-            for name,body in old.items():write_file(os.path.join(root,name),body)
-            run(compose+['up','-d','--no-deps','control']);healthy()
+            for name,body in old.items():write_file(os.path.join(root,name),body,0o644)
+            run(compose+['up','-d','--no-deps','admin-gateway','control']);healthy()
             report['rolled_back']=True
         except Exception as rollback_error:report['rollback_error']=str(rollback_error)
 finally:

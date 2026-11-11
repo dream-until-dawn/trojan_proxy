@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/netip"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -72,13 +71,9 @@ func run() error {
 	var vpnManager *vpnservice.Service
 	var router *routing.Service
 	if c.VPNManagement {
-		resolver := c.VPNResolver
-		if resolver == "" {
-			resolver = "9.9.9.9:53"
-		}
-		vpnSettings := vpn.Settings{Domain: c.Domain, Port: c.VPNPort, Resolver: netip.MustParseAddrPort(resolver)}
-		for _, value := range c.VPNAddresses {
-			vpnSettings.OwnAddresses = append(vpnSettings.OwnAddresses, netip.MustParseAddr(value))
+		vpnSettings, err := vpn.SettingsFromConfig(c)
+		if err != nil {
+			return err
 		}
 		runner := vpnrunner.NewClient("/run/vpn/control.sock")
 		component := &vpnrunner.Component{Key: key, Runner: runner}

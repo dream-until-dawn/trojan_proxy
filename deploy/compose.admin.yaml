@@ -42,10 +42,11 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    command: [--domain, qin-xin.top, --port, "18443", --own-addresses, "47.82.112.245"]
+    command: [--config, /etc/trojan-proxy/proxy.json]
     volumes:
       - ./run/vpn:/run/vpn
       - ./certificates/published:/certificates:ro
+      - ./admin.proxy.example.json:/etc/trojan-proxy/proxy.json:ro
     tmpfs:
       - /run/vpn/private:uid=10002,gid=10001,mode=0700
       - /tmp:uid=10002,gid=10001,mode=0700
@@ -57,7 +58,10 @@ services:
       driver: json-file
       options: {max-size: "5m", max-file: "3"}
   admin-gateway:
-    image: caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+    image: trojan-gateway:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.gateway
     network_mode: host
     user: "0:10001"
     read_only: true

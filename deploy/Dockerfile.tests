@@ -1,0 +1,8 @@
+# 仅供开发/发布门槛，GCC和race运行库不进入产品镜像。
+FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb
+RUN apk add --no-cache gcc musl-dev
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY internal ./internal
+RUN go test -race ./internal/runtime ./internal/vpnservice ./internal/auth ./internal/api ./internal/routing

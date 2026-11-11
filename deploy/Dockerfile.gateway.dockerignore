@@ -1,0 +1,4 @@
+**
+!engines/
+!engines/gateway/
+!engines/gateway/**

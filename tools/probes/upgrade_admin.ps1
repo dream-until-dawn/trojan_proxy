@@ -4,6 +4,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+if((Get-Content -Raw -LiteralPath (Join-Path $repoRoot 'deploy/compose.admin.yaml')) -notmatch 'image: trojan-control:m4\s') {throw '此历史探针只适用于M3到M4；当前源码请使用经过release gate的upgrade_vpn.ps1'}
 $archive=Join-Path $repoRoot '.work/control-m4.tar.gz'
 $hash=(Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
 $tarPath=Join-Path $repoRoot '.work/control-m4.tar'

@@ -1,6 +1,8 @@
 package gateway
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -9,6 +11,19 @@ import (
 
 	"github.com/dream-until-dawn/trojan_proxy/internal/routes"
 )
+
+// Fingerprint 将编译格式和部署设置绑定到持久快照，升级后不能恢复旧编译策略。
+func Fingerprint(settings Settings) (string, error) {
+	body, err := json.Marshal(struct {
+		Version  int
+		Settings Settings
+	}{Version: 2, Settings: settings})
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256(body)
+	return hex.EncodeToString(digest[:]), nil
+}
 
 // Settings 来自部署配置，不允许经Web覆盖后台地址、证书路径或管理socket。
 type Settings struct {

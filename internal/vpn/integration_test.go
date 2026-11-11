@@ -31,6 +31,13 @@ func TestWriteEngineFixture(t *testing.T) {
 	if err = os.Chmod("/fixture/server.json", 0644); err != nil {
 		t.Fatal(err)
 	}
+	profile, err := ExportClash(s, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile("/fixture/clash-export.yaml", profile, 0644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestRealTrojanEgressAndUDP(t *testing.T) {
@@ -56,7 +63,7 @@ func TestRealTrojanEgressAndUDP(t *testing.T) {
 			t.Fatal("真实TCP代理失败", target, status, body, err)
 		}
 	}
-	for _, target := range []string{"127.0.0.1", "198.51.100.10", "private.test", "rebind.test"} {
+	for _, target := range []string{"127.0.0.1", "198.51.100.10", "private.test", "mixed.test", "rebind.test"} {
 		if status, body, err := fetch(target); err == nil && status == 200 {
 			t.Fatal("目的地址保护失效", target, body)
 		}

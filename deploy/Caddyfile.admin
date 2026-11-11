@@ -2,6 +2,9 @@
 	# 本阶段复用已有证书，不争抢旧服务80/443，不自动触发签发。
 	auto_https off
 	admin unix//run/caddy/admin.sock|0660
+	servers {
+		protocols h1 h2
+	}
 }
 
 https://qin-xin.top:8007 {

@@ -30,7 +30,7 @@ try:
         'chown -R 0:10001 /certificates && find /certificates -type d -exec chmod 0750 {} + && find /certificates -type f -exec chmod 0640 {} +'])
     runner=command(['docker','run','-d','--name',prefix,'--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
         '--memory','192m','--cpus','1','--pids-limit','64','-v',socket+':/run/vpn','-v',certs+':/certificates:ro',
-        'trojan-runner:dev','--domain','probe.test','--port','18443','--own-addresses','47.82.112.245'])
+        'trojan-runner:dev','--config','/certificates/proxy.json'])
     binary=str(Path('.work/runner-integration.test').resolve())+':/probe:ro'
     for phase in ('first','crash','restart'):
         if phase=='crash':

@@ -5,8 +5,9 @@ import subprocess
 import tempfile
 import uuid
 from gateway_probe import command
+from images import gateway_image, container_logs
 
-CADDY='caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9'
+CADDY=gateway_image()
 PEBBLE='ghcr.io/letsencrypt/pebble@sha256:0c81f05db371f436c97fb894bd6d2ab8fc9c8e2ce40f8bef8a8e15941bcd75ef'
 prefix='trojan-acme-'+uuid.uuid4().hex[:10]
 network=None
@@ -46,12 +47,12 @@ try:
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=100)
         report['test']={'exit_code':result.returncode,'output':result.stdout}
         if result.returncode:raise RuntimeError('ACME生命周期验收失败')
-        logs=command(['docker','logs',pebble])
+        logs=container_logs(pebble)
         if 'Attempting to validate w/ HTTP:' not in logs:raise RuntimeError('缺少真实HTTP-01挑战记录')
         report['http01_challenge_observed']=True
 except Exception as error:
     report['error']=str(error)
-    report['logs']={cid:command(['docker','logs',cid])[-5000:] for cid in containers}
+    report['logs']={cid:container_logs(cid)[-5000:] for cid in containers}
 finally:
     for cid in reversed(containers):command(['docker','rm','-f',cid])
     for volume in reversed(volumes):command(['docker','volume','rm',volume])

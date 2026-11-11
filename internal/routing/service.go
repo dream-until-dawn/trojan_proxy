@@ -62,6 +62,10 @@ func (s *Service) initialize(ctx context.Context) error {
 	if s.ready {
 		return nil
 	}
+	digest, err := gateway.Fingerprint(s.settings)
+	if err != nil {
+		return err
+	}
 	j, err := s.store.Load(ctx)
 	if err != nil {
 		return err
@@ -73,6 +77,7 @@ func (s *Service) initialize(ctx context.Context) error {
 		}
 		j.Applied.Gateway = current
 		j.Applied.Rules = "[]"
+		j.Applied.GatewaySettings = digest
 		if err = s.store.Save(ctx, j); err != nil {
 			return err
 		}
@@ -83,6 +88,27 @@ func (s *Service) initialize(ctx context.Context) error {
 	j, err = s.store.Load(ctx)
 	if err != nil {
 		return err
+	}
+	if j.Applied.GatewaySettings != digest {
+		// 部署设置或编译安全策略变化必须形成完整修订，不能在重启后被旧JSON覆盖。
+		var ruleset []routes.Rule
+		if j.Applied.Rules != "" {
+			if err = json.Unmarshal([]byte(j.Applied.Rules), &ruleset); err != nil {
+				return err
+			}
+		}
+		compiled, err := gateway.Compile(s.settings, ruleset)
+		if err != nil {
+			return err
+		}
+		next := j.Applied
+		next.Number++
+		next.Gateway = compiled
+		next.GatewaySettings = digest
+		if err = s.coordinator.Apply(ctx, j.Applied.Number, next); err != nil {
+			return err
+		}
+		j.Applied = next
 	}
 	// 网关独立重启后可能只加载部署文件，必须恢复数据库里的已提交配置。
 	if err = s.gateway.Apply(ctx, j.Applied.Gateway); err != nil {
@@ -142,7 +168,10 @@ func (s *Service) Apply(ctx context.Context, expected uint64, ruleset []routes.R
 	if err != nil {
 		return err
 	}
-	next := control.Revision{Number: expected + 1, Gateway: config, VPN: j.Applied.VPN, Rules: string(body)}
+	next := j.Applied
+	next.Number = expected + 1
+	next.Gateway = config
+	next.Rules = string(body)
 	if err = s.coordinator.Apply(ctx, expected, next); err != nil {
 		s.ready = false
 		return err

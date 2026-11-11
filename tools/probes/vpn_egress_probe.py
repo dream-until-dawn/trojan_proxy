@@ -30,6 +30,8 @@ try:
                 '-subj','/CN=vpn.test','-addext','subjectAltName=DNS:vpn.test','-keyout','/fixture/'+name+'.key','-out','/fixture/'+name+'.crt'])
         binary=str(Path('.work/vpn-integration.test').resolve())+':/probe:ro'
         command(['docker','run','--rm','--network','none','-v',mount,'-v',binary,'--entrypoint','/probe','trojan-control:m4','-test.run','^TestWriteEngineFixture$'])
+        command(['docker','run','--rm','--network','none','-v',mount,CLIENT,'-t','-f','/fixture/clash-export.yaml'])
+        report['actual_export_mihomo_check']=True
         if mutation:
             config=json.loads((root/'server.json').read_text(encoding='utf-8'))
             config['route']['rules']=[rule for rule in config['route']['rules'] if 'ip_cidr' not in rule]
@@ -65,9 +67,9 @@ while True:
  if name=="rebind.test" and kind==1:
   counter+=1
   if counter>1:ip="127.0.0.1"
- question=data[12:offset+4];count=1 if kind==1 else 0
+ question=data[12:offset+4];ips=[ip,"127.0.0.1"] if name=="mixed.test" else [ip];count=len(ips) if kind==1 else 0
  answer=b""
- if count:answer=b"\\xc0\\x0c"+struct.pack("!HHIH",1,1,0,4)+socket.inet_aton(ip)
+ if count:answer=b"".join(b"\\xc0\\x0c"+struct.pack("!HHIH",1,1,0,4)+socket.inet_aton(value) for value in ips)
  s.sendto(data[:2]+struct.pack("!HHHHH",0x8180,1,count,0,0)+question+answer,peer)
 '''
         dns=command(['docker','run','-d','--name',prefix+'-dns','--network',network,'--ip','198.51.100.53','--memory','64m','python:3.12-slim','python','-c',dns_code]);containers.append(dns)

@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-11",
+  "source": "github.com/caddyserver/caddy/v2 v2.11.9",
+  "upstream_commit": "0d98caea58f794f88e709b1bef2880996a471bca",
+  "module": "engines/gateway",
+  "go": "1.26.11",
+  "linux_source_scan": "No vulnerabilities found",
+  "linux_binary_scan": "No vulnerabilities found",
+  "linux_binary_bytes": 48160930,
+  "local_image_index": "sha256:4f24bd7ae40079ae0c7657f30a1a509f5e0f7073e5337c65175d93bff6f1a292",
+  "image_config": "sha256:c4b67b59f37b7a6f5a3efab61fed5cdab1c03defa248c395c7d4cc93eed5e353",
+  "verification": {
+    "registered_required_and_excluded_modules": "passed",
+    "real_http01_and_renewal_actual_handshake": "passed",
+    "internal_ca_cache_renewal_and_publish": "passed",
+    "gateway_lifecycle_initial_and_restart": "passed",
+    "standard_ports_and_host_restriction": "passed",
+    "legacy_settings_migration_actual_caddy": "passed",
+    "migration_rejected_rollback": "passed",
+    "migration_idempotence_and_deployment_change": "passed",
+    "actual_clash_export_mihomo_check": "passed",
+    "mixed_public_private_dns_answer_rejection": "passed"
+  },
+  "probe_failure_and_resolution": "Docker空命名卷复制镜像目录所有权，覆盖预设socket权限，导致旧root无cap模式启动失败；使用volume-nocopy后通过。生产使用绑定目录，不使用该复制机制。",
+  "deployment_status": "尚未升级远端；将以完整离线包自动门槛为准",
+  "limitations": ["当前扫描仅覆盖已知漏洞数据库快照。", "不等于公共ACME或最终一键安装验收。"]
+}

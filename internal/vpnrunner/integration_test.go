@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"net"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpn"
 )
 
@@ -57,6 +59,14 @@ func TestWriteExpiredFixture(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err = os.WriteFile("/certificates/"+strings.Repeat("d", 64)+"/fullchain.pem", pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), 0640); err != nil {
+		t.Fatal(err)
+	}
+	deployment := config.Config{Version: 1, Domain: "probe.test", AdminPort: 8007, ControlPort: 18090, VPNPort: 18443, DataDir: "/data", VPNManagement: true, VPNAddresses: []string{"47.82.112.245"}, VPNResolver: "9.9.9.9:53"}
+	body, err := json.Marshal(deployment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile("/certificates/proxy.json", body, 0640); err != nil {
 		t.Fatal(err)
 	}
 }

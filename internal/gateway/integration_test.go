@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -187,6 +188,67 @@ func TestRealGatewayLifecycle(t *testing.T) {
 	}
 	testRejectTLSReservation(t, engine, settings)
 	testStandardIngress(t, engine, settings, backendPort)
+	testLegacySettingsMigration(t, engine, settings, backendPort)
+}
+
+func testLegacySettingsMigration(t *testing.T, engine *gateway.Client, settings gateway.Settings, backendPort int) {
+	t.Helper()
+	ctx := context.Background()
+	original, err := engine.Current(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := engine.Apply(ctx, original); err != nil {
+			t.Error("迁移探针后恢复失败", err)
+		}
+	}()
+	rule := routes.Rule{ID: "migrate", Name: "迁移哨兵", Port: port(t), Path: "/", Kind: "proxy", UpstreamIP: "127.0.0.1", UpstreamPort: backendPort}
+	body, err := gateway.Compile(settings, []routes.Rule{rule})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacy map[string]any
+	if err = json.Unmarshal([]byte(body), &legacy); err != nil {
+		t.Fatal(err)
+	}
+	for _, server := range legacy["apps"].(map[string]any)["http"].(map[string]any)["servers"].(map[string]any) {
+		delete(server.(map[string]any), "protocols")
+	}
+	oldJSON, _ := json.Marshal(legacy)
+	rulesJSON, _ := json.Marshal([]routes.Rule{rule})
+	if err = engine.Apply(ctx, string(oldJSON)); err != nil {
+		t.Fatal(err)
+	}
+	store, err := storage.OpenJournal(ctx, filepath.Join(t.TempDir(), "migration.db"), control.Revision{Number: 1, Gateway: string(oldJSON), Rules: string(rulesJSON)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	state, err := routing.NewService(store, engine, settings).List(ctx)
+	if err != nil || state.Revision != 2 {
+		t.Fatal("真实旧配置安全策略迁移失败", state, err)
+	}
+	actual, err := engine.Current(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var migrated map[string]any
+	if err = json.Unmarshal([]byte(actual), &migrated); err != nil {
+		t.Fatal(err)
+	}
+	for _, server := range migrated["apps"].(map[string]any)["http"].(map[string]any)["servers"].(map[string]any) {
+		protocols, _ := json.Marshal(server.(map[string]any)["protocols"])
+		if string(protocols) != `["h1","h2"]` {
+			t.Fatal("实际迁移配置仍开放其他协议", string(protocols))
+		}
+	}
+	if status, body := fetch(t, rule.Port, "/migrated"); status != 200 || body != "upstream:/migrated" {
+		t.Fatal("迁移破坏实际路由", status, body)
+	}
+	if state, err = routing.NewService(store, engine, settings).List(ctx); err != nil || state.Revision != 2 {
+		t.Fatal("真实迁移重复提交", state, err)
+	}
 }
 
 func testStandardIngress(t *testing.T, engine *gateway.Client, settings gateway.Settings, backendPort int) {

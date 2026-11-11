@@ -6,11 +6,14 @@ import tempfile
 import time
 import uuid
 from gateway_probe import command
+from images import gateway_image, container_logs
 
 prefix='trojan-cert-cache-'+uuid.uuid4().hex[:10]
 volumes=[]
 cid=None
 report={'public_ca_used':False}
+gateway_target=gateway_image()
+report['gateway_image']=gateway_target
 try:
     cache=command(['docker','volume','create',prefix+'-cache']);volumes.append(cache)
     published=command(['docker','volume','create',prefix+'-published']);volumes.append(published)
@@ -22,7 +25,7 @@ try:
         cid=command(['docker','run','-d','--name',prefix,'--user','10001:10001','--read-only','--cap-drop','ALL',
             '--security-opt','no-new-privileges','--memory','128m','--cpus','0.5',
             '-v',str(path.resolve())+':/etc/caddy/Caddyfile:ro','-v',cache+':/data','--tmpfs','/config','--tmpfs','/tmp',
-            'caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9'])
+            gateway_target])
         ready=False
         for _ in range(50):
             result=subprocess.run(['docker','exec',cid,'test','-f','/data/caddy/certificates/local/probe.test/probe.test.crt'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=5)
@@ -50,7 +53,7 @@ try:
         report['renewal_changed_certificate']=True
 except Exception as error:
     report['error']=str(error)
-    if cid:report['logs']=command(['docker','logs',cid])[-4000:]
+    if cid:report['logs']=container_logs(cid)[-4000:]
 finally:
     if cid:command(['docker','rm','-f',cid])
     for volume in reversed(volumes):command(['docker','volume','rm',volume])
