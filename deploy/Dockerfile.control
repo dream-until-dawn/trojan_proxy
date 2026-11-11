@@ -1,0 +1,19 @@
+# 构建和运行镜像固定摘要；依赖在构建期安装，运行期不下载软件。
+FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS build
+WORKDIR /src
+ENV CGO_ENABLED=0 GOTOOLCHAIN=local
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN go build -trimpath -ldflags="-s -w" -o /out/control ./cmd/control && \
+    go build -trimpath -ldflags="-s -w" -o /out/proxyctl ./cmd/proxyctl
+
+FROM alpine:3.22@sha256:365499d9dccb7c8cfaffef995a6c382e71174585e0556f6476ead1c5971c39fb
+RUN addgroup -g 10001 proxy && adduser -D -H -u 10001 -G proxy proxy
+COPY --from=build /out/control /usr/local/bin/control
+COPY --from=build /out/proxyctl /usr/local/bin/proxyctl
+USER 10001:10001
+WORKDIR /data
+ENTRYPOINT ["control"]
+CMD ["--config", "/etc/trojan-proxy/proxy.json"]

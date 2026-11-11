@@ -61,7 +61,7 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 1 {
+	if version > 2 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if _, err := s.db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {
@@ -75,6 +75,9 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS revision_journal (id INTEGER PRIMARY KEY CHECK(id=1), body TEXT NOT NULL CHECK(json_valid(body)))"); err != nil {
 		return err
 	}
+	if _, err = tx.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS administrator (id INTEGER PRIMARY KEY CHECK(id=1), password_hash TEXT NOT NULL, secret BLOB NOT NULL, last_counter INTEGER NOT NULL, recovery TEXT NOT NULL CHECK(json_valid(recovery)))"); err != nil {
+		return err
+	}
 	b, err := json.Marshal(control.Journal{Applied: initial})
 	if err != nil {
 		return err
@@ -82,7 +85,7 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if _, err = tx.ExecContext(ctx, "INSERT INTO revision_journal(id,body) VALUES(1,?) ON CONFLICT(id) DO NOTHING", string(b)); err != nil {
 		return err
 	}
-	if _, err = tx.ExecContext(ctx, "PRAGMA user_version=1"); err != nil {
+	if _, err = tx.ExecContext(ctx, "PRAGMA user_version=2"); err != nil {
 		return err
 	}
 	return tx.Commit()

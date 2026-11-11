@@ -27,6 +27,8 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "admin-init":
+		return initializeAdmin(*path)
 	case "init":
 		c := config.Config{Version: 1, Domain: *domain, AdminPort: *admin, ControlPort: 18090, VPNPort: 18443, DataDir: *data}
 		if err := c.Validate(); err != nil {

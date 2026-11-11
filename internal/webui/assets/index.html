@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>独用代理管理</title><link rel="stylesheet" href="/style.css"></head>
+<body><main><header><p class="label">TROJAN PROXY</p><h1>独用代理管理</h1><p>管理入口采用强口令与双重验证。刷新页面后需重新登录。</p></header>
+<section id="login-panel"><h2>管理员登录</h2><form id="login-form">
+<label>管理员口令<input id="password" type="password" autocomplete="current-password" minlength="16" maxlength="1024" required></label>
+<label>验证方式<select id="method"><option value="otp">验证器验证码</option><option value="recovery">一次性恢复码</option></select></label>
+<label>验证码或恢复码<input id="verification" type="text" autocomplete="one-time-code" maxlength="64" required></label>
+<button id="submit" type="submit">安全登录</button></form><p id="message" role="status" aria-live="polite"></p>
+<p class="hint">首次使用请在服务器终端运行管理员初始化，完成验证器绑定并保存恢复码。这里不提供注册入口。</p></section>
+<section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><p class="hint">当前版本正在接入反向代理、证书和VPN管理功能。</p><button id="logout" type="button">退出登录</button></section>
+</main><script type="module" src="/main.js"></script></body></html>

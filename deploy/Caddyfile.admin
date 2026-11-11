@@ -1,0 +1,10 @@
+{
+	# 本阶段复用已有证书，不争抢旧服务80/443，不自动触发签发。
+	auto_https off
+	admin unix//run/caddy/admin.sock
+}
+
+https://qin-xin.top:8007 {
+	tls /certs/fullchain.cer /certs/private.key
+	reverse_proxy 127.0.0.1:18090
+}

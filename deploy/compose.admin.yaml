@@ -1,0 +1,46 @@
+# M3单独验收后台用，不是最终接管80/443的一键部署包。
+services:
+  control:
+    image: trojan-control:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.control
+    network_mode: host
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ./admin.proxy.example.json:/etc/trojan-proxy/proxy.json:ro
+      - ./data:/data
+    tmpfs: [/tmp]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, wget, -q, -T, "3", -O, /dev/null, "http://127.0.0.1:18090/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}
+  admin-gateway:
+    image: caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
+    network_mode: host
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ./Caddyfile.admin:/etc/caddy/Caddyfile:ro
+      - /mnt/trojan/cert/qin-xin.top:/certs:ro
+    tmpfs: [/run/caddy, /data, /config, /tmp]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 128
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}

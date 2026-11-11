@@ -118,3 +118,34 @@ func TestInvalidJournalAndFutureSchema(t *testing.T) {
 		t.Fatal("未拒绝未来数据库版本")
 	}
 }
+
+func TestVersionOneMigrationRetainsJournal(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "v1.db")
+	old := control.Revision{Number: 7, Gateway: "existing-g", VPN: "existing-v"}
+	s, err := OpenJournal(ctx, path, old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.db.ExecContext(ctx, "DROP TABLE administrator"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.db.ExecContext(ctx, "PRAGMA user_version=1"); err != nil {
+		t.Fatal(err)
+	}
+	if err = s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s, err = OpenJournal(ctx, path, control.Revision{Number: 99})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	j, err := s.Load(ctx)
+	if err != nil || j.Applied != old {
+		t.Fatal("迁移覆盖旧修订", j, err)
+	}
+	if ready, err := s.Initialized(ctx); err != nil || ready {
+		t.Fatal("迁移误建管理员或缺少新表", err)
+	}
+}

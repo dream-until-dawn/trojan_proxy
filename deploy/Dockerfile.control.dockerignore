@@ -1,0 +1,9 @@
+.git
+.work
+config
+scripts
+docs
+data
+**/*.pem
+**/*.key
+**/node_modules

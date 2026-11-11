@@ -1,0 +1,27 @@
+{
+  "toolchain": "go1.26.11",
+  "checks": {
+    "go_test_all": "PASS",
+    "go_vet_all": "PASS",
+    "authentication_guard_mutation": "target-specific failure observed",
+    "origin_guard_mutation": "target-specific failure observed",
+    "uninitialized_container_refuses_start": "PASS",
+    "noninteractive_enrollment_refused": "PASS",
+    "gateway_configuration_on_server": "Valid configuration",
+    "init_script_syntax_on_server": "PASS"
+  },
+  "security_scan": {"scanner":"govulncheck v1.9.0","reachable":0,"imported_packages":0,"unreachable_module_reports":17},
+  "deployment": {
+    "directory": "/opt/trojan-proxy-refactor",
+    "prepared": true,
+    "account_initialized": false,
+    "services_started": false,
+    "existing_containers_unchanged": true,
+    "local_oci_index": "sha256:2bc7fce20d44c0608120233937ad84999ed4860044f676661983103124a20fae",
+    "canonical_image_config": "sha256:d9ff323643a2b86415bc792df539062368c193c9e265a4a67ed3a5441a5745d8",
+    "image_layers_equal": true,
+    "control_sha256": "238667bdc871bf77433f94841da37d976ff6f182990e0006bb475e6765b35d1e",
+    "proxyctl_sha256": "fc88bbcf567db8ccc92462dfbe2b6acf73d620df5f434006fd3e1d4f28baca04"
+  },
+  "limitations": ["等待所有者在终端绑定TOTP；正式登录服务尚未启动。","反代、证书自动化和VPN管理页面尚未接入。"]
+}

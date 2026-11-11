@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "domain": "qin-xin.top",
+  "admin_port": 8007,
+  "control_port": 18090,
+  "vpn_port": 18443,
+  "data_dir": "/data"
+}
