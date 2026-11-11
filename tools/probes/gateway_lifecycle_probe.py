@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import uuid
+from images import control_image, openssl_image
 from gateway_probe import command
 from images import gateway_image, container_logs
 
@@ -19,7 +20,7 @@ try:
     sock,certs,state,public=volumes
     command(['docker','run','--rm','--network','none','-v',sock+':/socket','-v',state+':/state','-v',public+':/public',
         'alpine:3.22','sh','-c','chown 0:10001 /socket && chmod 0770 /socket && chown 10001:10001 /state /public && chmod 0700 /state /public'])
-    openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
+    openssl=openssl_image()
     command(['docker','run','--rm','--network','none','-v',certs+':/certs',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
         '-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost,DNS:localhost.test','-keyout','/certs/private.key','-out','/certs/fullchain.cer'])
     command(['docker','run','--rm','--network','none','-v',certs+':/certs','alpine:3.22','sh','-c','chown -R 0:10001 /certs && chmod 0750 /certs && chmod 0640 /certs/*'])
@@ -35,7 +36,7 @@ try:
         result=subprocess.run(['docker','run','--rm','--network','container:'+gateway,'--user','10001:10001',
             '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--memory','256m','--cpus','1',
             '--tmpfs','/tmp','-v',binary,'-v',sock+':/run/caddy:ro','-v',state+':/state','-v',public+':/public','-v',certs+':/certs:ro',
-            '-e','TROJAN_GATEWAY_PHASE='+phase,'--entrypoint','/probe','trojan-control:m4',
+            '-e','TROJAN_GATEWAY_PHASE='+phase,'--entrypoint','/probe',control_image(),
             '-test.run','TestRealGatewayLifecycle','-test.v','-test.timeout','60s'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=90)
         report['phases'][phase]={'exit_code':result.returncode,'output':result.stdout}

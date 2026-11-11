@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from images import control_image
 from gateway_probe import command
 from images import gateway_image, container_logs
 
@@ -46,7 +47,7 @@ try:
             result=subprocess.run(['docker','run','--rm','--network','none','--read-only','--user','10001:10001',
                 '--cap-drop','ALL','--security-opt','no-new-privileges','--memory','128m','--tmpfs','/tmp',
                 '-v',binary,'-v',cache+':/cache:ro','-v',published+':/published','-e','TROJAN_CERT_PHASE='+phase,
-                '--entrypoint','/probe','trojan-control:m4','-test.run','TestCaddyManagedCacheAndPublish','-test.v','-test.timeout','30s'],
+                '--entrypoint','/probe',control_image(),'-test.run','TestCaddyManagedCacheAndPublish','-test.v','-test.timeout','30s'],
                 stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=60)
             report['phases'][phase]={'exit_code':result.returncode,'output':result.stdout}
             if result.returncode:raise RuntimeError('证书缓存适配或发布测试失败: '+phase)

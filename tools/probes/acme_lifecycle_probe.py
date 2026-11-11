@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import uuid
+from images import control_image, openssl_image
 from gateway_probe import command
 from images import gateway_image, container_logs
 
@@ -21,7 +22,7 @@ try:
     sock,fixture,cache,published=volumes
     command(['docker','run','--rm','--network','none','-v',sock+':/socket','-v',cache+':/cache','-v',published+':/published',
         'alpine:3.22','sh','-c','chown 0:10001 /socket && chmod 0770 /socket && chown 10001:10001 /cache /published && chmod 0750 /cache /published'])
-    openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
+    openssl=openssl_image()
     command(['docker','run','--rm','--network','none','-v',fixture+':/fixture',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
         '-subj','/CN=pebble','-addext','subjectAltName=DNS:pebble','-keyout','/fixture/key.pem','-out','/fixture/ca.pem'])
     command(['docker','run','--rm','--network','none','-v',fixture+':/fixture',openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
@@ -46,7 +47,7 @@ try:
         result=subprocess.run(['docker','run','--rm','--network','container:'+caddy,'--user','10001:10001','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges','--memory','128m','--tmpfs','/tmp','-v',binary,
             '-v',sock+':/run/caddy:ro','-v',fixture+':/fixture:ro','-v',cache+':/cache:ro','-v',published+':/published',
-            '--entrypoint','/probe','trojan-control:m4','-test.run','^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
+            '--entrypoint','/probe',control_image(),'-test.run','^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=100)
         report['test']={'exit_code':result.returncode,'output':result.stdout}
         if result.returncode:raise RuntimeError('ACME生命周期验收失败')

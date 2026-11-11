@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import uuid
+from images import control_image, openssl_image
 from gateway_probe import command
 
 SERVER=os.environ.get('TROJAN_RUNNER_IMAGE','trojan-runner:dev')
@@ -24,13 +25,18 @@ try:
     report['server_image']=SERVER
     with tempfile.TemporaryDirectory(prefix='trojan-egress-') as directory:
         root=Path(directory)
+        # 只有公开假口令/自签证书的一次性夹具需跨宿主UID和容器UID读写；
+        # Linux不具备Docker Desktop的权限映射，不能依赖本机缓存掩盖失败。
+        root.chmod(0o777)
         mount=str(root.resolve())+':/fixture'
-        openssl=json.loads(command(['docker','image','inspect','alpine/openssl:latest']))[0]['Id']
+        openssl=openssl_image()
         for name in ('trusted','untrusted'):
             command(['docker','run','--rm','--network','none','-v',mount,openssl,'req','-x509','-newkey','rsa:2048','-nodes','-days','1',
                 '-subj','/CN=vpn.test','-addext','subjectAltName=DNS:vpn.test','-keyout','/fixture/'+name+'.key','-out','/fixture/'+name+'.crt'])
+        command(['docker','run','--rm','--network','none','-v',mount,'alpine:3.22','sh','-c','chmod 0644 /fixture/*.key /fixture/*.crt'])
         binary=str(Path('.work/vpn-integration.test').resolve())+':/probe:ro'
-        command(['docker','run','--rm','--network','none','-v',mount,'-v',binary,'--entrypoint','/probe','trojan-control:m4','-test.run','^TestWriteEngineFixture$'])
+        command(['docker','run','--rm','--network','none','-v',mount,'-v',binary,'--entrypoint','/probe',control_image(),'-test.run','^TestWriteEngineFixture$'])
+        command(['docker','run','--rm','--network','none','-v',mount,'alpine:3.22','chmod','0666','/fixture/server.json'])
         command(['docker','run','--rm','--network','none','-v',mount,CLIENT,'-t','-f','/fixture/clash-export.yaml'])
         report['actual_export_mihomo_check']=True
         if mutation:
@@ -85,7 +91,7 @@ while True:
             client=command(['docker','run','-d','--name',prefix+'-client-'+phase,'--network',network,'--memory','128m','--cap-drop','ALL',
                 '-e','SSL_CERT_FILE=/fixture/'+trust+'.crt','-v',mount+':ro',CLIENT,'-f','/fixture/client.json','-d','/tmp']);containers.append(client)
             result=subprocess.run(['docker','run','--rm','--network','container:'+client,'--memory','128m','--cap-drop','ALL','--read-only','--tmpfs','/tmp:uid=10001,gid=10001,mode=0700','--mount','type=volume,source='+statistics+',target=/run/vpn,readonly,volume-nocopy','-v',binary,
-                '-e','TROJAN_VPN_PHASE='+phase,'-e','TROJAN_STATISTICS_TEST=1','--entrypoint','/probe','trojan-control:m4','-test.run','^TestRealTrojanEgressAndUDP$','-test.v','-test.timeout','45s'],
+                '-e','TROJAN_VPN_PHASE='+phase,'-e','TROJAN_STATISTICS_TEST=1','--entrypoint','/probe',control_image(),'-test.run','^TestRealTrojanEgressAndUDP$','-test.v','-test.timeout','45s'],
                 stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=60)
             report['checks'][phase]={'exit_code':result.returncode,'output':result.stdout}
             if mutation:

@@ -32,7 +32,7 @@ for setting in ('GOOS','GOARCH','CGO_ENABLED'):environment.pop(setting,None)
 def command(args,cwd=ROOT,env=None,timeout=180,log=None):
     result=subprocess.run([str(arg) for arg in args],cwd=cwd,env=env or environment,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=timeout)
     if log:(LOGS/log).write_text(result.stdout,encoding='utf-8')
-    if result.returncode:raise RuntimeError('门槛失败: '+str(args[:3])+'；见 '+str(log or result.stdout[-800:]))
+    if result.returncode:raise RuntimeError('门槛失败: '+str(args[:3])+'；见 '+str(log or '')+'\n'+result.stdout[-4000:])
     return result.stdout.strip()
 
 def file_hash(path):
@@ -95,6 +95,15 @@ try:
         progress('Linux源码漏洞扫描 '+name)
         command([SCANNER,'./...'],cwd=module,env=linux,log=name+'-source.log')
         report['checks'][name+'_linux_source_scan']='passed'
+    progress('显式准备固定探针夹具，不依赖开发机缓存或旧产品镜像')
+    fixtures=['alpine:3.22','python:3.12-slim',
+        'alpine/openssl@sha256:f6def4887e8413b228b66f314d0bcf5c25b128d918a258f3b0b9d66a0327edcb',
+        'ghcr.io/letsencrypt/pebble@sha256:0c81f05db371f436c97fb894bd6d2ab8fc9c8e2ce40f8bef8a8e15941bcd75ef',
+        'metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c']
+    for fixture in fixtures:
+        inspect=subprocess.run(['docker','image','inspect',fixture],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        if inspect.returncode:command(['docker','pull',fixture],timeout=180,log='fixture-'+fixture.split('/')[0].replace(':','-')+'.log')
+    report['checks']['explicit_probe_fixtures']='passed'
     for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner'),('deployment','deployment')]:
         command(['go','test','-c','-tags','integration','-o','.work/'+name+'-integration.test','./internal/'+package],env=linux,log=name+'-build.log')
     probes=['gateway_lifecycle','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','recovery_mutation','default_deployment']
