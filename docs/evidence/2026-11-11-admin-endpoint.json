@@ -1,0 +1,12 @@
+{
+  "domain": "qin-xin.top",
+  "resolved_from_server": ["47.82.112.245"],
+  "local_clash_dns_returned_fake_ip": true,
+  "port_selection": [{"port":8008,"available":false},{"port":8007,"available":true}],
+  "admin_origin": "https://qin-xin.top:8007",
+  "public_probe": {"tls_verified":true,"http_status":200,"sentinel_matches":true},
+  "existing_certificate": {"not_after_utc":"2027-01-26T23:59:59Z","issuer":"ZeroSSL ECC DV SSL CA 2"},
+  "probe_container_removed":true,
+  "existing_containers_unchanged":true,
+  "limitations":["复用现有证书，未发起新的ACME签发。","临时探针已清理，8007尚未部署正式后台。"]
+}

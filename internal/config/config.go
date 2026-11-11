@@ -1,0 +1,81 @@
+// Package config 定义部署配置及其静态约束；不包含管理员或 VPN 明文密码。
+package config
+
+import (
+	"encoding/json"
+	"errors"
+	"io"
+	"os"
+	"regexp"
+	"strings"
+)
+
+// Config 是版本化部署配置，运行秘密另存于受限数据目录。
+type Config struct {
+	Version     int    `json:"version"`
+	Domain      string `json:"domain"`
+	AdminPort   int    `json:"admin_port"`
+	ControlPort int    `json:"control_port"`
+	VPNPort     int    `json:"vpn_port"`
+	DataDir     string `json:"data_dir"`
+}
+
+var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
+
+// Validate 拒绝未知版本、端口重复与非法域名；空域名表示 HTTP-only 模式。
+func (c Config) Validate() error {
+	if c.Version != 1 {
+		return errors.New("配置版本必须为1")
+	}
+	if strings.TrimSpace(c.DataDir) == "" {
+		return errors.New("必须指定数据目录")
+	}
+	ports := map[int]bool{80: true, 443: true}
+	for _, port := range []int{c.AdminPort, c.ControlPort, c.VPNPort} {
+		if port < 1024 || port > 65535 {
+			return errors.New("后台、内控和VPN端口必须在1024至65535之间")
+		}
+		if ports[port] {
+			return errors.New("监听端口重复或占用保留端口")
+		}
+		ports[port] = true
+	}
+	if c.Domain != "" {
+		if len(c.Domain) > 253 || !strings.Contains(c.Domain, ".") {
+			return errors.New("域名格式无效")
+		}
+		for _, label := range strings.Split(c.Domain, ".") {
+			if !domainLabel.MatchString(label) {
+				return errors.New("域名必须使用小写ASCII或Punycode，不带协议、路径或端口")
+			}
+		}
+	}
+	return nil
+}
+
+// Load 严格读取单个 JSON 文档，拒绝拼写错误字段和超大配置。
+func Load(path string) (Config, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return Config{}, err
+	}
+	defer f.Close()
+	stat, err := f.Stat()
+	if err != nil {
+		return Config{}, err
+	}
+	if !stat.Mode().IsRegular() || stat.Size() > 1024*1024 {
+		return Config{}, errors.New("配置必须为不超过1MiB的普通文件")
+	}
+	decoder := json.NewDecoder(io.LimitReader(f, 1024*1024))
+	decoder.DisallowUnknownFields()
+	var c Config
+	if err = decoder.Decode(&c); err != nil {
+		return c, err
+	}
+	var extra any
+	if err = decoder.Decode(&extra); err != io.EOF {
+		return c, errors.New("配置只能包含一个JSON对象")
+	}
+	return c, c.Validate()
+}

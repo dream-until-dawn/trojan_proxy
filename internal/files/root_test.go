@@ -35,7 +35,7 @@ func TestRootBoundary(t *testing.T) {
 	if err != nil || string(b) != "public" {
 		t.Fatalf("正文错误: %q %v", b, err)
 	}
-	for _, name := range []string{"../secret", "/etc/passwd", ".env", "a/../../secret", "%2e%2e/secret", "a\\secret", "ok.txt\x00", "."} {
+	for _, name := range []string{"../secret", "/etc/passwd", ".env", "a/../../secret", "%2e%2e/secret", "a\\secret", "ok.txt\x00", ".", "link/"} {
 		if f, err := r.Open(name); err == nil {
 			f.Close()
 			t.Fatalf("非法路径被接受: %q", name)

@@ -1,0 +1,12 @@
+{
+  "platform": "Alibaba Cloud Linux 3 x86_64",
+  "exit_code": 0,
+  "tests": {
+    "TestAbruptProcessExit": "PASS",
+    "TestDurableRecovery/prepared": "PASS",
+    "TestDurableRecovery/gateway": "PASS",
+    "TestDurableRecovery/vpn": "PASS",
+    "TestInvalidJournalAndFutureSchema": "PASS"
+  },
+  "limitations": ["使用测试组件模拟网关和VPN运行态；真实组件摘要核对尚未接入。"]
+}

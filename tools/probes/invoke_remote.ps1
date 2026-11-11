@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$Server,
     [Parameter(Mandatory=$true)][string]$KeyPath,
-    [Parameter(Mandatory=$true)][ValidateSet('gateway_probe','tls_probe','binary_probe','health_probe')][string]$Probe,
+    [Parameter(Mandatory=$true)][ValidateSet('gateway_probe','tls_probe','binary_probe','health_probe','deployment_probe','public_tls_probe')][string]$Probe,
     [string]$BinaryPath,
     [string]$BinaryArgs = ''
 )

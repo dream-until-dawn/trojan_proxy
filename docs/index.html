@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trojan Proxy · 重构设计入口</title><link rel="stylesheet" href="assets/docs.css"></head>
-<body><header><div class="eyebrow">TROJAN PROXY / 重构方案 v0.2</div><h1>一键部署的个人代理与反代管理平台</h1><p class="muted">调研基线：<code>b155d97</code> · 2026-11-11（北京时间） · 状态：主要产品决策已确认，技术方案进入可行性验证</p><nav><a href="progress.html">开发进展</a><a href="review.html">现状与证据</a><a href="architecture.html">架构与安全设计</a><a href="plan.html">开发计划与验收</a></nav></header>
+<body><header><div class="eyebrow">TROJAN PROXY / 重构方案 v0.2</div><h1>一键部署的个人代理与反代管理平台</h1><p class="muted">调研基线：<code>b155d97</code> · 2026-11-11（北京时间） · 状态：主要产品决策已确认，技术方案进入可行性验证</p><nav><a href="endpoint-and-recovery.html">后台入口与恢复底座</a><a href="progress.html">开发进展</a><a href="review.html">现状与证据</a><a href="architecture.html">架构与安全设计</a><a href="plan.html">开发计划与验收</a></nav></header>
 <main><section><h2>本轮交付范围</h2><p>阅读现有项目，独立核实问题，形成运行模式、模块边界、决策记录、前期探针与分阶段开发计划。不改动现有运行脚本，不执行旧安装程序，不申请真实证书。用户后续授权服务器测试，已核实环境并开展回环高端口隔离探针。</p><p>已接受用户的 Git 分支、提交、推送、合并及打 tag 授权；按任务实际成熟度使用。本次使用设计分支，尚未冻结的方案不作为发布版本。</p><div class="grid"><article class="card"><h3><a href="review.html">01 · 现状审计</a></h3><p>启动链路、已核实风险、代码位置和已执行检查；区分静态结论与待实测事项。</p></article><article class="card"><h3><a href="architecture.html">02 · 实现设计</a></h3><p>Docker、证书、独用后台、多协议接口、反代、公开目录、配置回滚与安全边界。</p></article><article class="card"><h3><a href="plan.html">03 · 开发路线</a></h3><p>M0–M7 的输入、交付与退出条件，前置可行性探针，正向、反向及破坏性验证矩阵。</p></article></div></section>
 <section id="decisions"><h2>产品决策记录</h2><p class="note">D1–D5 已由用户在本轮明确确认。D6–D7 是工程建议默认值，仍可在实现前调整；服务器信息已实时核实。</p><div class="table-wrap"><table><thead><tr><th>编号</th><th>决策</th><th>推荐与影响</th><th>状态</th></tr></thead><tbody>
 <tr><td>D1</td><td>无域名 HTTP 与强制跳转的关系</td><td>无域名：80 提供 HTTP、443 保留拒绝业务；有域名且证书就绪：80 跳转 443，ACME 验证除外。无域名后台仅走本机/SSH 隧道。</td><td>已确认</td></tr>
@@ -9,6 +9,6 @@
 <tr><td>D4</td><td>独用后台鉴权</td><td>单管理员，强口令 + 手机验证器 TOTP；无注册/多用户/找回邮件。终端初始化与离线恢复码，公网后台必须 HTTPS。</td><td>已确认</td></tr>
 <tr><td>D5</td><td>无域名是否也必须立即有 VPN</td><td>允许首版无域名只启用 HTTP 反代；Trojan 等域名证书或导入可信证书后启用。首版不强行增加第二协议。</td><td>已确认</td></tr>
 <tr><td>D6</td><td>额外端口及目录</td><td>8001/8002 示例按 HTTP 默认；可为带域名的端口显式启用 HTTPS。目录发布只读、默认关闭索引；开启后允许列目录与下载，不支持上传/执行。</td><td>建议默认</td></tr>
-<tr><td>D7</td><td>域名与证书范围</td><td>首版普通域名/子域名、HTTP-01 自动签发续期与手工导入；泛域名和 DNS-01 作为后续扩展。后台使用专属域名，避免与公开站点同源。</td><td>建议默认</td></tr>
+<tr><td>D7</td><td>域名与证书范围</td><td>首版普通域名/子域名、HTTP-01 自动签发续期与手工导入；泛域名和 DNS-01 作为后续扩展。用户已确定后台使用 qin-xin.top，按 8008 起递减选端口；实测选定 8007。不同端口不隔离 Cookie，改用页面内存令牌并严格校验来源。</td><td>建议默认</td></tr>
 </tbody></table></div></section>
 <section><h2>建议实施顺序</h2><div class="flow"><div><strong>M0–M1</strong>明确需求 → 验证端口、证书与协议可行性</div><div><strong>M2–M3</strong>部署底座 → 安全后台与恢复通道</div><div><strong>M4–M5</strong>反代/目录 → 证书生命周期</div><div><strong>M6–M7</strong>VPN 适配 → 故障演练与发布</div></div><p>不以“容器 running”或“页面可打开”作为交付完成条件：必须同时验证真实流量、失败保护、恢复与备份还原。</p></section></main><footer>全部文档使用本地 HTML/CSS，无 CDN 或外部脚本；可离线阅读与打印。链接所指的外部技术资料仅作为核实来源。</footer></body></html>

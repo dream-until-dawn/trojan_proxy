@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>后台入口与配置恢复 · 设计补充</title><link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+<header><div class="eyebrow">2026-11-11 / 已确认入口与底座验证</div>
+  <h1>后台固定为 qin-xin.top:8007</h1>
+  <nav><a href="index.html">总览</a><a href="progress.html">进展</a><a href="plan.html">计划</a></nav>
+</header>
+<main>
+  <section>
+    <h2>入口选择及证据</h2>
+    <p>用户授权使用当前域名 qin-xin.top，后台端口从 8008 起递减选择。服务器 TCP 8008 已被占用，8007 在 IPv4/IPv6 上可绑定，已选定 https://qin-xin.top:8007。首次安装选择后持久化，后续启动遇到冲突则报错，不再悄悄改变访问地址。</p>
+    <p>服务器 DNS 返回 47.82.112.245；本机 Clash 返回 Fake-IP，因此公网探针直接连接实际服务器 IP，同时以 qin-xin.top 作为 TLS server name 正常校验证书。8007 的外部 HTTPS 请求获得 HTTP 200 和指定哨兵正文，证明当前链路可达。</p>
+    <p>复用现有 ZeroSSL 证书，notAfter 为 2027-01-26 23:59:59 UTC；没有发起新签发。临时探针结束后删除了自建容器，原有运行容器启动时间保持不变。<a href="evidence/2026-11-11-admin-endpoint.json">查看脱敏证据</a>。</p>
+    <p class="note">该地址是已验证的未来后台入口，目前没有正式后台在此运行；临时探针已清理。TCP 80/443 的归属和跳转要求继续保留，8007 不替代 443。</p>
+  </section>
+  <section>
+    <h2>同域名不同端口的鉴权边界</h2>
+    <p>浏览器来源包含协议、域名和端口，而 Cookie 的隔离边界不包含端口。为避免后台凭据被自动发送给同域名其他服务，管理员令牌不放 Cookie、URL、localStorage 或 sessionStorage，仅保留在页面内存，用 Authorization 头提交；刷新或关闭页面后重新登录。</p>
+    <p>单管理员强口令 + TOTP 不变；API 严格校验允许的来源，拒绝跨来源写入，不开启通配 CORS。前端采用严格 CSP、静态资源同源与输出转义，不允许自定义脚本。来源隔离不能抵御后台自身 XSS，因此令牌短期有效并支持服务器端撤销。</p>
+    <p>无域名模式下后台仍只经 SSH 隧道访问，不因这个域名配置开放明文公网登录。SSH 本地来源显式配置，和公网来源采用同一身份模型。</p>
+  </section>
+  <section>
+    <h2>配置应用与恢复的当前实现</h2>
+    <p>新增 internal/runtime 协调器：验证两个组件 → 保存 pending 日志 → 顺序应用 → 保存 applied；任何失败返回原始原因并补偿恢复旧快照。回滚采用独立的 15 秒清理上下文，调用方取消请求不会直接取消恢复；恢复失败保留 pending 并拒绝继续写入。</p>
+    <p>新增 internal/storage SQLite 日志：WAL、FULL 同步、schema version 检查，不覆盖既有状态。测试覆盖 prepared、网关应用后、VPN 应用后各阶段恢复；还使用子进程 os.Exit(17)，故意跳过数据库关闭和 defer，再重新打开数据库验证已提交 pending 可恢复。</p>
+    <p>以上SQLite重开、异常退出与schema拒绝测试已在目标Linux服务器通过，<a href="evidence/2026-11-11-revision-tests.json">结果证据</a>。当前组件状态由测试适配器模拟，不能据此声称真实 Caddy/VPN 跨组件恢复已验收。下一步接入实际适配器并比对运行配置摘要；单进程协调锁也尚未替代部署实例锁。</p>
+    <p>新增 internal/config、internal/ports 和 cmd/proxyctl：版本化配置、未知字段拒绝、重复端口拒绝、初始化不覆盖、TCP 双栈预检。Windows 预检增加独占绑定，避免普通 wildcard bind 漏报已有监听。相关依据见 <a href="https://learn.microsoft.com/windows/win32/winsock/using-so-reuseaddr-and-so-exclusiveaddruse">Microsoft Winsock 文档</a>。</p>
+    <p>目前 proxyctl 的 init/doctor 只是部署底座；尚未接入 Docker 版本检测、启动、升级和备份流程，不应当作最终一键安装器使用。</p>
+  </section>
+<section><h2>工具链安全门槛</h2><p>govulncheck v1.9.0 在初始 Go1.26.1 工具链报告三个可达标准库问题，包括根目录相关问题。项目已固定 Go1.26.10，重新测试与扫描后可达漏洞为0，导入包漏洞为0；模块中仍有18个未被当前代码调用的报告。<a href="evidence/2026-11-11-security-scan.json">扫描结果</a>。</p><p>官方报告：<a href="https://pkg.go.dev/vuln/GO-2026-6604">GO-2026-6604</a>、<a href="https://pkg.go.dev/vuln/GO-2026-4971">GO-2026-4971</a>、<a href="https://pkg.go.dev/vuln/GO-2026-4970">GO-2026-4970</a>。可达性报告不等同于已复现漏洞利用；仍升级底层依赖并保留输入校验，后续新增功能时重新扫描。</p><p>密码模块已实现固定参数Argon2id及随机盐、六位TOTP、前后一档漂移和已消费步长拒绝，标准RFC6238向量与错误口令/重放测试通过。持久化消费计数、会话、限流和前端尚未接入，不能据此宣称后台鉴权已完成。</p></section></main>
+</body>
+</html>
