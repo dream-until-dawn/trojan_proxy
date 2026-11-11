@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>现状审计 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
+<header><div class="eyebrow">01 / 现状与证据</div><h1>现有代码的能力与缺口</h1><p class="muted">本地基线 b155d97；已读取 README、Dockerfile、Compose、所有 Shell 脚本和客户端配置。初始工作区干净，未发现 AGENTS.md、测试目录或 CI 配置。</p><nav><a href="index.html">总览</a><a href="architecture.html">架构</a><a href="plan.html">计划</a></nav></header><main>
+<section><h2>当前启动链路</h2><pre>Dockerfile.trojan：Alpine latest + Bash/Nginx 等工具
+  → scripts/install.environment.sh
+  → 启动时安装 acme.sh 与 Trojan（在线最新版 / 本地归档回退）
+  → Nginx 监听 80，提供 config/dist 中的静态页面
+  → Trojan 监听 443，TLS 终止；非 Trojan 流量回退至 127.0.0.1:80
+  → 缺少证书时尝试 ACME → 重启 Nginx/Trojan
+  → tail -f /dev/null 保持容器存活</pre><p>管理入口是容器内交互式菜单；没有 Web 后台、账号/会话、路由持久化模型、配置事务、证书状态页和协议适配层。前端目录为构建产物，仓库没有对应源码和构建依赖清单。</p><p>另有 <code>scripts/trojan_mult.sh</code>：旧版宿主机安装脚本，未被 Docker CMD 调用。它与容器路径分开审计，不能把旧脚本的能力当作当前容器能力。</p></section>
+<section><h2>独立核实的问题</h2><div class="table-wrap"><table><thead><tr><th>优先级</th><th>事实与影响</th><th>可定位证据</th><th>重构要求</th></tr></thead><tbody>
+<tr><td>高</td><td>跟踪的客户端 JSON 存在明文密码；启动日志也输出 Trojan 密码。不在报告复述凭据。是否仍在使用未知。</td><td><a href="../config/config.json">config/config.json</a>；install.environment.sh:9；trojan.manage.sh:259</td><td>历史值视为已暴露；若仍有效需轮换。示例改占位值、秘密不入日志/镜像；历史清理单独评估。</td></tr>
+<tr><td>高</td><td>证书以 mtime 超过 60 天判过期，而非 X.509 notAfter；只检测文件存在，不验证密钥匹配。</td><td>acme.manage.sh:133–150；trojan.manage.sh:246–253</td><td>解析真实证书属性、域名覆盖及密钥匹配；续期和失败告警。</td></tr>
+<tr><td>高</td><td>Compose 将 ACME 挂载到 /opt/acme-config，脚本实际使用 /root/.acme.sh，账号状态没有按预期持久化。</td><td><a href="../docker-compose.yml">docker-compose.yml</a>:11；acme.manage.sh:11、161</td><td>统一数据目录与备份规范；冷重建验证账号和证书保留。</td></tr>
+<tr><td>高</td><td>未见启动 crond/专用续期调度器；不能据此认定自动续期在容器内生效。</td><td>install.environment.sh 全文；Dockerfile.trojan</td><td>明确唯一证书管理者与续期调度，执行时间推进测试。</td></tr>
+<tr><td>高</td><td>应用后台运行并抑制输出，最后 tail 保活；进程退出可能不导致容器退出；无 HEALTHCHECK。</td><td>trojan.manage.sh:274；install.environment.sh:37；Dockerfile.trojan</td><td>前台受管进程、健康检查、退出码、受控重启与故障可见性。</td></tr>
+<tr><td>高</td><td>启动时下载并执行远程安装脚本，基础镜像和依赖未锁定，未校验下载归档摘要。</td><td>Dockerfile.trojan:1；acme.manage.sh:21–29；trojan.manage.sh:26–48</td><td>构建期固定版本、摘要与来源；运行期不安装软件。</td></tr>
+<tr><td>中</td><td>当前 Nginx 配置监听 80 并返回网页，无 80→443 跳转；端口检测只在容器内启动 Trojan 前检查 443。</td><td>nginx.manage.sh:90、140；trojan.manage.sh:241</td><td>宿主机预检 80/443、IPv4/IPv6 和目标端口；占用即退出，最终 bind 再兜底。</td></tr>
+<tr><td>中</td><td>口令直接插入 JSON 模板，双引号/反斜线可破坏结构；FORCE_LOCAL 被当命令执行。</td><td>trojan.manage.sh:21、82–91；acme.manage.sh:15</td><td>类型化配置、标准序列化、严格布尔值，禁止输入参与 shell 拼接。</td></tr>
+<tr><td>中</td><td>Nginx worker 以 root 运行；停止 Trojan 直接执行 fuser -k 443/tcp。</td><td>nginx.manage.sh:70、120；trojan.manage.sh:305</td><td>最小权限；仅操作所属服务进程，端口冲突不杀进程。</td></tr>
+<tr><td>中</td><td>下载目标 /tmp/tmp_download 在当前脚本中未见创建；错误分支依赖 jq/fuser，而 Dockerfile 未显式安装对应工具。</td><td>trojan.manage.sh:26、41、265、305；Dockerfile.trojan:4</td><td>镜像构建验证依赖，运行路径独立测试；实际失败表现待容器实测。</td></tr>
+<tr><td>中</td><td>使用 ping 取 DNS 地址，再经明文 HTTP 获取公网 IPv4；不适配多地址、IPv6、NAT 等环境。</td><td>utils.sh:17–26</td><td>直接 DNS 检查与可达性诊断；最终以 CA challenge 为准，不把 ping 当证书依据。</td></tr>
+<tr><td>隔离旧入口</td><td>旧宿主机脚本预检前先停 Nginx，可能关闭 SELinux，并含全盘查找删除操作。不是当前 Docker 入口。</td><td>trojan_mult.sh:291–330、470</td><td>新部署包不分发此执行入口；迁移前备份，不复用停止/卸载逻辑。</td></tr>
+</tbody></table></div><p class="note">Dockerfile 将整个 config 复制入镜像；当前 Nginx 根目录为 config/dist 的对应位置，因此不能仅凭 COPY 就断言客户端 JSON 能从公网直接下载。这里确认的是明文入库/入镜像风险。</p></section>
+<section><h2>本轮已执行检查</h2><div class="table-wrap"><table><thead><tr><th>检查</th><th>结果</th><th>证据与限制</th></tr></thead><tbody>
+<tr><td>Git 状态与入口核实</td><td><span class="badge pass">完成</span></td><td>初始 main@b155d97，无工作区修改；origin 为本项目仓库。新增设计分支 codex/refactor-design。</td></tr>
+<tr><td>docker compose config --quiet</td><td><span class="badge pass">通过</span></td><td>Compose v2.39.2；仅证明现有 Compose 结构可解析，不证明部署可用。</td></tr>
+<tr><td>全部 8 个 Shell 文件 bash -n</td><td><span class="badge pass">通过</span></td><td>首次 Git Bash 初始化被沙箱拦截；提升执行后仅做语法分析成功，没有执行脚本正文。</td></tr>
+<tr><td>Docker 引擎可用性</td><td><span class="badge pass">已恢复并核实</span></td><td>初次引擎未运行；用户启动后，提升访问权限成功读取：本地 Docker Desktop 4.45 / Engine 28.3.3，Linux amd64。</td></tr>
+<tr><td>现有功能测试与容器实测</td><td><span class="badge pending">部分待执行</span></td><td>旧项目没有测试套件；未验证真实签发、续期和 Trojan 客户端连接。新网关的有界探针单独记录。</td></tr>
+<tr><td>候选组件能力</td><td><span class="badge pass">已查官方文档</span></td><td>官方资料支持选型方向；不等于本项目版本组合已通过联调。见架构来源。</td></tr>
+</tbody></table></div></section>
+<section id="server"><h2>用户授权服务器的实时事实</h2><p>通过严格主机密钥校验的 SSH 连接读取。私钥只使用权限受限的临时副本，用后删除；未把密钥、完整环境变量或口令写入仓库。</p><div class="table-wrap"><table><thead><tr><th>项</th><th>核实结果</th><th>影响</th></tr></thead><tbody>
+<tr><td>系统与容器运行时</td><td>Alibaba Cloud Linux 3.2104 U10 / x86_64；Docker 26.1.3；Compose 2.27.0</td><td>以此作为首个 Linux 验收平台，而非默认 Ubuntu</td></tr>
+<tr><td>现有项目容器</td><td>trojan，镜像 guagua8719/trojan:1.1.5；running；AutoRemove=false；restart policy=no；RestartCount=0</td><td>已授权可操作，但隔离探针无需先停它</td></tr>
+<tr><td>端口</td><td>本项目映射 TCP 80/443（IPv4/IPv6）；另有 8443、8002、8008 监听</td><td>不能直接沿用 8443/8002 示例值；不操作其他业务监听</td></tr>
+<tr><td>实际挂载</td><td>/mnt/trojan/acme-home → /root/.acme.sh；/mnt/trojan/cert → /usr/src/trojan-cert；/mnt/trojan/dist → 静态页面目录</td><td>线上 ACME 路径正确；仓库 Compose 的错配不应泛化为线上状态丢失</td></tr>
+<tr><td>磁盘</td><td>根盘 30G，已用约 23G，可用约 5.2G，82%</td><td>探针有界、限制镜像体积；不清理其他镜像/卷</td></tr>
+</tbody></table></div><p>服务器镜像不能仅凭标签当作当前 checkout 的产物。后续停机或替换前另存运行信息、日志与数据备份；本轮不输出线上域名和密钥内容。</p></section>
+<section id="probe"><h2>已完成的网关可行性探针</h2><p><a href="../tools/probes/gateway_probe.py">探针源码</a> · <a href="evidence/2026-11-11-gateway-probe.json">脱敏结果 JSON</a>。在用户授权 Linux 服务器创建临时 host 网络容器，所有探针监听仅绑定 127.0.0.1；内存 128 MiB、CPU 0.5、只读容器根目录、drop ALL capabilities。</p><div class="table-wrap"><table><thead><tr><th>场景</th><th>实际结果</th><th>断言</th></tr></thead><tbody>
+<tr><td>正向：宿主机回环上游</td><td>PASS</td><td>通过网关返回上游特定哨兵正文</td></tr>
+<tr><td>正向：动态增加端口</td><td>PASS</td><td>同一个容器应用新配置，新增监听返回指定正文</td></tr>
+<tr><td>反向：故意写入不存在的 handler</td><td>PASS</td><td>拒绝原因包含指定非法模块，原有两路请求继续成功</td></tr>
+<tr><td>反向：配置监听一个已被占用的端口</td><td>PASS</td><td>明确返回 address already in use，原有两路请求继续成功</td></tr>
+<tr><td>清理与影响核实</td><td>PASS</td><td>临时容器已删除；原有 13 个运行容器的 ID 与 StartedAt 保持不变</td></tr>
+</tbody></table></div><p>实测 Caddy v2.11.9；精确镜像摘要见 JSON。镜像保留在服务器缓存供后续复测，未执行全局清理；未更改安全组或停止现有服务。P1 通过；P2 仅单组件拒绝行为通过，跨组件事务/崩溃恢复待实现后验证。此处的坏配置注入不等同于未来产品保护逻辑的 mutation 测试。</p></section>
+</main><footer>风险结论来自当前代码和本轮实时核实；没有把其他会话或历史记忆当作已验证事实。</footer></body></html>

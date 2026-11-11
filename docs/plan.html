@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>开发计划与验收 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
+<header><div class="eyebrow">03 / 分期与验收</div><h1>先证明可行，再逐步交付</h1><p class="muted">范围：Docker 全新部署、单管理员、HTTP/HTTPS 反代、公开目录、Trojan 独立端口。具体工期在 M1 后估计，不用未验证假设承诺上线日期。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="architecture.html">架构</a></nav></header><main>
+<section><h2>阶段、依赖与退出条件</h2><div class="table-wrap"><table><thead><tr><th>阶段</th><th>工作与交付</th><th>退出条件</th></tr></thead><tbody>
+<tr><td>M0 · 调研与决策</td><td>审计当前代码，记录基线；确认 HTTP 模式、后台安全、VPN 端口、平台。交付本套 HTML 设计。</td><td>主要决策已确认；服务器系统/架构、端口与现有容器已核实；未知项明确列出。</td></tr>
+<tr><td>M1 · 可行性与版本锁定</td><td>P1–P7 探针；确定 Caddy、Go、VPN 引擎版本/摘要，许可证及维护成本。补充设计 ADR 与原始结果。</td><td>所有关键探针通过；失败项有替代方案且已验证，不能跳过证书发布/443 保留交接。</td></tr>
+<tr><td>M2 · 部署与数据底座</td><td>模块目录、配置 schema、SQLite 迁移；构建镜像；proxyctl/install.sh 初始化、端口预检、健康检查、停止/诊断；离线秘密文件。</td><td>干净主机最少交互启动；二次执行幂等；80/443 任一被占用则不留半启动实例；重建容器不丢状态。</td></tr>
+<tr><td>M3 · 后台与认证</td><td>中文 UI、强口令、TOTP、恢复码、会话/CSRF/限流、日志脱敏、SSH 恢复入口。</td><td>未认证不能读配置或写入；登录绕过/重放/CSRF/恢复码复用被拒；公网 HTTP 无管理入口。</td></tr>
+<tr><td>M4 · 反代与公开目录</td><td>HTTP 反代、域名/路径/自定义端口、WebSocket、目录发布；草稿/校验/生效/回滚与修订审计。</td><td>80→本机服务、8001→目录、8002→另一本机服务均实测；坏配置不破坏原路由；路径穿越及符号链接逃逸测试通过。</td></tr>
+<tr><td>M5 · HTTPS 与证书</td><td>HTTP-01 自动签发、续期/到期状态、手工导入、80 跳转、失败退避、证书发布适配器。</td><td>本地 CA + ACME 测试服务/测试环境验证生命周期；受控域名真实签发；续期后的实际握手指纹正确；失败无明文降级。</td></tr>
+<tr><td>M6 · Trojan 与协议扩展边界</td><td>适配器、runner、配置校验、证书绑定、启停/状态、客户端导出；为后续协议保留能力模型。</td><td>至少一个真实目标客户端成功连通；错误口令/证书拒绝；TCP 与所需 UDP 转发、DNS、断线恢复实测；VPN 不影响网关。</td></tr>
+<tr><td>M7 · 故障演练与发布</td><td>备份恢复、升级回退、资源与长稳、安全扫描、HTML 运维手册、镜像/发布清单。</td><td>干净 Linux 主机复现一键部署；至少 24 小时稳定性观察；进程崩溃/磁盘满/证书失败可诊断和恢复；关键缺陷为零后才发布版本。</td></tr>
+</tbody></table></div><p>依赖顺序：M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7。每阶段更新设计和验收证据，再推进下一阶段；现阶段不直接进入大规模实现。</p></section>
+<section><h2>必须先做的有界探针</h2><p class="note">2026-11-11 进度：P1 已在 Linux 主机通过；P2 的 Caddy 单组件坏配置/端口冲突拒绝通过，跨组件崩溃恢复未执行；P3–P7 待执行。<a href="review.html#probe">查看实测结果与限制</a>。当前 M0 完成、M1 部分完成。</p><div class="table-wrap"><table><thead><tr><th>ID</th><th>问题</th><th>方法与成功标准</th><th>失败处理</th></tr></thead><tbody>
+<tr><td>P1 网络</td><td>host 网络是否满足 loopback 与动态端口？</td><td>Linux 隔离高端口临时服务；Caddy 请求 127.0.0.1 上游；增加两个监听，验证只改网关配置，无需重建容器。</td><td>明确 Linux 限制；验证专用 host relay 备选，不能默默依赖 Desktop 差异。</td></tr>
+<tr><td>P2 配置应用</td><td>坏配置与崩溃如何保住旧配置？</td><td>好配置生效；非法 upstream/重复监听/端口占用失败；故意在 prepared/apply/commit 间中断，恢复到一致修订。</td><td>先完成状态机和回滚设计，再扩展 UI。</td></tr>
+<tr><td>P3 TLS 与交接</td><td>80/443 所有模式是否兼容？</td><td>高端口模拟保留 listener→TLS→失败回滚；再在授权窗口真实 80/443 验证 IPv4/IPv6。验证 ACME 路径不被跳转吞掉。</td><td>修正 portguard/协调协议；不得改为不占 443 来假装通过。</td></tr>
+<tr><td>P4 证书发布</td><td>Caddy 证书如何可靠给 VPN 使用？</td><td>本地短期证书轮换，匹配校验、原子发布、引擎激活、握手指纹、坏密钥回滚；固定存储适配版本。</td><td>评估独立 ACME 服务统一签发；不能让两套组件争抢证书管理。</td></tr>
+<tr><td>P5 协议</td><td>候选引擎是否兼容实际客户端？</td><td>Trojan 独立端口真实端到端，正确/错误认证、TLS 校验、TCP/UDP、重连、证书轮换；客户端名单待开发前补充。</td><td>保留 Trojan 原引擎独立适配，避免因为替换引擎丢兼容性。</td></tr>
+<tr><td>P6 公开目录</td><td>路径边界是否挡住动态攻击？</td><td>临时目录正向下载；../、双重编码、隐藏文件、符号链接、并发换链均不能读到根外哨兵文件。</td><td>使用受限文件打开 API，必要时独立静态容器；不以静态 realpath 校验替代运行期保护。</td></tr>
+<tr><td>P7 鉴权成本</td><td>单机口令安全是否可用？</td><td>目标主机 Argon2id 内存与耗时；并发失败登录受限；TOTP 时间漂移/重放、SSH 恢复；控制面不影响数据面。</td><td>调整预算与并发限流；不降为快速散列。</td></tr>
+</tbody></table></div><p>所有探针：指定时间上限、独立容器名/目录/端口、记录镜像摘要与退出状态，清理仅限本次创建的资源；不得使用全局 prune。真实 CA/云安全组变更需具备明确目标域名或规则，不猜测。</p></section>
+<section><h2>正向、反向与故意破坏</h2><div class="table-wrap"><table><thead><tr><th>模块</th><th>正向</th><th>反向/边界</th><th>移除保护后的预期失败</th></tr></thead><tbody>
+<tr><td>端口</td><td>80/443 空闲启动</td><td>任一占用、仅 IPv6 占用、bind 竞争、同实例重启</td><td>移除冲突处理后，“启动失败不残留”的特定断言失败；其他容器始终未受影响</td></tr>
+<tr><td>认证</td><td>强口令+TOTP 登录/退出</td><td>未登录 API、错误口令、TOTP 重放、会话过期、凭据重置</td><td>移除 auth middleware，原本 401 的配置读取变为可访问，测试明确失败</td></tr>
+<tr><td>CSRF</td><td>合法 Origin/token 写入</td><td>有效会话下缺 token、跨域 Origin、伪造代理头</td><td>使用其他条件均有效的请求，只移除 CSRF 校验时目标失败，避免被其他 guard 掩盖</td></tr>
+<tr><td>规则</td><td>域名/路径、WS 和自定义端口</td><td>重复规则、自循环、后台路径遮蔽、命令注入、元数据地址</td><td>删除对应校验后，指定非法规则被接受导致测试失败</td></tr>
+<tr><td>文件</td><td>范围内下载/可选索引</td><td>越界、编码、符号链接、隐藏文件、大文件 Range/中断</td><td>删除受限打开约束后能够读取哨兵文件，安全测试失败</td></tr>
+<tr><td>证书</td><td>签发/续期/导入/发布</td><td>过期、未来生效、域名不匹配、坏链、私钥不匹配、CA 限流</td><td>删除匹配或有效期校验后，特定坏证书被激活导致失败</td></tr>
+<tr><td>事务</td><td>修订成功且状态一致</td><td>并发修改、应用超时、数据库写失败、重载后崩溃</td><td>移除回滚或恢复分支后，旧路由哨兵请求失败或修订不一致</td></tr>
+<tr><td>VPN</td><td>真实客户端请求与重连</td><td>错误口令、不可信证书、非法配置、引擎崩溃、内网目标</td><td>删除目的地址约束后可触及内部哨兵服务；其他认证条件保持有效</td></tr>
+<tr><td>恢复</td><td>干净目录还原完整状态</td><td>坏备份、版本不兼容、缺主密钥、磁盘满、只读数据盘</td><td>删除完整性检查后错误备份被接受，专门断言失败</td></tr>
+</tbody></table></div><p>每个 mutation 必须证明测试因目标保护缺失而失败，并记录具体断言；不能只看退出码红了。测试固定版本、可复现夹具与明确预期，不用“任何非零都算成功”的脚本。</p></section>
+<section><h2>最终一键部署体验</h2><ol><li>从带校验清单的发布包运行 <code>./install.sh</code>（拟定入口，不是当前可执行功能）。</li><li>选择无域名/域名，填写域名和通知邮箱（需要时）、公开目录映射；工具执行只读环境与端口预检。</li><li>生成秘密文件，启动固定镜像；本地完成管理员 TOTP 绑定，打印一次性恢复材料和后台访问方式。</li><li>域名模式等待证书并显示失败原因；无域名模式打印可复制的 SSH 隧道命令；首版无证书不启用 Trojan。</li><li>后台创建反代/目录规则、设置 Trojan 密码并导出客户端配置；显示生效结果及回滚入口。</li><li>提供 <code>status / doctor / backup / restore / upgrade / rollback / stop</code>，停止保留数据；删除数据是单独显式命令。</li></ol><p>系统不要求用户手写 Nginx/Caddy 配置、进入容器装软件或手工维护 cron。域名解析、云端口放行、Docker 安装前提和证书失败会以中文给出明确修复步骤。</p></section>
+<section><h2>服务器测试与发布管理</h2><p>用户已提供测试服务器密钥路径，并授权启停/删除本项目镜像 guagua8719/trojan 对应容器。操作前必须通过实际 inspect 确认容器身份、AutoRemove、挂载、网络与日志；先导出运行信息/日志，必要时一致性备份，再进入会中断服务的测试。此授权不扩展到其他业务容器或全局资源清理。</p><p>设计/实现使用 codex/ 分支；每阶段完成检查后提交。远端推送、合并和 tag 已获用户一般授权，但仅在内容成熟且对应验证完成时使用，不把草案 tag 为成品。生产部署手册应绑定确切提交和镜像摘要，保留回退版本。</p><p>全新部署不要求保留旧架构。若后续决定沿用旧域名/证书/口令，应转为明确迁移任务，核实旧值有效性并安排暴露凭据轮换。</p></section></main><footer>每一阶段完成时报告：变更、证据、失败/限制、下一阶段入口。未执行的测试不得写成已通过。</footer></body></html>

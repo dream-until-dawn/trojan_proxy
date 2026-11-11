@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>架构与安全设计 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
+<header><div class="eyebrow">02 / 架构与安全设计</div><h1>控制、流量与协议分离</h1><p class="muted">方案 v0.2 · 用户已确认主要运行模式、Trojan 独立端口、Linux 全新部署与 TOTP。组件与实现细节仍需通过 M1 探针。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="plan.html">计划</a></nav></header><main>
+<section><h2>1. 已确认的产品契约</h2><div class="table-wrap"><table><thead><tr><th>模式</th><th>80/TCP</th><th>443/TCP</th><th>后台</th><th>Trojan</th></tr></thead><tbody>
+<tr><td>无域名</td><td>HTTP 反代或静态站点</td><td>本项目保留监听，拒绝业务请求；不宣称提供 HTTPS</td><td>本机/SSH 隧道访问</td><td>默认关闭，直到配置域名证书或导入可信证书</td></tr>
+<tr><td>域名签发中</td><td>仅验证路径与最小状态提示；不接受后台凭据</td><td>证书未就绪时拒绝业务 TLS</td><td>SSH 隧道可用</td><td>等待证书</td></tr>
+<tr><td>域名证书就绪</td><td>ACME 验证优先，其余 308 到规范域名的 HTTPS，保留路径及查询</td><td>HTTPS 站点与后台入口</td><td>HTTPS + 强口令 + TOTP</td><td>独立端口，建议 8443；不与 443 争用</td></tr>
+<tr><td>续期失败</td><td>已有有效证书时维持跳转</td><td>使用仍有效的旧证书，报告退化；过期后阻止受保护业务，不静默改 HTTP</td><td>SSH 恢复入口持续可用</td><td>有效旧证书继续；到期后停止接受新连接</td></tr>
+</tbody></table></div><p>固定占用指 TCP 80/443。首版关闭 HTTP/3，不默认占用 UDP/443；后续 QUIC 协议使用独立 UDP 端口并进入同一端口注册表。未知 Host 不被用于重定向目标，也不触发任意域名自动签发。</p><p>“访问 80 指向本机 xxxx”在无域名模式直接反代；HTTPS 模式先跳转 443，再反代到 xxxx。额外端口（如 8001、8002）按各条规则显式选择 HTTP/HTTPS，默认 HTTP。</p></section>
+<section><h2>2. 组件选择与职责</h2><div class="flow"><div><strong>管理浏览器</strong>HTTPS / SSH 本地隧道<br>单管理员会话</div><div><strong>Caddy 网关</strong>80、443、8001…<br>反代、路由、TLS</div><div><strong>Go 控制服务</strong>认证、模型、校验、审计<br>SQLite + 配置修订</div><div><strong>VPN 运行服务</strong>协议适配器 → sing-box 候选<br>Trojan 8443 / 后续协议</div></div>
+<p>推荐 Go 控制服务、SQLite 存储、TypeScript 前端（建议 React，构建后嵌入控制服务镜像）、Caddy 网关、独立 VPN 引擎。组件版本和镜像摘要在 M1 锁定；不在启动时拉取“最新版”。</p>
+<div class="table-wrap"><table><thead><tr><th>服务</th><th>职责</th><th>权限与失败影响</th></tr></thead><tbody>
+<tr><td>control</td><td>单管理员 API/UI、路由/证书元数据、修订事务、状态与审计、受限目录读取</td><td>非 root；默认仅 127.0.0.1 管理端口（暂定 18090），检查占用；不得挂载 Docker socket，不提供远程终端</td></tr>
+<tr><td>gateway</td><td>Caddy；自动签发/续期；HTTP/HTTPS 反代；无 TLS 时的 443 保留监听由受管 portguard 实现</td><td>仅 NET_BIND_SERVICE；管理接口绑定有权限限制的 Unix socket，不向公网开放 2019；证书状态单独持久化</td></tr>
+<tr><td>vpn</td><td>受管引擎 + 小型 runner：校验配置、受控重载/重启、反馈进程状态</td><td>首版 Trojan 不需要 NET_ADMIN/TUN；runner 仅可控制自身子进程，无任意命令执行；控制 socket 仅 control 可访问</td></tr>
+</tbody></table></div>
+<p>控制面停止时已生效的反代和 VPN 继续运行；VPN 故障不重启网关；后台重启不重新签证书。网关与控制面采用本地 Unix socket 或固定回环端口通讯，所有内控端口保留在注册表中。</p>
+<p>选型依据：<a href="https://caddyserver.com/docs/automatic-https">Caddy 自动 HTTPS</a>提供签发续期基础；<a href="https://caddyserver.com/docs/api">Caddy API</a>支持配置管理与 Unix socket 防护；<a href="https://sing-box.sagernet.org/configuration/inbound/trojan/">sing-box Trojan 入站</a>提供协议配置基础。这里是设计选型，实际兼容性以固定版本探针为准。</p></section>
+<section><h2>3. Docker 与宿主机网络</h2><p>首版 Linux 原生 Docker 使用 <code>network_mode: host</code>，让网关直接访问宿主机 <code>127.0.0.1:xxxx</code>，后台新增端口不必重建 Docker 端口映射。host 模式共享网络命名空间，不再配置 Compose ports；隔离能力降低，需要靠进程权限、受限 API 与端口策略补足。参见 <a href="https://docs.docker.com/engine/network/drivers/host/">Docker host 网络说明</a>。</p>
+<p>仅将 Docker Desktop 用作构建/部分测试；真实网络行为必须在 Linux 服务器验证。bridge 网络是后续可选模式，不能用 host.docker.internal 替代对宿主机仅回环监听服务的完整支持。</p>
+<ol><li>启动前锁住部署操作，检查 Docker/Compose、CPU 架构、目录权限、磁盘、时间、80/443 和所有配置端口的 IPv4/IPv6 占用。</li><li>遇到其他程序占用时，显示可辨识的 PID/容器信息，退出非零；不停止冲突服务，不自动改端口，不改全局防火墙/SELinux。</li><li>检查到真正 bind 之间仍可能发生竞争。最终 bind 失败必须回滚本次创建的进程，不把预检当作端口预留；不得留下半启动实例。</li><li>升级时允许经实例标识及运行状态核实的本项目监听；不把本实例误判为外部冲突，也不只凭容器名字判定归属。</li><li>HTTP-only 的 portguard 持有 443，转换到 TLS 时受协调器控制交接；转换失败恢复原保留状态。该交接是 M1 必须实测的风险点。</li></ol>
+<p>云安全组/上游防火墙放行不等于应用监听。界面区分“配置生效”“本机可达”“外网已验证”；只绑定、不擅自改云防火墙。</p></section>
+<section><h2>4. 后台鉴权与恢复</h2><p>固定单管理员，无注册、多租户和邮件找回。首次通过服务器终端完成强随机口令初始化、TOTP 绑定与恢复码生成；初始化令牌只能本机读取、短时有效、一次使用。未绑定 TOTP 前不开放公网管理。</p>
+<ul><li>口令采用 Argon2id，参数根据目标服务器测量校准；会话使用随机不透明 token，服务端存散列。登录轮换会话，退出/重置凭据撤销全部会话。</li><li>HTTPS 会话 Cookie：Secure、HttpOnly、SameSite=Strict、Host-only；写操作使用 CSRF token + Origin 校验，限制 JSON 请求类型、体积和超时，默认不允许跨域。</li><li>SSH 通道是明确的本地模式：仅 loopback 监听和允许的 localhost Host，使用独立 Cookie/会话命名；不会直接在明文公网接口降级 Cookie 安全选项。</li><li>登录及 TOTP 限流、渐进延迟、统一错误消息；同一步 TOTP 防重放。恢复码单次使用且仅保存散列，TOTP 秘密加密存储，主密钥单独权限保护。</li><li>会话建议空闲 30 分钟、最长 12 小时；导出 VPN 凭据、重置认证、导入证书和还原备份要求近期再次认证。</li><li>专属后台域名不允许被普通路由覆盖。未知 Host、伪造转发头、公开静态站点到后台的访问均有负向测试。</li><li>无密码回显、无日志 token、无 localStorage 长期凭据。SSH 本地恢复命令可重置管理员并记录审计；恢复不依赖网关正常运行。</li></ul>
+<p>后台鉴权不自动保护发布的业务站点。公开目录/反代发布时清楚展示“公网无需登录”；如果后续需要业务访问认证，单独建模，不能用管理员 Cookie 复用。</p>
+<p>实现依据：<a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">OWASP 口令存储</a>、<a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">会话管理</a>与<a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html">CSRF 防护</a>。这些机制不能抵御已取得服务器 root 的攻击者，此信任边界写入运维说明。</p></section>
+<section><h2>5. 路由与公开目录</h2><p>规则包含监听地址/端口、HTTP 或 HTTPS、精确域名、路径前缀、目标类型、目标地址/目录 ID、是否剥离前缀、WebSocket、超时、请求体限制和启用状态。默认保留路径；页面不接受原始 Caddy/Nginx 配置或脚本。</p>
+<div class="table-wrap"><table><thead><tr><th>例子</th><th>用户填写</th><th>行为</th></tr></thead><tbody><tr><td>本机应用</td><td>80 / → 127.0.0.1:3000</td><td>HTTP 模式直接代理；HTTPS 模式在 443 处理业务</td></tr><tr><td>公开下载</td><td>8001 / → 目录 ID public-downloads</td><td>只读文件服务；可显式启用索引</td></tr><tr><td>其他应用</td><td>8002 / → 127.0.0.1:9000</td><td>独立 HTTP 入口；端口冲突不影响已有规则</td></tr><tr><td>子域名或路径</td><td>app.example.com /api → 127.0.0.1:8080</td><td>精确 Host + 路径前缀，最长前缀优先</td></tr></tbody></table></div>
+<p>保护的系统路由优先于业务路由；同一端口/Host/路径重复规则拒绝；80/443、后台、引擎控制端口不可被自定义监听器覆盖。禁止反代回自身形成循环，禁止云元数据/link-local 和内控接口；允许明确配置的宿主机应用端口。首版上游限定本机 IP，远程 LAN/域名上游后续再扩展，避免引入 DNS 重绑定面。</p>
+<p>发布根目录由安装配置显式挂载到 <code>/srv/public/&lt;id&gt;</code>，后台只能选择此范围。禁止宿主机根目录、密钥、数据库、Docker socket 等敏感位置；新增挂载通过 CLI/部署配置完成，后台不能任意挂载宿主机。</p>
+<p class="warn">仅配置 Caddy root 不构成文件系统沙箱。首版公开文件走受限文件模块：从根目录描述符出发、拒绝符号链接与越界、处理 URL 编码及路径竞争，文件打开后再流式输出；只读挂载作为第二道边界。用恶意目录与并发换链探针验证，不依赖字符串前缀检查。参见 <a href="https://caddyserver.com/docs/caddyfile/directives/file_server">Caddy 文件服务边界说明</a>。</p>
+<p>默认拒绝隐藏文件、配置与凭据文件；目录索引默认关闭；公开目录应作为专用发布目录，不承诺识别所有用户误放的敏感内容。不支持上传、编辑、脚本执行。</p></section>
+<section><h2>6. 证书生命周期</h2><p>Caddy 是自动证书的唯一写入者，control 维护证书绑定、来源与状态。首版支持单域名/多域名普通证书、HTTP-01、手工导入；DNS-01/泛域名暂不进入交付。不开启根据任意访问 Host 触发的无限制签发。</p>
+<pre>disabled → validating → issuing → ready → renewing → ready
+                              ↘ failed        ↘ degraded（旧证书有效）
+                                              ↘ expired（关闭受保护业务）</pre>
+<p>校验 SAN、有效期、私钥匹配、证书链及部署时间；到期时间来自证书本身。界面显示签发者、覆盖域名、notAfter、续期任务/失败原因和实际使用指纹。导入替换先验证再切换，失败保留旧版本。</p>
+<p>Trojan 仅获得其绑定域名的证书副本，不挂载完整 ACME 账号目录。M1 验证固定版本的证书读取/发布适配器：成对读取证书和密钥、核验匹配、写入新版本目录、原子更新引用、引擎校验后激活；不能假定 Caddy 私有存储路径永久稳定。后台以实际握手指纹确认生效，不以文件更新时间判断。</p>
+<p>续期不重启整套 Compose。若引擎不支持无损证书重载，则界面提示 VPN 短暂重连并限定仅重启该引擎；长期连接行为通过实测确定。失败退避，测试默认 ACME staging/本地 CA；真实签发只针对服务器拥有且解析正确的域名，记录一次受控成功。</p></section>
+<section><h2>7. 多协议接口与配置事务</h2><pre>ProtocolAdapter
+  Capabilities()   // TCP/UDP、TLS、TUN、重载方式及客户端能力
+  Validate()       // 规范化配置与拒绝不支持的组合
+  Render()         // 生成引擎配置；禁止拼 shell
+  Check()          // 调用引擎原生语法校验
+  Apply()/Health() // 受管 runner 应用与状态观察
+  ExportClient()   // 显式操作才导出敏感客户端配置</pre>
+<p>首版实现 Trojan 适配器；sing-box 是候选引擎而不是产品数据模型。Shadowsocks/Hysteria2 可共享引擎，WireGuard 需要单独的网络权限和生命周期，不能假设“换一个 type 即可”。协议凭据与管理员凭据分离；VPN 出站默认禁止访问宿主机管理接口、云元数据和私有网段，防止泄漏的 VPN 凭据变成内网入口。限制需覆盖 IPv4/IPv6、服务器自身公网地址和域名解析后的实际目标，DNS 解析服务通过独立的明确规则允许。</p>
+<pre>提交草稿（携带 revision）
+ → 结构/冲突/权限校验 → 生成完整配置 → 引擎原生检查
+ → 持久化 prepared 修订 → 串行应用 → 实际健康探针
+ → 标记 applied；失败则回滚 last-known-good
+ → 恢复失败标记 degraded，禁止并发继续写，保留 SSH 修复入口</pre>
+<p>数据库和多个进程之间没有跨进程原子事务：使用持久化状态机与补偿回滚，不声称一条数据库事务就能保证一致。启动时比对 desired revision、实际 revision 与配置摘要；中途崩溃先恢复一致状态，再接受写入。乐观并发冲突返回 409，所有应用操作持有全局串行锁。</p>
+<p>路由变化只应用到网关；协议变化只应用到 VPN；证书更新按绑定关系通知。旧配置在新版本验证前保持服务。审计记录操作者、修改摘要、修订号与结果，不记录口令/私钥。</p></section>
+<section><h2>8. 模块与持久化布局</h2><pre>cmd/control/           控制面入口
+cmd/proxyctl/          初始化、诊断、备份恢复 CLI
+cmd/runner/            VPN 受限进程管理
+cmd/portguard/         无域名 443 保留与受控交接
+internal/auth/         口令、TOTP、会话、恢复码
+internal/api/          HTTP handler 与输入 DTO
+internal/config/       配置 schema 与迁移
+internal/routes/       监听、域名、路径冲突模型
+internal/files/        受限文件打开、索引与下载
+internal/certificates/  证书校验、状态、发布适配器
+internal/gateway/      Caddy 编译器与控制客户端
+internal/protocols/    公共契约与 trojan/ 适配器
+internal/runtime/      修订协调、回滚、健康状态
+internal/storage/      SQLite repository 与 migrations/
+internal/audit/        审计与脱敏
+web/src/features/      auth/routes/certificates/vpn/system
+deploy/                Compose、Dockerfile、示例配置
+scripts/               少量部署入口；不承载业务逻辑
+tests/                 unit/integration/e2e/security/mutation
+tools/probes/          有界可行性探针
+docs/                  HTML 设计、验收与运维说明</pre>
+<p>主机数据分为 config、control、certificates、vpn-runtime、public、backups。权限分离，秘密 0600，配置和日志轮转；数据库备份用一致性备份 API 或停止写入的受控流程，不能直接复制正在写入的单个 SQLite 文件。</p>
+<p>备份包括数据库、配置修订、ACME 账号/证书、恢复所需密钥与版本清单；加密离线保存，还原在干净目录演练。镜像只读根文件系统、必要 tmpfs、资源限制、日志上限、restart 策略。交付时使用固定版本及摘要，输出依赖/许可证清单与安全扫描结果。</p>
+<p>导出函数、接口、复杂分支、权限边界和回滚逻辑必须中文注释；用有意义的命名表达普通代码，不以机械注释行比例替代可读性。开发审查检查目录职责与跨模块依赖。</p></section></main><footer>这是拟实施设计，不是已实现功能清单。最终参数、镜像版本和限制在 M1 验证后锁定。</footer></body></html>

@@ -1,0 +1,24 @@
+{
+  "recorded_date": "2026-11-11",
+  "timezone": "Asia/Shanghai",
+  "environment": "User-authorized Linux server; Alibaba Cloud Linux 3.2104 U10; x86_64; Docker 26.1.3",
+  "checks": {
+    "host_loopback_proxy": "PASS",
+    "dynamic_listener_without_recreate": "PASS",
+    "invalid_handler_rejected_old_routes_live": "PASS",
+    "occupied_port_rejected_old_routes_live": "PASS"
+  },
+  "limitations": [
+    "仅验证回环 HTTP 与 Caddy 单组件配置应用，未验证真实 80/443。",
+    "未验证 ACME、跨组件事务、证书发布、鉴权或 Trojan。"
+  ],
+  "image_id": "sha256:5813f7eb9b94fac4970f9f576695fe1ed1d53d41586fd3eaa350caf7c4627d9c",
+  "repo_digests": [
+    "caddy@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9"
+  ],
+  "version": "v2.11.9 h1:bhZtcRKQOq0fuLvEgCdPYvUxXyGn9kzjG4lh2332DTE=",
+  "probe_container_removed": true,
+  "existing_running_containers_unchanged": true,
+  "existing_running_container_count": 13,
+  "passed": true
+}
