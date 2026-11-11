@@ -29,10 +29,19 @@ with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
     compose=['docker','compose','-p',prefix,'-f',root/'deploy/compose.yaml','-f',override]
     try:
         resolved=json.loads(command(compose+['config','--format','json']).stdout)
+        if os.environ.get('TROJAN_GATEWAY_CACHE_MUTATION')=='1':
+            # 新Compose会拒绝重复target，故直接替换成可写临时盘；
+            # 必须由持久性断言发现，不能让解析器或UID权限提前掩盖该断言。
+            gateway=resolved['services']['admin-gateway']
+            gateway['volumes']=[v for v in gateway['volumes'] if v['target']!='/data']
+            gateway['tmpfs']=['/data:uid=10001,gid=10001,mode=0700','/config:uid=10001,gid=10001,mode=0700','/tmp:uid=10001,gid=10001,mode=0700']
+            override.write_text(json.dumps(resolved),encoding='utf-8')
+            compose=['docker','compose','-p',prefix,'-f',override]
         command(compose+['up','-d','lab'])
         lab=command(compose+['ps','-q','lab']).stdout.strip()
         public=resolved['volumes']['fixture-public']['name']
         data=resolved['volumes']['control-data']['name']
+        cache=resolved['volumes']['caddy-data']['name']
         command(['docker','run','--rm','--network','none','-v',public+':/fixture','alpine:3.22','sh','-c','printf readonly-file-sentinel > /fixture/download.txt && chmod 0755 /fixture && chmod 0644 /fixture/download.txt'])
         backend=command(['docker','run','-d','--name',prefix+'-backend','--network','container:'+lab,'--user','10001:10001','--read-only','--cap-drop','ALL','python:3.12-slim','python','-c',
             'import http.server\nclass H(http.server.BaseHTTPRequestHandler):\n def do_GET(self):\n  self.send_response(200);self.end_headers();self.wfile.write(b"upstream-sentinel")\n def log_message(self,*args):pass\nhttp.server.HTTPServer(("127.0.0.1",19000),H).serve_forever()']).stdout.strip()
@@ -58,6 +67,10 @@ with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
                 if int(fields[key],16)!=capability:raise RuntimeError('runtime capability set too wide or missing: '+service+' '+key)
             if fields['NoNewPrivs'].strip()!='1':raise RuntimeError('runtime no-new-privileges missing: '+service)
         report['checks']['actual_uid_gid_all_capability_sets_and_no_new_privs']=True
+        write_cache=command(compose+['exec','-T','--user','10001:10001','admin-gateway','sh','-c','umask 077; printf persistent-cache-sentinel > /data/.persistence-probe'],allow_failure=True)
+        if write_cache.returncode:raise RuntimeError('gateway cache is not writable as runtime UID')
+        read_cache=command(['docker','run','--rm','--network','none','--user','10001:10001','--read-only','--cap-drop','ALL','-v',cache+':/cache:ro','alpine:3.22','cat','/cache/.persistence-probe'],allow_failure=True)
+        if read_cache.returncode or read_cache.stdout.strip()!='persistent-cache-sentinel':raise RuntimeError('gateway cache mount is not persistent')
         negative=command(compose+['exec','-T','control','proxyctl','setup-token'],allow_failure=True)
         if negative.returncode==0 or '交互终端' not in negative.stdout:raise RuntimeError('setup token accepted non-TTY output')
         report['checks']['setup_token_no_tty_rejected']=True
@@ -77,6 +90,8 @@ with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
         ready()
         flow('verify')
         report['checks']['container_recreation_preserved_account_routes_settings']=True
+        if command(compose+['exec','-T','--user','10001:10001','admin-gateway','cat','/data/.persistence-probe']).stdout.strip()!='persistent-cache-sentinel':raise RuntimeError('gateway cache disappeared after recreation')
+        report['checks']['cache_persists_across_container_recreation']=True
         restore=command(['docker','volume','create',prefix+'-restore']).stdout.strip()
         command(['docker','run','--rm','--network','none','-v',restore+':/restore','alpine:3.22','sh','-c','chown 10001:10001 /restore && chmod 0700 /restore'])
         command(['docker','run','--rm','--network','container:'+lab,'--user','10001:10001','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--memory','192m','--tmpfs','/tmp',

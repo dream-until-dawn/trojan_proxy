@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "commit": "ab5358165f8b23975ecd388c4b97c150f77c8951",
+  "archive_sha256": "34168e607fdf376610a6f22b3a2bef1c13ebe38587a80b51e0e88ce431e375e1",
+  "backup": "/opt/trojan-proxy-refactor/backups/before-standard-20261111T143550Z",
+  "active_listener_negative_probe": true,
+  "web_checks": {
+    "80/ qin-xin.top": 308,
+    "80/robots.txt qin-xin.top": 200,
+    "443/ qin-xin.top": 200,
+    "443/robots.txt qin-xin.top": 200,
+    "443/ wrong.example": 404,
+    "8007/ qin-xin.top:8007": 200
+  },
+  "connectivity": {
+    "port": 18443,
+    "runner_started": "2026-11-11T14:36:03.196383119Z",
+    "checks": {
+      "local_tls": {
+        "tls": "TLSv1.3",
+        "certificate_sha256": "2e978bb599d560cc7bf8bd17073a3e8848fc81d4639a44a88e21b363a39f831f"
+      },
+      "direct_google_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_domain_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_ip_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_https": {
+        "status_line": "HTTP/1.1 204 No Content",
+        "inner_tls_verified": true
+      },
+      "wrong_password": {
+        "rejected": true,
+        "error_type": "ConnectionResetError"
+      }
+    }
+  },
+  "schema": 3,
+  "revision": 7,
+  "authentication_preserved": true,
+  "routes_preserved": true,
+  "master_key_preserved": true,
+  "unrelated_processes_unchanged": true,
+  "actual_privileges_checked": true,
+  "old_container_retained_stopped": "175cd41e4bdb1710ce9523715125a6c765ccafcbb27876e4527dc708dff163b6",
+  "images": {
+    "trojan-control:m6": "sha256:99204f4970f50845111b3a3011774ca448e505b291f8a2121071a9b92e375e94",
+    "trojan-runner:dev": "sha256:78cc827dd0b697c51476e90cb484767778c50e277fbb7f03a4c8df8c15ac59d6",
+    "trojan-gateway:dev": "sha256:c402ba20a5229d6dae20c03ad474356c656b9da5b18c80a80c1057ac8acdc749"
+  },
+  "observation_started_utc": "2026-11-11T14:36:05.000761Z",
+  "note": "Initial standard-port handoff; subsequent automatic certificate switch is recorded separately. No target traffic history is exported."
+}

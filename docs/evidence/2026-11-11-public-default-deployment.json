@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "scope": "disposable isolated Compose; no real server or public CA",
+  "checks": {
+    "actual_uid_gid_all_capability_sets_and_no_new_privs": true,
+    "setup_token_no_tty_rejected": true,
+    "first": {
+      "passed": true,
+      "output": "=== RUN   TestDisposableComposeFlow\n--- PASS: TestDisposableComposeFlow (1.26s)\nPASS\n"
+    },
+    "verify": {
+      "passed": true,
+      "output": "=== RUN   TestDisposableComposeFlow\n--- PASS: TestDisposableComposeFlow (0.02s)\nPASS\n"
+    },
+    "repeated_up_preserved_web_settings": true,
+    "container_recreation_preserved_account_routes_settings": true,
+    "cache_persists_across_container_recreation": true,
+    "live_control_lock_online_backup_and_cold_restore_auth_gate": true,
+    "unprivileged_port_start_1024_nonroot_gateway": true
+  },
+  "disposable_project_cleanup": true
+}

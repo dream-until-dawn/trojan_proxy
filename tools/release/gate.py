@@ -87,6 +87,8 @@ try:
     progress('根模块与两个独立引擎模块测试、静态检查')
     command([sys.executable,'tools/validate.py'],log='modules.log')
     report['checks']['three_modules_test_vet']='passed'
+    command([sys.executable,'-m','unittest','discover','-s','tools/stability','-p','test_*.py'],log='stability-verdicts.log')
+    report['checks']['stability_positive_negative_verdicts']='passed'
     progress('Linux关键并发路径race检查')
     command(['docker','build','-f','deploy/Dockerfile.tests','-t','trojan-tests:release','.'],timeout=240,log='linux-race.log')
     report['checks']['linux_race']='passed'
@@ -117,6 +119,12 @@ try:
     result=json.loads(output)
     if result.get('expected_mutation_failure')!='目的地址保护失效 127.0.0.1 public-sentinel':raise RuntimeError('定向破坏未触发指定断言')
     report['checks']['vpn_egress_mutation']='passed'
+    progress('持久证书缓存被可写tmpfs覆盖的定向破坏')
+    negative=subprocess.run([sys.executable,'tools/probes/default_deployment_probe.py'],cwd=ROOT,env=dict(environment,TROJAN_GATEWAY_CACHE_MUTATION='1'),stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=90)
+    (LOGS/'cache-mount-mutation.json').write_text(negative.stdout,encoding='utf-8')
+    result=json.loads(negative.stdout)
+    if negative.returncode==0 or result.get('error')!='gateway cache mount is not persistent' or result.get('disposable_project_cleanup') is not True:raise RuntimeError('临时盘覆盖未命中持久性保护断言')
+    report['checks']['gateway_cache_mount_mutation']='passed'
     if command(['git','status','--porcelain']):raise RuntimeError('门槛执行期间源码发生变化')
     report['passed']=True
 except Exception as error:

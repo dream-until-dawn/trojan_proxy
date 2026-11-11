@@ -1,4 +1,5 @@
 """有界只读诊断：凭据仅在服务器内存使用，不输出原始配置或秘密。"""
+import argparse
 import hashlib
 import ipaddress
 import json
@@ -6,6 +7,12 @@ import socket
 import ssl
 import struct
 import subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--project', default='trojan-refactor')
+parser.add_argument('--deployment-config', default='/opt/trojan-proxy-refactor/admin.proxy.example.json')
+parser.add_argument('--domain', help='明确给定当前业务域名时不读取旧部署文件')
+options = parser.parse_args()
 
 
 def docker(args):
@@ -29,7 +36,7 @@ def check(operation):
         return {'error_type': type(error).__name__, 'message': str(error)[:200]}
 
 
-ids = docker(['ps', '-q', '--filter', 'label=com.docker.compose.project=trojan-refactor',
+ids = docker(['ps', '-q', '--filter', 'label=com.docker.compose.project=' + options.project,
               '--filter', 'label=com.docker.compose.service=vpn-runner']).decode().split()
 if len(ids) != 1:
     raise RuntimeError('Expected exactly one owned VPN runner')
@@ -40,9 +47,11 @@ if not container['State']['Running']:
 config = json.loads(docker(['exec', ids[0], 'cat', '/run/vpn/private/config.json']))
 inbound = config['inbounds'][0]
 port = inbound['listen_port']
-with open('/opt/trojan-proxy-refactor/admin.proxy.example.json') as stream:
-    deployment = json.load(stream)
-domain = deployment['domain']
+if options.domain:
+    domain = options.domain
+else:
+    with open(options.deployment_config) as stream:
+        domain = json.load(stream)['domain']
 report = {'port': port, 'runner_started': container['State']['StartedAt'], 'checks': {}}
 
 

@@ -1,0 +1,104 @@
+{
+  "passed": true,
+  "scope": "real public Let’s Encrypt HTTP-01 after owner-confirmed UI switch",
+  "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+  "not_after_utc": "2027-02-09T13:50:03Z",
+  "public_web": {
+    "passed": true,
+    "checks": {
+      "HTTP qin-xin.top/": {
+        "status": 308
+      },
+      "HTTP qin-xin.top/robots.txt": {
+        "status": 200
+      },
+      "HTTPS qin-xin.top/": {
+        "status": 200,
+        "welcome_and_privacy": true
+      },
+      "HTTPS qin-xin.top/robots.txt": {
+        "status": 200
+      },
+      "HTTPS wrong.example/": {
+        "status": 404
+      }
+    },
+    "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+  },
+  "public_admin": {
+    "origin": "https://qin-xin.top:8007",
+    "checks": {
+      "GET /": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "GET /vpn.js": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "GET /traffic.js": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/status": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/export": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/live": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/dashboard": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/clear": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/dashboard wrong-origin": {
+        "status": 403,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/export wrong-origin": {
+        "status": 403,
+        "cache_control": "no-store"
+      }
+    },
+    "passed": true,
+    "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+  },
+  "vpn": {
+    "port": 18443,
+    "runner_started": "2026-11-11T14:36:03.196383119Z",
+    "checks": {
+      "local_tls": {
+        "tls": "TLSv1.3",
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+      },
+      "direct_google_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_domain_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_ip_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_https": {
+        "status_line": "HTTP/1.1 204 No Content",
+        "inner_tls_verified": true
+      },
+      "wrong_password": {
+        "rejected": true,
+        "error_type": "ConnectionResetError"
+      }
+    }
+  },
+  "public_renewal_not_yet_due": true,
+  "isolated_short_lived_renewal_gate_passed": true
+}

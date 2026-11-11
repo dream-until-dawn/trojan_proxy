@@ -1,6 +1,6 @@
-# 发布前仍需替换为通过门槛且已经公开的固定镜像版本；镜像覆盖仅用于隔离验收。
+# 固定为通过完整CI门槛且已匿名拉取的Linux/amd64候选；正式发布仍待长稳验收。
 name: trojan-proxy
-x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control:2.0.0-rc.1}
+x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:2a98bbc8cbc5af6b4143c86965ecc10b4e70d61ffe26612a549d7be20fc09b96}
 x-logging: &logging
   driver: json-file
   options: {max-size: "5m", max-file: "3"}
@@ -27,7 +27,7 @@ services:
     pids_limit: 32
     logging: *logging
   admin-gateway:
-    image: ${TROJAN_GATEWAY_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-gateway:2.0.0-rc.1}
+    image: ${TROJAN_GATEWAY_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:2a0a7ec4cc68caf224863b18b2cb9b3ee3a3ebad69f7d89ed991d1fc61cb6995}
     depends_on:
       prepare: {condition: service_completed_successfully}
     command: [caddy, run, --config, /run/caddy/bootstrap.json]
@@ -42,14 +42,16 @@ services:
       - gateway-run:/run/caddy
       - certificates:/certificates:ro
       - caddy-data:/data
-    tmpfs: [/config, /tmp]
+    tmpfs:
+      - /config:uid=10001,gid=10001,mode=0700
+      - /tmp:uid=10001,gid=10001,mode=0700
     mem_limit: 128m
     cpus: 0.5
     pids_limit: 128
     restart: unless-stopped
     logging: *logging
   vpn-runner:
-    image: ${TROJAN_RUNNER_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-runner:2.0.0-rc.1}
+    image: ${TROJAN_RUNNER_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737}
     depends_on:
       prepare: {condition: service_completed_successfully}
     user: "10002:10001"

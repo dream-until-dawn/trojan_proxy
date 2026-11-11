@@ -2,7 +2,7 @@
 
 trojan 代理 docker 容器
 
-> 重构规划与当前代码分开维护：请从 [HTML 设计文档](docs/index.html) 阅读已确认需求、现状审计、架构和开发验收计划。以下为旧版使用说明。
+> 重构候选已上线验证：使用 [HTML 部署与维护手册](docs/operations.html) 和 `deploy/compose.yaml`，固定摘要镜像可匿名拉取，业务在后台配置。架构与进度见 [HTML 文档](docs/index.html)。正式发布仍待长稳验收。以下为旧版使用说明。
 
 ## 证书管理
 

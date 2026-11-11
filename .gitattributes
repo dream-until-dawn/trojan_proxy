@@ -1,0 +1,12 @@
+# Go嵌入的网页资源必须与Linux检出保持同样字节，避免跨平台镜像散列漂移。
+*.go text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.py text eol=lf
+Dockerfile* text eol=lf
+*.png -text
+*.tar.gz -text

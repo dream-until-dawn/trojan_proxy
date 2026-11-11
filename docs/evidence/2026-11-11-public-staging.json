@@ -1,0 +1,63 @@
+{
+  "passed": true,
+  "source_commit": "2dfb4dcd556949c32aeb176a77a6daafe3506259",
+  "images": {
+    "control": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:2a98bbc8cbc5af6b4143c86965ecc10b4e70d61ffe26612a549d7be20fc09b96",
+      "manifest_digest": "sha256:2a98bbc8cbc5af6b4143c86965ecc10b4e70d61ffe26612a549d7be20fc09b96",
+      "config_digest": "sha256:d97141c36b0535103a39d61c9b828f245f2bc76b758e5a0696f813b07361c0af",
+      "platform": "linux/amd64"
+    },
+    "runner": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+      "manifest_digest": "sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+      "config_digest": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+      "platform": "linux/amd64"
+    },
+    "gateway": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:2a0a7ec4cc68caf224863b18b2cb9b3ee3a3ebad69f7d89ed991d1fc61cb6995",
+      "manifest_digest": "sha256:2a0a7ec4cc68caf224863b18b2cb9b3ee3a3ebad69f7d89ed991d1fc61cb6995",
+      "config_digest": "sha256:9a487985099a61742274a4feec684ceb6e60ae71e78afdd32923518018547863",
+      "platform": "linux/amd64"
+    }
+  },
+  "certificate_handshakes": {
+    "443": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+    "8007": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+    "18443": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+  },
+  "private_backup": "/opt/trojan-proxy-refactor/backups/before-public-images-20261111T150035Z",
+  "revision": 13,
+  "owner_settings_preserved": true,
+  "authentication_preserved": true,
+  "cache_persistence_verified": true,
+  "unrelated_containers_unchanged": true,
+  "connectivity": {
+    "port": 18443,
+    "runner_started": "2026-11-11T15:00:36.79856231Z",
+    "checks": {
+      "local_tls": {
+        "tls": "TLSv1.3",
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+      },
+      "direct_google_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_domain_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_ip_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_https": {
+        "status_line": "HTTP/1.1 204 No Content",
+        "inner_tls_verified": true
+      },
+      "wrong_password": {
+        "rejected": true,
+        "error_type": "ConnectionResetError"
+      }
+    }
+  },
+  "observation_started_utc": "2026-11-11T15:00:38.114599Z"
+}
