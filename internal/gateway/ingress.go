@@ -71,21 +71,29 @@ func validateIngress(s Settings, rules []routes.Rule) error {
 	return nil
 }
 
-func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any) {
+func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any) error {
 	// 不生成任何公网明文后台；无域名时只保留控制服务的SSH隧道入口。
 	if s.Domain == "" {
 		delete(servers, "admin")
 		delete(tlsApp, "certificates")
 		if servers["public_80"] == nil {
-			servers["public_80"] = publicServer(":80", nil)
+			welcome, err := welcomeRoute("")
+			if err != nil {
+				return err
+			}
+			servers["public_80"] = publicServer(":80", []any{welcome})
 		}
 		reserved := publicServer(":443", nil)
 		reserved["tls_connection_policies"] = []any{map[string]any{"drop": true}}
 		servers["public_443"] = reserved
-		return
+		return nil
 	}
 	if servers["public_443"] == nil {
-		servers["public_443"] = publicServer(":443", nil)
+		welcome, err := welcomeRoute(s.Domain)
+		if err != nil {
+			return err
+		}
+		servers["public_443"] = publicServer(":443", []any{welcome})
 	}
 	https := servers["public_443"].(map[string]any)
 	https["tls_connection_policies"] = []any{map[string]any{}}
@@ -95,10 +103,11 @@ func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any)
 	servers["public_80"] = publicServer(":80", []any{redirect})
 	if s.Ingress.Mode == "manual" {
 		tlsApp["certificates"] = map[string]any{"load_files": []any{map[string]any{"certificate": s.Ingress.Certificate, "key": s.Ingress.Key}}}
-		return
+		return nil
 	}
 	tlsApp["certificates"] = map[string]any{"automate": []string{s.Domain}}
 	tlsApp["automation"] = map[string]any{"policies": []any{map[string]any{"subjects": []string{s.Domain}, "issuers": []any{map[string]any{"module": "acme", "ca": "https://acme-v02.api.letsencrypt.org/directory", "challenges": map[string]any{"tls-alpn": map[string]any{"disabled": true}}}}}}}
+	return nil
 }
 
 func notFound() any {

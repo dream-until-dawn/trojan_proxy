@@ -46,10 +46,12 @@ func TestAutomaticIngressBindsDomainAndHTTPRedirect(t *testing.T) {
 	if err = json.Unmarshal([]byte(body), &config); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(config.Apps.HTTP.Servers["public_80"].Routes[0]), "3000") {
+	httpRoutes, _ := json.Marshal(config.Apps.HTTP.Servers["public_80"].Routes)
+	httpsRoutes, _ := json.Marshal(config.Apps.HTTP.Servers["public_443"].Routes)
+	if strings.Contains(string(httpRoutes), "3000") {
 		t.Fatal("域名模式仍在HTTP承载业务")
 	}
-	if !strings.Contains(string(config.Apps.HTTP.Servers["public_443"].Routes[0]), "3000") {
+	if !strings.Contains(string(httpsRoutes), "3000") {
 		t.Fatal("80规则未迁移到HTTPS")
 	}
 	for _, required := range []string{`"automate":["qin-xin.top"]`, `"status_code":308`, `https://qin-xin.top{http.request.uri}`, `"tls-alpn":{"disabled":true}`} {

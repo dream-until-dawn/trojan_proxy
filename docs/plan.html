@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>开发计划与验收 · Trojan Proxy</title><link rel="stylesheet" href="assets/docs.css"></head><body>
 <header><div class="eyebrow">03 / 分期与验收</div><h1>先证明可行，再逐步交付</h1><p class="muted">范围：Docker 全新部署、单管理员、HTTP/HTTPS 反代、公开目录、Trojan 独立端口。具体工期在 M1 后估计，不用未验证假设承诺上线日期。</p><nav><a href="index.html">总览</a><a href="review.html">现状</a><a href="architecture.html">架构</a></nav></header><main>
-<section><h2>阶段、依赖与退出条件</h2><p class="note">当前：M0完成；M1关键隔离探针与安全构建通过，真实80/443交接仍待验收；M2/M3底座与认证已部署，最终一键安装、SSH重置及恢复工具未完成；M4自定义HTTP反代/目录已部署；M5隔离ACME/续期已通过，公共ACME及证书管理未完成；M6管理与runner已并行部署，等待Clash Verge/Clash Mi真机反馈；M7自动门槛已通过，完整故障/备份恢复和24小时长稳未完成。<a href="vpn-staging.html">当前所有者操作</a>。</p><div class="table-wrap"><table><thead><tr><th>阶段</th><th>工作与交付</th><th>退出条件</th></tr></thead><tbody>
+<section><h2>阶段、依赖与退出条件</h2><p class="note">当前：M0完成；M1关键隔离探针与安全构建通过，真实80/443交接仍待验收；M2/M3底座与认证已部署，最终一键安装、SSH重置及恢复工具未完成；M4自定义HTTP反代/目录已部署；M5隔离ACME/续期已通过，公共ACME及证书管理未完成；M6管理与runner已并行部署，所有者已确认放行18443后Google可达，具体客户端版本及逐设备UDP尚未单列；M7自动门槛已通过，完整故障/备份恢复和24小时长稳未完成。<a href="vpn-staging.html">当前所有者操作</a>。</p><div class="table-wrap"><table><thead><tr><th>阶段</th><th>工作与交付</th><th>退出条件</th></tr></thead><tbody>
 <tr><td>M0 · 调研与决策</td><td>审计当前代码，记录基线；确认 HTTP 模式、后台安全、VPN 端口、平台。交付本套 HTML 设计。</td><td>主要决策已确认；服务器系统/架构、端口与现有容器已核实；未知项明确列出。</td></tr>
 <tr><td>M1 · 可行性与版本锁定</td><td>P1–P7 探针；确定 Caddy、Go、VPN 引擎版本/摘要，许可证及维护成本。补充设计 ADR 与原始结果。</td><td>所有关键探针通过；失败项有替代方案且已验证，不能跳过证书发布/443 保留交接。</td></tr>
 <tr><td>M2 · 部署与数据底座</td><td>模块目录、配置 schema、SQLite 迁移；构建镜像；默认启动与网页初始化、端口预检、健康检查、停止/诊断；离线秘密文件。</td><td>干净主机最少交互启动；二次执行幂等；80/443 任一被占用则不留半启动实例；重建容器不丢状态。</td></tr>
-<tr><td>M3 · 后台与认证</td><td>中文 UI、强口令、TOTP、恢复码、会话/CSRF/限流、日志脱敏、SSH 恢复入口；首次浏览器绑定与入口切换（新增待做）。</td><td>未认证不能读配置或写入；登录绕过/重放/CSRF/恢复码复用被拒；公网 HTTP 无管理入口。</td></tr>
-<tr><td>M4 · 反代与公开目录</td><td>HTTP 反代、域名/路径/自定义端口、WebSocket、目录发布；草稿/校验/生效/回滚与修订审计；默认欢迎页与全站爬虫声明（新增待做）。</td><td>80→本机服务、8001→目录、8002→另一本机服务均实测；坏配置不破坏原路由；路径穿越及符号链接逃逸测试通过。</td></tr>
+<tr><td>M3 · 后台与认证</td><td>中文 UI、强口令、TOTP、恢复码、会话/CSRF/限流、日志脱敏、SSH 恢复入口；首次浏览器绑定（代码及有界验证通过）、入口切换（待做）。</td><td>未认证不能读配置或写入；登录绕过/重放/CSRF/恢复码复用被拒；公网 HTTP 无管理入口。</td></tr>
+<tr><td>M4 · 反代与公开目录</td><td>HTTP 反代、域名/路径/自定义端口、WebSocket、目录发布；草稿/校验/生效/回滚与修订审计；默认欢迎页与全站爬虫声明（隔离网关已验证，待线上交接）。</td><td>80→本机服务、8001→目录、8002→另一本机服务均实测；坏配置不破坏原路由；路径穿越及符号链接逃逸测试通过。</td></tr>
 <tr><td>M5 · HTTPS 与证书</td><td>HTTP-01 自动签发、续期/到期状态、手工导入、80 跳转、失败退避、证书发布适配器。</td><td>本地 CA + ACME 测试服务/测试环境验证生命周期；受控域名真实签发；续期后的实际握手指纹正确；失败无明文降级。</td></tr>
 <tr><td>M6 · Trojan 与协议扩展边界</td><td>适配器、runner、配置校验、证书绑定、启停/状态、客户端导出；为后续协议保留能力模型；实际目标 IP、流量/网速记录及 30 天保留（新增待做）。</td><td>至少一个真实目标客户端成功连通；错误口令/证书拒绝；TCP 与所需 UDP 转发、DNS、断线恢复实测；VPN 不影响网关。</td></tr>
 <tr><td>M7 · 故障演练与发布</td><td>备份恢复、升级回退、资源与长稳、安全扫描、HTML 运维手册、镜像/发布清单。</td><td>干净 Linux 主机复现一键部署；至少 24 小时稳定性观察；进程崩溃/磁盘满/证书失败可诊断和恢复；关键缺陷为零后才发布版本。</td></tr>

@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 2, Settings: settings})
+	}{Version: 3, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +81,15 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	}
 	servers := map[string]any{}
 	for port, rs := range serverRoutes {
-		rs = append(rs, map[string]any{"handle": []any{map[string]any{"handler": "static_response", "status_code": 404}}})
+		fallback := notFound()
+		if settings.Ingress != nil && (port == 80 || port == 443) {
+			var err error
+			fallback, err = welcomeRoute(settings.Domain)
+			if err != nil {
+				return "", err
+			}
+		}
+		rs = append(rs, fallback)
 		server := map[string]any{"listen": []string{fmt.Sprintf(":%d", port)}, "automatic_https": map[string]any{"disable": true}, "routes": rs}
 		if port == 443 {
 			server["tls_connection_policies"] = []any{map[string]any{}}
@@ -92,9 +100,16 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		"routes": []any{map[string]any{"match": []any{map[string]any{"host": []string{settings.Domain}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.ControlPort))}}}}}}}
 	tlsApp := map[string]any{"certificates": map[string]any{"load_files": []any{map[string]any{"certificate": "/certs/fullchain.cer", "key": "/certs/private.key"}}}}
 	if settings.Ingress != nil {
-		configureIngress(settings, servers, tlsApp)
+		if err := configureIngress(settings, servers, tlsApp); err != nil {
+			return "", err
+		}
 	}
-	for _, value := range servers {
+	for name, value := range servers {
+		domain := ""
+		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443")) {
+			domain = settings.Domain
+		}
+		crawlPolicy(value.(map[string]any), domain)
 		// 首版不开放UDP/HTTP3，避免TCP预检通过但UDP监听冲突。
 		value.(map[string]any)["protocols"] = []string{"h1", "h2"}
 	}

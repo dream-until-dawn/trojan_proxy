@@ -1,5 +1,6 @@
 """真实网关跨容器重启验收，资源均使用唯一前缀并限定在本轮范围。"""
 import json
+import os
 from pathlib import Path
 import subprocess
 import uuid
@@ -26,7 +27,7 @@ try:
         '--mount','type=volume,source='+sock+',target=/run/caddy,volume-nocopy','-v',certs+':/certs:ro','-v',certs+':/certificates/test:ro','--tmpfs','/data','--tmpfs','/config',
         '-e','CADDY_ADMIN=unix//run/caddy/admin.sock|0660',
         gateway_target,'caddy','run'])
-    binary=str(Path('.work/gateway-integration.test').resolve())+':/probe:ro'
+    binary=str(Path(os.environ.get('TROJAN_GATEWAY_PROBE_BINARY','.work/gateway-integration.test')).resolve())+':/probe:ro'
     for phase in ('first','restart'):
         if phase=='restart':command(['docker','restart',gateway])
         result=subprocess.run(['docker','run','--rm','--network','container:'+gateway,'--user','10001:10001',

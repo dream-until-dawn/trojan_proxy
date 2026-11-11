@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-11",
+  "scope": "Default page and crawl declarations, verified with isolated real gateway; not deployed to public 80/443",
+  "gateway_image": "sha256:4f24bd7ae40079ae0c7657f30a1a509f5e0f7073e5337c65175d93bff6f1a292",
+  "checks": {
+    "http_welcome_without_domain": "passed",
+    "https_welcome_with_configured_domain": "passed",
+    "unknown_host_rejection_in_domain_mode": "passed",
+    "existing_business_404_preserved": "passed",
+    "robots_overrides_root_proxy": "passed",
+    "http_robots_exception_to_https_redirect": "passed",
+    "upstream_cannot_override_x_robots_tag": "passed",
+    "gateway_restart_and_legacy_configuration_migration": "passed",
+    "html_escape_mutation": "expected specific failure observed",
+    "robots_priority_mutation": "expected specific failure observed",
+    "crawl_header_removal_mutation": "expected specific failure observed"
+  },
+  "limits": [
+    "The public status reflects welcome-page availability, not VPN state or internal health metrics.",
+    "No-domain mode never reflects the request Host into HTML; arbitrary Host rejection is enforced for configured-domain mode.",
+    "Removing only Caddy's deferred flag did not break the effective header policy in this fixture. That mutation was inconclusive and replaced with actual header removal; it is not counted as coverage of deferred behavior.",
+    "Robots directives are declarations, not authentication or guaranteed exclusion from search results."
+  ]
+}

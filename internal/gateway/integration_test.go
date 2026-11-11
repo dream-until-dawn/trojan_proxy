@@ -78,7 +78,13 @@ func TestRealGatewayLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	backend := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "upstream:"+r.URL.Path) }))
+	backend := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Robots-Tag", "all")
+		if strings.HasSuffix(r.URL.Path, "/business-missing") {
+			w.WriteHeader(404)
+		}
+		io.WriteString(w, "upstream:"+r.URL.Path)
+	}))
 	backend.Listener = backendListener
 	backend.Start()
 	defer backend.Close()
@@ -282,6 +288,16 @@ func testStandardIngress(t *testing.T, engine *gateway.Client, settings gateway.
 	if status, body := fetch(t, 80, "/plain"); status != 200 || body != "upstream:/plain" {
 		t.Fatal("无域名HTTP未承载服务", status, body)
 	}
+	if status, body := fetch(t, 80, "/robots.txt"); status != 200 || body != "User-agent: *\nDisallow: /\n" {
+		t.Fatal("robots did not override root proxy", status, body)
+	}
+	ruleset[0].Path = "/app"
+	apply()
+	if status, body := fetch(t, 80, "/"); status != 200 || !strings.Contains(body, "<h1>欢迎访问</h1>") {
+		t.Fatal("HTTP welcome fallback missing", status, body)
+	}
+	ruleset[0].Path = "/"
+	apply()
 	for _, address := range []string{"127.0.0.1:80", "127.0.0.1:443", "[::1]:80", "[::1]:443"} {
 		if l, err := net.Listen("tcp", address); err == nil {
 			l.Close()
@@ -335,6 +351,29 @@ func testStandardIngress(t *testing.T, engine *gateway.Client, settings gateway.
 		if status, _, location := request(scheme, "attacker.test", "/"); status != 404 || location != "" {
 			t.Fatal("未授权Host被接受或用于跳转", scheme, status, location)
 		}
+	}
+	ruleset[0].Path = "/app"
+	apply()
+	if status, body, _ := request("https", s.Domain, "/"); status != 200 || !strings.Contains(body, "欢迎访问 localhost.test") || strings.Contains(body, "Trojan") {
+		t.Fatal("HTTPS welcome fallback invalid", status, body)
+	}
+	if status, body, _ := request("https", s.Domain, "/app/business-missing"); status != 404 || body != "upstream:/app/business-missing" {
+		t.Fatal("welcome swallowed business 404", status, body)
+	}
+	for _, scheme := range []string{"http", "https"} {
+		if status, body, location := request(scheme, s.Domain, "/robots.txt"); status != 200 || body != "User-agent: *\nDisallow: /\n" || location != "" {
+			t.Fatal("standard-port robots declaration invalid", scheme, status, body, location)
+		}
+	}
+	req, _ := http.NewRequest("GET", "https://127.0.0.1/app/headers", nil)
+	req.Host = s.Domain
+	response, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.Header.Get("X-Robots-Tag") != "noindex, nofollow, noarchive, nosnippet" {
+		t.Fatal("upstream overrode crawl declaration", response.Header.Get("X-Robots-Tag"))
 	}
 }
 
