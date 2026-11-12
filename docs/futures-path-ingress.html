@@ -21,7 +21,7 @@
   "https": true,
   "strip_prefix": false,
   "browse": false
-}</pre><p>保留现有根站点与所有其他路径，不添加全局/_next、/login或/api代理。80继续由既有跳转承载，不增加新监听。</p></section>
+}</pre><p>保留现有根站点与所有其他路径，不添加全局/_next、/login或/api代理。80继续由既有跳转承载，不增加新监听。浏览器草稿已准备，未勾选剥离前缀；服务器仍为修订18，未应用此路径规则。</p><figure><img src="evidence/2026-11-12-futures-path-draft.jpg" alt="已准备但尚未应用的443 futures路径草稿" style="max-width:100%"><figcaption>浏览器本地草稿，不代表/futures已经生效。</figcaption></figure></section>
 <section><h2>实施顺序与验收</h2><ol>
 <li>等待并独立复核后端/futures/login、/futures/api/overview、带前缀静态资源、登录跳转与Cookie范围就绪；不接触后端部署。</li>
 <li>通过近期双因素后台会话追加这一条规则，保留8001至替代路径验收完成。</li>
