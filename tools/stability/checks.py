@@ -3,7 +3,10 @@ SERVICE_ROLES = {'control': 'control', 'vpn-runner': 'runner', 'admin-gateway': 
 
 
 class CheckFailure(RuntimeError):
-    pass
+    """只携带受限诊断字段，禁止塞入响应正文或运行秘密。"""
+    def __init__(self, reason, details=None):
+        super().__init__(reason)
+        self.details = details or {}
 
 
 def validate_containers(containers, images, baseline=None):

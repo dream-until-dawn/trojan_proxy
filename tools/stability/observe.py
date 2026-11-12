@@ -2,18 +2,15 @@
 import argparse
 import datetime
 import fcntl
-import hashlib
-import http.client
 import json
 import os
 from pathlib import Path
 import signal
-import socket
-import ssl
 import subprocess
 import sys
 import time
 from checks import CheckFailure, SERVICE_ROLES, completed_pass, validate_containers, validate_vpn
+from http_checks import web_checks
 
 
 def command(arguments, timeout=20):
@@ -30,40 +27,6 @@ def inspect(project):
     ids = command(['docker', 'ps', '-aq', '--filter', 'label=com.docker.compose.project=' + project]).split()
     if not ids: raise CheckFailure('project_not_running')
     return json.loads(command(['docker', 'inspect'] + ids))
-
-
-class DirectHTTPS(http.client.HTTPSConnection):
-    """连本机实际端口但按授权域名验证TLS，不使用跳过证书校验的捷径。"""
-    def connect(self):
-        raw = socket.create_connection(('127.0.0.1', self.port), timeout=5)
-        self.sock = ssl.create_default_context().wrap_socket(raw, server_hostname=self.host)
-
-
-def web_checks(domain, admin, vpn, control):
-    for port, path, method, expected in [(control, '/healthz', 'GET', 200), (80, '/', 'GET', 308),
-                                         (80, '/robots.txt', 'GET', 200), (443, '/', 'GET', 200),
-                                         (admin, '/api/vpn/status', 'POST', 401)]:
-        secure = port in (443, admin)
-        connection = DirectHTTPS(domain, port, timeout=5) if secure else http.client.HTTPConnection('127.0.0.1', port, timeout=5)
-        host = domain + (':' + str(admin) if port == admin else '')
-        if port == control: host = '127.0.0.1:' + str(control)
-        headers = {'Host': host}
-        if method == 'POST': headers.update({'Origin': 'https://' + domain + ':' + str(admin), 'Content-Type': 'application/json'})
-        try:
-            connection.request(method, path, body='{}' if method == 'POST' else None, headers=headers)
-            response = connection.getresponse();body = response.read(100000)
-            if response.status != expected: raise CheckFailure('unexpected_http_status')
-            if port == 80 and path == '/' and response.getheader('Location') != 'https://' + domain + '/': raise CheckFailure('wrong_http_redirect')
-            if path == '/robots.txt' and b'Disallow: /' not in body: raise CheckFailure('robots_missing')
-            if port == 443 and (not response.getheader('X-Robots-Tag') or domain.encode() not in body): raise CheckFailure('welcome_or_noindex_missing')
-        finally: connection.close()
-    fingerprints = {}
-    for port in (443, admin, vpn):
-        with socket.create_connection(('127.0.0.1', port), timeout=5) as raw:
-            with ssl.create_default_context().wrap_socket(raw, server_hostname=domain) as tls:
-                fingerprints[str(port)] = hashlib.sha256(tls.getpeercert(binary_form=True)).hexdigest()
-    if len(set(fingerprints.values())) != 1: raise CheckFailure('certificate_publication_not_converged')
-    return fingerprints
 
 
 def private_output(output, containers):
@@ -140,7 +103,8 @@ def main():
                 if baseline is None: baseline = current
                 sample['resources'] = runtime_resources(containers)
                 if previous_sample is not None and now - previous_sample > args.interval_seconds + 90: raise CheckFailure('sampling_gap')
-                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port)['443']
+                sample['http_checks'] = []
+                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'])['443']
                 if now >= next_deep or final:
                     raw = command([sys.executable, args.vpn_diagnostic, '--project', args.project, '--domain', args.domain], timeout=85)
                     validate_vpn(json.loads(raw));summary['deep_checks'] += 1;sample['vpn_positive_and_negative'] = True
@@ -149,6 +113,7 @@ def main():
             except Exception as error:
                 # 保留累计失败；后续恢复不抹掉本轮已经发生的故障。
                 sample['reason'] = str(error) if isinstance(error, CheckFailure) else type(error).__name__
+                if isinstance(error, CheckFailure): sample['details'] = error.details
                 summary['failures'] += 1;summary['recent_failures'] = (summary['recent_failures'] + [sample])[-50:]
             summary['samples'] += 1;previous_sample = now
             history.write(json.dumps(sample) + '\n');history.flush()
