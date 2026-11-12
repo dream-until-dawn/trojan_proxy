@@ -1,0 +1,60 @@
+{
+  "checked_utc": "2026-11-12T14:19:19.906318Z",
+  "revision": 25,
+  "schema_version": 5,
+  "journal_pending": false,
+  "site": {
+    "domain": "qin-xin.top",
+    "admin_port": 8007,
+    "admin_path": "/proxy",
+    "certificate_source": "automatic"
+  },
+  "settings_pending": false,
+  "listeners": {
+    "80": true,
+    "443": true,
+    "8001": false,
+    "8007": false,
+    "18443": true,
+    "18090": true
+  },
+  "rules": [
+    {
+      "id": "6b30219b-7376-4e3d-b60c-933f2d464344",
+      "name": "期货 Web · futures 路径",
+      "port": 443,
+      "host": "qin-xin.top",
+      "path": "/futures",
+      "kind": "proxy",
+      "upstream_ip": "127.0.0.1",
+      "upstream_port": 3030,
+      "strip_prefix": false,
+      "browse": false,
+      "https": true
+    },
+    {
+      "id": "db368971-728a-4e55-8cc0-1fd96c0fddca",
+      "name": "Flow Analysis · flow 路径",
+      "port": 443,
+      "host": "qin-xin.top",
+      "path": "/flow",
+      "kind": "proxy",
+      "upstream_ip": "127.0.0.1",
+      "upstream_port": 3031,
+      "strip_prefix": false,
+      "browse": false,
+      "https": true
+    }
+  ],
+  "passed": true,
+  "proxy_vpn_flow_and_futures_web_containers_preserved": true,
+  "concurrent_other_project_change": {
+    "project": "futures-decision-strategy-forward",
+    "started": "2026-11-12T13:56:03.643179152Z",
+    "note": "Observed while waiting for owner MFA, before route application; all remaining container IDs and started times unchanged"
+  },
+  "old_rules_and_site_preserved": true,
+  "original_stability_window_preserved": true,
+  "flow_prefix_preserved": true,
+  "full_authenticated_login_and_RSC_acceptance": "pending source application independent verification"
+}

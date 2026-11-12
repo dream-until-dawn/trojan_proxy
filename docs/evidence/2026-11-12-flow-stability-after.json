@@ -1,0 +1,19 @@
+{
+  "running": true,
+  "observer_source_unchanged": true,
+  "summary": {
+    "passed": false,
+    "completed": false,
+    "started_utc": "2026-11-12T08:26:48.816206Z",
+    "duration_seconds": 86400,
+    "source_commit": "020b7e58b6401d16a15c94cb475ffdbcf82c2d3a",
+    "samples": 353,
+    "failures": 0,
+    "deep_checks": 6,
+    "recent_failures": [],
+    "updated_utc": "2026-11-12T14:18:52.431576Z",
+    "elapsed_seconds": 21123.615381014533
+  },
+  "expected_finish_utc": "2026-11-13T08:26:48Z",
+  "private_output": "/opt/trojan-proxy-refactor/backups/stability-20261112T082639Z-681d9d/24h"
+}
