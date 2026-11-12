@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 6, Settings: settings})
+	}{Version: 7, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -28,6 +28,7 @@ func Fingerprint(settings Settings) (string, error) {
 // Settings 来自部署配置，不允许经Web覆盖后台地址、证书路径或管理socket。
 type Settings struct {
 	Domain                           string
+	AdminPath                        string
 	AdminPort, ControlPort, FilePort int
 	Socket                           string
 	Policy                           routes.Policy
@@ -37,6 +38,9 @@ type Settings struct {
 // Compile 生成完整配置，始终保留后台入口，绝不拼接原始配置文本。
 func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	if err := validateIngress(settings, rules); err != nil {
+		return "", &routes.ValidationError{Cause: err}
+	}
+	if err := validateAdminPath(settings, rules); err != nil {
 		return "", &routes.ValidationError{Cause: err}
 	}
 	if err := routes.ValidateSet(rules, settings.Policy); err != nil {
@@ -118,6 +122,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 			return "", err
 		}
 	}
+	configureAdminPath(settings, servers)
 	for name, value := range servers {
 		domain := ""
 		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443" || value.(map[string]any)["tls_connection_policies"] != nil)) {

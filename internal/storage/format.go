@@ -20,6 +20,24 @@ func RequiredJournalVersion(j control.Journal) (int, error) {
 		if revision.Settings != "" && version < 3 {
 			version = 3
 		}
+		if json.Valid([]byte(revision.Settings)) {
+			var document struct {
+				Site struct {
+					AdminPath string `json:"admin_path"`
+				} `json:"site"`
+				Pending *struct {
+					Candidate struct {
+						AdminPath string `json:"admin_path"`
+					} `json:"candidate"`
+				} `json:"pending"`
+			}
+			if err := json.Unmarshal([]byte(revision.Settings), &document); err != nil {
+				return 0, err
+			}
+			if document.Site.AdminPath != "" || (document.Pending != nil && document.Pending.Candidate.AdminPath != "") {
+				version = 5
+			}
+		}
 		if revision.Rules == "" {
 			continue
 		}
@@ -30,7 +48,7 @@ func RequiredJournalVersion(j control.Journal) (int, error) {
 			return 0, err
 		}
 		for _, rule := range rules {
-			if rule.HTTPS {
+			if rule.HTTPS && version < 4 {
 				version = 4
 			}
 		}
@@ -41,6 +59,18 @@ func RequiredJournalVersion(j control.Journal) (int, error) {
 // DowngradeHTTPFormat 仅供持有独占维护锁的离线工具调用，不改变业务或认证记录。
 // 撤销所有HTTPS规则且不存在准备中修订后，才能允许旧程序重新读取数据库。
 func (s *JournalStore) DowngradeHTTPFormat(ctx context.Context) (int, error) {
+	return s.downgradeFormat(ctx, 0)
+}
+
+// DowngradeCompatibleFormat 仅供独占维护工具指定目标2/3/4，不允许仍在使用的新特性降级。
+func (s *JournalStore) DowngradeCompatibleFormat(ctx context.Context, target int) (int, error) {
+	if target < 2 || target > 4 {
+		return 0, errors.New("兼容回退目标只允许2、3或4")
+	}
+	return s.downgradeFormat(ctx, target)
+}
+
+func (s *JournalStore) downgradeFormat(ctx context.Context, target int) (int, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
@@ -61,21 +91,27 @@ func (s *JournalStore) DowngradeHTTPFormat(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if required >= 4 {
-		return 0, errors.New("请先通过后台撤销所有HTTPS规则，不能降级为明文")
+	if target == 0 {
+		if required >= 4 {
+			return 0, errors.New("请先通过后台撤销所有HTTPS规则与管理路径，不能降级为明文")
+		}
+		target = required
+	}
+	if required > target {
+		return 0, errors.New("当前修订仍使用更高格式特性，拒绝兼容回退")
 	}
 	var version int
 	if err = tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return 0, err
 	}
-	if version > 4 {
+	if version > 5 {
 		return 0, errors.New("未知新格式不能由本工具降级")
 	}
-	if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", required)); err != nil {
+	if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", target)); err != nil {
 		return 0, err
 	}
-	if _, err = tx.ExecContext(ctx, "INSERT INTO config_events(created_utc,revision,state,summary) VALUES(strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,'format_rollback','离线验证无HTTPS规则后降低兼容格式')", journal.Applied.Number); err != nil {
+	if _, err = tx.ExecContext(ctx, "INSERT INTO config_events(created_utc,revision,state,summary) VALUES(strftime('%Y-%m-%dT%H:%M:%fZ','now'),?,'format_rollback','离线核验当前特性后降低兼容格式')", journal.Applied.Number); err != nil {
 		return 0, err
 	}
-	return required, tx.Commit()
+	return target, tx.Commit()
 }

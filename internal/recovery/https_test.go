@@ -13,7 +13,19 @@ import (
 )
 
 func TestHTTPSFormatBackupRestoreAndRejectMislabelledDatabase(t *testing.T) {
+	testIngressFormatBackup(t, false)
+}
+
+func TestAdminPathBackupRestoreAndRejectMislabelledDatabase(t *testing.T) {
+	testIngressFormatBackup(t, true)
+}
+
+func testIngressFormatBackup(t *testing.T, byPath bool) {
+	t.Helper()
 	c, store, _ := recoveryFixture(t)
+	if byPath {
+		c.StandardIngress = true
+	}
 	ctx := context.Background()
 	j, err := store.Load(ctx)
 	if err != nil {
@@ -25,6 +37,9 @@ func TestHTTPSFormatBackupRestoreAndRejectMislabelledDatabase(t *testing.T) {
 	}
 	document.Site.Domain = "qin-xin.top"
 	document.Site.CertificateSource = "automatic"
+	if byPath {
+		document.Site.AdminPath = "/proxy"
+	}
 	next := j.Applied
 	next.Number++
 	next.Settings, err = document.Encode(c)
@@ -53,7 +68,7 @@ func TestHTTPSFormatBackupRestoreAndRejectMislabelledDatabase(t *testing.T) {
 	}
 	actual, err := restored.Load(ctx)
 	restored.Close()
-	if err != nil || actual.Applied.Rules != next.Rules {
+	if err != nil || actual.Applied.Rules != next.Rules || actual.Applied.Settings != next.Settings {
 		t.Fatal("HTTPS restore lost TLS semantics", err)
 	}
 	copyPath := filepath.Join(t.TempDir(), "mislabelled.db")
@@ -64,7 +79,11 @@ func TestHTTPSFormatBackupRestoreAndRejectMislabelledDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = db.ExecContext(ctx, "PRAGMA user_version=3")
+	if byPath {
+		_, err = db.ExecContext(ctx, "PRAGMA user_version=4")
+	} else {
+		_, err = db.ExecContext(ctx, "PRAGMA user_version=3")
+	}
 	db.Close()
 	if err != nil {
 		t.Fatal(err)

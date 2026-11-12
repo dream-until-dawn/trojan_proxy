@@ -31,7 +31,14 @@ func TestStandardManagementImportsDefaultsAndKeepsSSHOnBadSettings(t *testing.T)
 			if m.API.Settings == nil || m.API.Certificates == nil || m.API.VPN == nil {
 				t.Fatal("standard management not connected")
 			}
-			if !m.API.OriginProvider()["http://127.0.0.1:18090"] {
+			origins := func() map[string]bool {
+				result := map[string]bool{}
+				for _, endpoint := range m.API.EndpointsProvider() {
+					result[endpoint.Origin] = true
+				}
+				return result
+			}
+			if !origins()["http://127.0.0.1:18090"] {
 				t.Fatal("SSH login origin unavailable before migration")
 			}
 			err = m.Prepare(ctx)
@@ -39,7 +46,7 @@ func TestStandardManagementImportsDefaultsAndKeepsSSHOnBadSettings(t *testing.T)
 				if err == nil {
 					t.Fatal("corrupt settings silently replaced")
 				}
-				if !m.API.OriginProvider()["http://127.0.0.1:18090"] || len(m.API.OriginProvider()) != 2 {
+				if !origins()["http://127.0.0.1:18090"] || len(origins()) != 2 {
 					t.Fatal("bad settings removed SSH access or widened origins")
 				}
 			} else {

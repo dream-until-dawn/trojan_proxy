@@ -7,7 +7,7 @@
   <title>
    独用代理管理 · 控制台
   </title>
-  <link href="/style.css" rel="stylesheet"/>
+  <link href="./style.css" rel="stylesheet"/>
  </head>
  <body>
   <main class="auth-layout" id="login-panel">
@@ -573,9 +573,15 @@
          域名（可留空）
          <input id="site-domain" maxlength="253" placeholder="例如 example.com，不带协议、路径或端口"/>
         </label>
-        <label>
+        <label>管理入口方式
+         <select id="site-admin-mode"><option value="port">独立HTTPS端口</option><option value="path">网站HTTPS路径</option></select>
+        </label>
+        <label id="site-admin-port-field">
          后台HTTPS端口
          <input id="site-admin-port" max="65535" min="1024" required="" type="number"/>
+        </label>
+        <label id="site-admin-path-field" hidden="">管理路径
+         <input id="site-admin-path" maxlength="128" value="/proxy" placeholder="例如/proxy，不带尾斜杠" disabled=""/>
         </label>
         <label>
          证书来源
@@ -675,7 +681,7 @@
     </footer>
    </main>
   </div>
-  <script src="/main.js" type="module">
+  <script src="./main.js" type="module">
   </script>
  </body>
 </html>

@@ -11,6 +11,9 @@ import (
 // CompileAdminTransition 保留当前公共业务，仅叠加候选后台监听和其证书授权。
 // 同端口更换域名时合并精确Host路由；候选Host不覆盖旧入口或公开规则。
 func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) (string, error) {
+	if err := validateAdminPath(candidate, ruleset); err != nil {
+		return "", err
+	}
 	if current.ControlPort != candidate.ControlPort || current.FilePort != candidate.FilePort || current.Socket != candidate.Socket {
 		return "", errors.New("入口切换不能改变内控通信边界")
 	}
@@ -49,10 +52,17 @@ func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) 
 		} else {
 			oldServers["candidate_admin"] = newAdmin
 		}
-		oldTLS := oldApps["tls"].(map[string]any)
-		newTLS := newApps["tls"].(map[string]any)
-		mergeCertificates(oldTLS, newTLS)
 	}
+	if candidate.AdminPath != "" {
+		oldPublic, ok := oldServers["public_443"].(map[string]any)
+		if !ok {
+			return "", errors.New("路径迁移需要当前标准HTTPS入口")
+		}
+		newPublic := newServers["public_443"].(map[string]any)
+		oldPublic["tls_connection_policies"] = newPublic["tls_connection_policies"]
+		insertCandidatePath(oldPublic, adminPathRoute(candidate))
+	}
+	mergeCertificates(oldApps["tls"].(map[string]any), newApps["tls"].(map[string]any))
 	body, err := json.Marshal(oldConfig)
 	return string(body), err
 }

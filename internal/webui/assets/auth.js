@@ -4,7 +4,7 @@ let token = "";
 export async function request(path, body = {}) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(path, {
+  const response = await fetch(new URL(`.${path}`, import.meta.url), {
     method: "POST", headers, body: JSON.stringify(body),
     credentials: "omit", cache: "no-store", redirect: "error",
   });

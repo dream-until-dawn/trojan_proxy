@@ -15,6 +15,10 @@ import (
 
 // downgradeHTTPFormat 不提供路由写入后门；仅在control停止后验证旧镜像的兼容前提。
 func downgradeHTTPFormat(path string) error {
+	return downgradeFormat(path, 0)
+}
+
+func downgradeFormat(path string, target int) error {
 	c, err := config.Load(path)
 	if err != nil {
 		return err
@@ -34,7 +38,12 @@ func downgradeHTTPFormat(path string) error {
 		return err
 	}
 	defer store.Close()
-	version, err := store.DowngradeHTTPFormat(ctx)
+	var version int
+	if target == 0 {
+		version, err = store.DowngradeHTTPFormat(ctx)
+	} else {
+		version, err = store.DowngradeCompatibleFormat(ctx, target)
+	}
 	if err != nil {
 		return err
 	}

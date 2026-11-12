@@ -1,0 +1,45 @@
+{
+  "passed": true,
+  "mutations": {
+    "path-reader-protection": {
+      "passed": true,
+      "expected_failure": "path candidate did not reject legacy readers"
+    },
+    "path-confirmation-identity": {
+      "passed": true,
+      "expected_failure": "wrong management identity confirmed candidate"
+    },
+    "import-once": {
+      "passed": true,
+      "expected_failure": "static JSON overwrote persisted business settings"
+    },
+    "trusted-root": {
+      "passed": true,
+      "expected_failure": "unsafe settings accepted untrusted-root"
+    },
+    "revision-protection": {
+      "passed": true,
+      "expected_failure": "gateway bootstrap bypassed settings revision protection"
+    },
+    "old-reader-protection": {
+      "passed": true,
+      "expected_failure": "new settings did not reject old schema readers"
+    },
+    "new-origin-confirmation": {
+      "passed": true,
+      "expected_failure": "old entry confirmed the new endpoint"
+    },
+    "ready-certificate": {
+      "passed": true,
+      "expected_failure": "unready certificate accepted"
+    },
+    "deadline-recovery": {
+      "passed": true,
+      "expected_failure": "entry deadline did not restore old endpoint"
+    },
+    "write-freeze": {
+      "passed": true,
+      "expected_failure": "ordinary writes allowed while entry waits for confirmation"
+    }
+  }
+}

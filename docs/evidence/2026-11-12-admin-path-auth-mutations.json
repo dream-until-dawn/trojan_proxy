@@ -1,0 +1,29 @@
+{
+  "mutations": {
+    "path_boundary": {
+      "expected_test_failure": true,
+      "reason": "management prefix matched sibling path"
+    },
+    "authentication": {
+      "expected_test_failure": true,
+      "reason": "未认证读取未拒绝: 200"
+    },
+    "origin": {
+      "expected_test_failure": true,
+      "reason": "跨来源未拒绝:"
+    },
+    "recent_mfa": {
+      "expected_test_failure": true,
+      "reason": "近期双因素保护未拒绝: 200"
+    },
+    "vpn_recent_mfa": {
+      "expected_test_failure": true,
+      "reason": "VPN近期MFA未拒绝 /api/vpn/apply: 200"
+    },
+    "vpn_export_mfa": {
+      "expected_test_failure": true,
+      "reason": "VPN近期MFA未拒绝 /api/vpn/export: 200"
+    }
+  },
+  "passed": true
+}

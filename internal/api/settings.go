@@ -84,7 +84,7 @@ func (s *Server) settingsConfirm(w http.ResponseWriter, r *http.Request) {
 		respond(w, 403, map[string]string{"error": "请直接打开新后台入口并登录确认"})
 		return
 	}
-	if err = s.Settings.Confirm(r.Context(), input.Revision, origin); err != nil {
+	if err = s.Settings.Confirm(r.Context(), input.Revision, requestEndpoint(r)); err != nil {
 		settingsError(w, err)
 		return
 	}

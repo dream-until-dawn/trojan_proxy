@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "origin": "https://qin-xin.top/futures",
+  "checks": {
+    "login": 200,
+    "static_asset_heads": 8,
+    "anonymous_data_rejected": 401,
+    "root_and_sibling_unchanged": true,
+    "http_redirect_preserves_path_query": true,
+    "wrong_password_response": {
+      "status": 303,
+      "location": "https://qin-xin.top/futures/login?error=1",
+      "cookie_summary": []
+    },
+    "wrong_password": {
+      "status": 303,
+      "session_cookie_issued": false
+    },
+    "cross_origin_response": {
+      "status": 500,
+      "location": null,
+      "cookie_summary": []
+    },
+    "cross_origin": {
+      "status": 500,
+      "session_cookie_issued": false
+    }
+  },
+  "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+}

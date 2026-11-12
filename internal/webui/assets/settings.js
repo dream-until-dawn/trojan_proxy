@@ -8,6 +8,13 @@ const form = document.querySelector("#settings-form");
 const message = document.querySelector("#settings-message");
 const field = name => document.querySelector(`#site-${name}`);
 
+function toggleAdminMode() {
+  const byPath = field("admin-mode").value === "path";
+  document.querySelector("#site-admin-port-field").hidden = byPath;
+  document.querySelector("#site-admin-path-field").hidden = !byPath;
+  field("admin-path").disabled = !byPath;
+}
+
 function directoryRow(binding = { id: "", root: "", relative: "." }) {
   const row = document.createElement("div"); row.className = "directory-binding";
   const values = [["目录名称", "id", binding.id], ["授权挂载", "root", binding.root], ["挂载内相对路径", "relative", binding.relative]];
@@ -31,6 +38,9 @@ function render() {
   document.querySelector("#settings-legend").textContent = snapshot.candidate ? "候选设置（待确认）" : "网站与管理入口";
   field("domain").value = site.domain;
   field("admin-port").value = site.admin_port;
+  field("admin-mode").value = site.admin_path ? "path" : "port";
+  field("admin-path").value = site.admin_path || "/proxy";
+  toggleAdminMode();
   field("vpn-port").value = site.vpn_port;
   field("resolver").value = site.vpn_resolver;
   field("addresses").value = (site.vpn_own_addresses || []).join("\n");
@@ -46,18 +56,21 @@ function render() {
   const link = document.querySelector("#site-candidate-link"); link.removeAttribute("href"); link.textContent = "";
   if (snapshot.candidate) {
     document.querySelector("#site-pending-summary").textContent = `候选入口有效至 ${new Date(snapshot.deadline * 1000).toLocaleString()}。请打开新入口，用口令和下一组验证码重新登录，再确认。到期会恢复原入口。`;
-    const target = new URL(snapshot.candidate_origin);
+    const target = new URL(snapshot.candidate_entry || snapshot.candidate_origin);
     if (target.protocol === "https:" || (target.protocol === "http:" && target.hostname === "127.0.0.1")) {
-      link.href = target.href; link.textContent = `打开候选入口 ${target.origin}`;
+      link.href = target.href; link.textContent = `打开候选入口 ${target.href}`;
     }
-    document.querySelector("#site-confirm").disabled = location.origin !== snapshot.candidate_origin || Date.now() >= snapshot.deadline * 1000;
+    const currentBase = new URL("./", import.meta.url);
+    const targetPath = target.pathname.endsWith("/") ? target.pathname : `${target.pathname}/`;
+    document.querySelector("#site-confirm").disabled = currentBase.origin !== target.origin || currentBase.pathname !== targetPath || Date.now() >= snapshot.deadline * 1000;
   }
-  document.querySelector("#site-current").textContent = `当前入口：${snapshot.current_origin} · 修订 ${snapshot.revision}`;
+  document.querySelector("#site-current").textContent = `当前入口：${snapshot.current_entry || snapshot.current_origin} · 修订 ${snapshot.revision}`;
 }
 
 export function clearSettings() {
   generation++; snapshot = null; imported = null;
   form.reset(); document.querySelector("#certificate-form").reset();
+  toggleAdminMode();
   document.querySelector("#site-directories").replaceChildren();
   document.querySelector("#site-candidate-link").removeAttribute("href");
   document.querySelector("#site-candidate-link").textContent = "";
@@ -95,6 +108,7 @@ function draftSite() {
   const domain = field("domain").value.trim();
   return {
     domain, admin_port: Number(field("admin-port").value), vpn_port: Number(field("vpn-port").value),
+    admin_path: field("admin-mode").value === "path" ? field("admin-path").value.trim() : "",
     vpn_resolver: field("resolver").value.trim(), vpn_own_addresses: field("addresses").value.split(/[\s,，]+/).filter(Boolean),
     certificate_source: source, acme_email: field("acme-email").value.trim(),
     imported_version: source === "imported" && imported?.domain === domain ? imported.version : "",
@@ -153,6 +167,7 @@ field("domain").addEventListener("change", () => {
 });
 document.querySelector("#site-add-directory").addEventListener("click", () => directoryRow());
 document.querySelector("#site-refresh").addEventListener("click", refreshSettings);
+field("admin-mode").addEventListener("change", toggleAdminMode);
 document.querySelector("#site-confirm").addEventListener("click", () => finishTransition("confirm"));
 document.querySelector("#site-cancel").addEventListener("click", () => finishTransition("cancel"));
 document.querySelector("#certificate-refresh").addEventListener("click", refreshCertificate);

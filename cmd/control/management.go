@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"github.com/dream-until-dawn/trojan_proxy/internal/api"
 	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
@@ -98,12 +99,12 @@ func newManagement(c config.Config, store control.Store, key []byte, roots map[s
 		m.API.Settings = m.Settings
 		m.API.Certificates = certificateManager
 		m.API.WriteGuard = guard
-		m.API.OriginProvider = func() map[string]bool {
+		m.API.EndpointsProvider = func() []adminentry.Endpoint {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			result, err := m.View.Origins(ctx)
+			result, err := m.View.Endpoints(ctx)
 			if err != nil {
-				return loopbackOrigins(c.ControlPort)
+				return adminentry.Loopback(c.ControlPort)
 			}
 			return result
 		}

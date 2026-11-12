@@ -4,6 +4,7 @@ package settings
 import (
 	"encoding/json"
 	"errors"
+	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"io"
 	"net/mail"
 	"path"
@@ -25,6 +26,7 @@ type Directory struct {
 type Site struct {
 	Domain            string      `json:"domain"`
 	AdminPort         int         `json:"admin_port"`
+	AdminPath         string      `json:"admin_path,omitempty"`
 	VPNPort           int         `json:"vpn_port"`
 	VPNAddresses      []string    `json:"vpn_own_addresses"`
 	VPNResolver       string      `json:"vpn_resolver"`
@@ -77,6 +79,12 @@ func FromLegacy(c config.Config) Document {
 func (d Document) Validate(deployment config.Config) error {
 	if d.Version != 1 {
 		return errors.New("业务设置版本不受支持")
+	}
+	if err := adminentry.ValidatePath(d.Site.AdminPath); err != nil {
+		return err
+	}
+	if d.Site.AdminPath != "" && (!deployment.StandardIngress || d.Site.Domain == "") {
+		return errors.New("管理路径需要已接管80/443并配置域名")
 	}
 	c := deployment
 	c.Domain = d.Site.Domain

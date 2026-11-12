@@ -3,11 +3,10 @@ package settings
 import (
 	"context"
 	"errors"
-	"net"
 	"path"
-	"strconv"
 	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	"github.com/dream-until-dawn/trojan_proxy/internal/files"
 	"github.com/dream-until-dawn/trojan_proxy/internal/gateway"
@@ -63,7 +62,7 @@ func (v *View) ForSite(ctx context.Context, site Site) (gateway.Settings, error)
 	if err != nil {
 		return gateway.Settings{}, err
 	}
-	result := gateway.Settings{Domain: c.Domain, AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, Socket: "/run/caddy/admin.sock",
+	result := gateway.Settings{Domain: c.Domain, AdminPath: site.AdminPath, AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, Socket: "/run/caddy/admin.sock",
 		Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, VPNPort: c.VPNPort, Directories: c.PublicDirectories, AllowStandardPorts: v.Standard}}
 	if v.Standard {
 		if v.Ingress == nil {
@@ -92,15 +91,27 @@ func (v *View) Gateway(ctx context.Context, revision control.Revision) (gateway.
 
 // Origins 每次返回新映射；候选入口到期立即失效，不依赖恢复协程及时执行。
 func (v *View) Origins(ctx context.Context) (map[string]bool, error) {
+	endpoints, err := v.Endpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]bool{}
+	for _, endpoint := range endpoints {
+		result[endpoint.Origin] = true
+	}
+	return result, nil
+}
+
+// Endpoints 只投影当前及未到期候选，避免Origin相同却路径已撤销时继续访问。
+func (v *View) Endpoints(ctx context.Context) ([]adminentry.Endpoint, error) {
 	d, err := v.Read(ctx)
 	if err != nil {
 		return nil, err
 	}
-	port := strconv.Itoa(v.Deployment.ControlPort)
-	result := map[string]bool{"http://127.0.0.1:" + port: true, "http://localhost:" + port: true}
+	result := adminentry.Loopback(v.Deployment.ControlPort)
 	add := func(site Site) {
 		if site.Domain != "" {
-			result["https://"+net.JoinHostPort(site.Domain, strconv.Itoa(site.AdminPort))] = true
+			result = append(result, adminentry.ForSite(site.Domain, site.AdminPort, v.Deployment.ControlPort, site.AdminPath))
 		}
 	}
 	add(d.Site)

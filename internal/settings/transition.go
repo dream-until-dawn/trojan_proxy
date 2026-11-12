@@ -3,13 +3,12 @@ package settings
 import (
 	"context"
 	"errors"
-	"net"
 	"reflect"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 )
@@ -52,6 +51,8 @@ type Snapshot struct {
 	Deadline        int64    `json:"deadline,omitempty"`
 	CurrentOrigin   string   `json:"current_origin"`
 	CandidateOrigin string   `json:"candidate_origin,omitempty"`
+	CurrentEntry    string   `json:"current_entry"`
+	CandidateEntry  string   `json:"candidate_entry,omitempty"`
 	Mounts          []string `json:"mounts"`
 }
 
@@ -76,6 +77,7 @@ func (m *Manager) Status(ctx context.Context) (Snapshot, error) {
 		return Snapshot{}, err
 	}
 	result := Snapshot{Revision: j.Applied.Number, Site: d.Site, CurrentOrigin: m.candidateOrigin(d.Site), Mounts: []string{}}
+	result.CurrentEntry = m.candidateEntry(d.Site)
 	for id := range m.deployment.PublicDirectories {
 		result.Mounts = append(result.Mounts, id)
 	}
@@ -85,6 +87,7 @@ func (m *Manager) Status(ctx context.Context) (Snapshot, error) {
 		result.Candidate = &candidate
 		result.Deadline = d.Pending.Deadline
 		result.CandidateOrigin = m.candidateOrigin(candidate)
+		result.CandidateEntry = m.candidateEntry(candidate)
 	}
 	return result, nil
 }
@@ -140,10 +143,11 @@ func (m *Manager) Propose(ctx context.Context, expected uint64, candidate Site) 
 }
 
 func (m *Manager) candidateOrigin(site Site) string {
-	if site.Domain == "" {
-		return "http://127.0.0.1:" + strconv.Itoa(m.deployment.ControlPort)
-	}
-	return "https://" + net.JoinHostPort(site.Domain, strconv.Itoa(site.AdminPort))
+	return adminentry.ForSite(site.Domain, site.AdminPort, m.deployment.ControlPort, site.AdminPath).Origin
+}
+
+func (m *Manager) candidateEntry(site Site) string {
+	return adminentry.ForSite(site.Domain, site.AdminPort, m.deployment.ControlPort, site.AdminPath).Identity()
 }
 
 // Confirm 由HTTP层先执行近期MFA，再在此核对新入口来源、期限及证书就绪。
@@ -157,7 +161,7 @@ func (m *Manager) Confirm(ctx context.Context, expected uint64, origin string) e
 	if j.Applied.Number != expected {
 		return control.ErrRevisionConflict
 	}
-	if d.Pending == nil || m.now().Unix() >= d.Pending.Deadline || origin != m.candidateOrigin(d.Pending.Candidate) {
+	if d.Pending == nil || m.now().Unix() >= d.Pending.Deadline || origin != m.candidateEntry(d.Pending.Candidate) {
 		return ErrConfirmation
 	}
 	if err = m.planner.Ready(ctx, d.Pending.Candidate); err != nil {

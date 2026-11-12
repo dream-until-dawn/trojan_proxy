@@ -7,9 +7,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 
+	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"github.com/dream-until-dawn/trojan_proxy/internal/auth"
 	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
@@ -54,16 +54,17 @@ type CertificateManagement interface {
 
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
-	Auth           Authentication
-	Origins        map[string]bool
-	Static         http.Handler
-	Routes         *routing.Service
-	VPN            VPNManagement
-	Settings       SettingsManagement
-	OriginProvider func() map[string]bool
-	WriteGuard     func(context.Context) error
-	Traffic        TrafficManagement
-	Certificates   CertificateManagement
+	Auth              Authentication
+	Origins           map[string]bool
+	Static            http.Handler
+	Routes            *routing.Service
+	VPN               VPNManagement
+	Settings          SettingsManagement
+	OriginProvider    func() map[string]bool
+	EndpointsProvider func() []adminentry.Endpoint
+	WriteGuard        func(context.Context) error
+	Traffic           TrafficManagement
+	Certificates      CertificateManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -101,34 +102,7 @@ func (s *Server) Handler() http.Handler {
 	if s.Static != nil {
 		mux.Handle("/", s.Static)
 	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origins := s.Origins
-		if s.OriginProvider != nil {
-			origins = s.OriginProvider()
-		}
-		hostAllowed := false
-		for origin := range origins {
-			u, err := url.Parse(origin)
-			if err == nil && u.Host == r.Host {
-				hostAllowed = true
-				break
-			}
-		}
-		if !hostAllowed {
-			respond(w, 421, map[string]string{"error": "访问地址不被允许"})
-			return
-		}
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
-		if strings.HasPrefix(r.URL.Path, "/api/") && !origins[r.Header.Get("Origin")] {
-			respond(w, 403, map[string]string{"error": "请求来源不被允许"})
-			return
-		}
-		mux.ServeHTTP(w, r)
-	})
+	return s.withEndpointPolicy(mux)
 }
 
 func bearer(r *http.Request) string {

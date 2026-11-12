@@ -104,7 +104,7 @@ def main():
                 sample['resources'] = runtime_resources(containers)
                 if previous_sample is not None and now - previous_sample > args.interval_seconds + 90: raise CheckFailure('sampling_gap')
                 sample['http_checks'] = []
-                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'], manifest.get('https_routes', []))['443']
+                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'], manifest.get('https_routes', []), manifest.get('admin_path', ''))['443']
                 if now >= next_deep or final:
                     raw = command([sys.executable, args.vpn_diagnostic, '--project', args.project, '--domain', args.domain], timeout=85)
                     validate_vpn(json.loads(raw));summary['deep_checks'] += 1;sample['vpn_positive_and_negative'] = True

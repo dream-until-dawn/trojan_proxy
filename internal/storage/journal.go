@@ -62,7 +62,7 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 4 {
+	if version > 5 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if _, err := s.db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {

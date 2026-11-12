@@ -19,11 +19,11 @@ import (
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: proxyctl init|doctor|setup-token|backup|restore|admin-reset|downgrade-http-format --config <配置文件>")
+		return fmt.Errorf("用法: proxyctl init|doctor|setup-token|backup|restore|admin-reset|downgrade-http-format|downgrade-format --config <配置文件>")
 	}
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	defaultPath := "proxy.json"
-	if args[0] == "setup-token" || args[0] == "prepare" || args[0] == "admin-reset" || args[0] == "backup" || args[0] == "restore" || args[0] == "downgrade-http-format" {
+	if args[0] == "setup-token" || args[0] == "prepare" || args[0] == "admin-reset" || args[0] == "backup" || args[0] == "restore" || args[0] == "downgrade-http-format" || args[0] == "downgrade-format" {
 		defaultPath = "/etc/trojan-proxy/proxy.json"
 	}
 	path := flags.String("config", defaultPath, "部署配置文件")
@@ -35,6 +35,7 @@ func run(args []string) error {
 	output := flags.String("output", "", "私有备份归档输出位置")
 	archive := flags.String("archive", "", "冷还原归档路径")
 	digest := flags.String("sha256", "", "从归档之外可信记录取得的SHA256")
+	targetVersion := flags.Int("target-version", 0, "离线兼容回退的明确目标版本2、3或4")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -42,6 +43,11 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "downgrade-format":
+		if *targetVersion < 2 || *targetVersion > 4 {
+			return fmt.Errorf("请明确指定 --target-version 2、3或4")
+		}
+		return downgradeFormat(*path, *targetVersion)
 	case "downgrade-http-format":
 		return downgradeHTTPFormat(*path)
 	case "admin-reset":

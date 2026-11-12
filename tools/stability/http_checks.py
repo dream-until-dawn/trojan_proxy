@@ -74,22 +74,22 @@ def extra_https_checks(domain, specs, results):
         check_response(connection, port, spec['path'], 'GET', host, spec['expected'], results)
 
 
-def web_checks(domain, admin, vpn, control, results=None, https_routes=None):
+def web_checks(domain, admin, vpn, control, results=None, https_routes=None, admin_path=''):
     results = results if results is not None else []
     https_routes = validate_https_routes(https_routes if https_routes is not None else [])
     for port, path, method, expected in [(control, '/healthz', 'GET', 200), (80, '/', 'GET', 308),
                                          (80, '/robots.txt', 'GET', 200), (443, '/', 'GET', 200),
-                                         (admin, '/api/vpn/status', 'POST', 401)]:
+                                         (admin, admin_path + '/api/vpn/status', 'POST', 401)]:
         secure = port in (443, admin)
         connection = DirectHTTPS(domain, port, timeout=5) if secure else http.client.HTTPConnection('127.0.0.1', port, timeout=5)
-        host = domain + (':' + str(admin) if port == admin else '')
+        host = domain + (':' + str(admin) if port == admin and admin != 443 else '')
         if port == control: host = '127.0.0.1:' + str(control)
         body, location, robots = check_response(connection, port, path, method, host, expected, results,
-                                                'https://' + domain + ':' + str(admin) if method == 'POST' else None)
+                                                'https://' + host if method == 'POST' else None)
         details = {'port': port, 'path': path, 'method': method}
         if port == 80 and path == '/' and location != 'https://' + domain + '/': raise CheckFailure('wrong_http_redirect', details)
         if path == '/robots.txt' and b'Disallow: /' not in body: raise CheckFailure('robots_missing', details)
-        if port == 443 and (not robots or domain.encode() not in body): raise CheckFailure('welcome_or_noindex_missing', details)
+        if port == 443 and path == '/' and (not robots or domain.encode() not in body): raise CheckFailure('welcome_or_noindex_missing', details)
     extra_https_checks(domain, https_routes, results)
     fingerprints = {}
     for port in dict.fromkeys([443, admin, vpn] + [spec['port'] for spec in https_routes]):

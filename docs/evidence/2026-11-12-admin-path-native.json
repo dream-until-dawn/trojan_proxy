@@ -1,0 +1,17 @@
+{
+  "phases": {
+    "first": {
+      "exit_code": 0,
+      "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n=== RUN   TestRealGatewayLifecycle/prefix-preserve-strip-and-response-boundaries\n=== RUN   TestRealGatewayLifecycle/admin-path-real-auth-assets-and-legacy-close\n--- PASS: TestRealGatewayLifecycle (0.69s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\n    --- PASS: TestRealGatewayLifecycle/prefix-preserve-strip-and-response-boundaries (0.04s)\n    --- PASS: TestRealGatewayLifecycle/admin-path-real-auth-assets-and-legacy-close (0.48s)\nPASS\n"
+    },
+    "restart": {
+      "exit_code": 0,
+      "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n=== RUN   TestRealGatewayLifecycle/prefix-preserve-strip-and-response-boundaries\n=== RUN   TestRealGatewayLifecycle/admin-path-real-auth-assets-and-legacy-close\n--- PASS: TestRealGatewayLifecycle (0.62s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\n    --- PASS: TestRealGatewayLifecycle/prefix-preserve-strip-and-response-boundaries (0.02s)\n    --- PASS: TestRealGatewayLifecycle/admin-path-real-auth-assets-and-legacy-close (0.45s)\nPASS\n"
+    }
+  },
+  "limitations": [
+    "测试使用临时证书和临时数据，不等于生产证书续期验收。"
+  ],
+  "gateway_image": "sha256:17a93dda98e60a2cec8a4a0cd93e97ec8fd81cf418a409eaadc4123920fdf70b",
+  "passed": true
+}
