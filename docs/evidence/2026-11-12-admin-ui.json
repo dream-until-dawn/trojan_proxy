@@ -1,0 +1,21 @@
+{
+  "scope": "local synthetic browser fixture; no owner credentials or production traffic",
+  "passed": true,
+  "checks": {
+    "six_independent_menu_pages": true,
+    "single_visible_page": true,
+    "browser_back_navigation": true,
+    "unknown_hash_returns_overview": true,
+    "route_draft_preserved_across_pages": true,
+    "site_domain_draft_preserved_across_pages": true,
+    "unchecked_route_publish_rejected": true,
+    "unchecked_history_clear_rejected": true,
+    "logout_hides_workspace_and_clears_targets_and_settings": true,
+    "logged_out_deep_link_cannot_reveal_workspace": true,
+    "mobile_390px_no_document_horizontal_overflow": true,
+    "browser_console_no_errors": true,
+    "existing_business_element_ids_preserved_without_duplicates": true
+  },
+  "screenshots": ["2026-11-12-admin-desktop.jpg", "2026-11-12-admin-mobile.jpg"],
+  "production_deployment": "pending exact-commit candidate verification"
+}

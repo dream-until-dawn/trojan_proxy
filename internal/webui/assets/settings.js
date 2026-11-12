@@ -45,7 +45,6 @@ function render() {
   const pending = document.querySelector("#site-pending"); pending.hidden = !snapshot.candidate;
   const link = document.querySelector("#site-candidate-link"); link.removeAttribute("href"); link.textContent = "";
   if (snapshot.candidate) {
-    panel.open = true;
     document.querySelector("#site-pending-summary").textContent = `候选入口有效至 ${new Date(snapshot.deadline * 1000).toLocaleString()}。请打开新入口，用口令和下一组验证码重新登录，再确认。到期会恢复原入口。`;
     const target = new URL(snapshot.candidate_origin);
     if (target.protocol === "https:" || (target.protocol === "http:" && target.hostname === "127.0.0.1")) {
@@ -53,7 +52,6 @@ function render() {
     }
     document.querySelector("#site-confirm").disabled = location.origin !== snapshot.candidate_origin || Date.now() >= snapshot.deadline * 1000;
   }
-  if (!site.domain) panel.open = true;
   document.querySelector("#site-current").textContent = `当前入口：${snapshot.current_origin} · 修订 ${snapshot.revision}`;
 }
 
@@ -144,7 +142,7 @@ document.querySelector("#certificate-form").addEventListener("submit", async eve
     const result = await request("/api/certificates/import", body);
     if (current !== generation) return;
     imported = { domain, version: result.version }; field("certificate-source").value = "imported";
-    output.textContent = `证书已核验并暂存，有效至 ${new Date(result.info.not_after).toLocaleString()}。提交上方设置并确认后才会启用。`;
+    output.textContent = `证书已核验并暂存，有效至 ${new Date(result.info.not_after).toLocaleString()}。返回系统设置，提交候选并确认后才会启用。`;
   } catch (error) { if (current === generation) output.textContent = error.message; }
   finally { if (current === generation) { document.querySelector("#certificate-form").reset(); button.disabled = false; } }
 });

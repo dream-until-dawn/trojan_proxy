@@ -1,49 +1,678 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive,nosnippet"><title>独用代理管理</title><link rel="stylesheet" href="/style.css"></head>
-<body><main><header><p class="label">TROJAN PROXY</p><h1>独用代理管理</h1><p>管理入口采用强口令与双重验证。刷新页面后需重新登录。</p></header>
-<section id="login-panel"><h2>管理员登录</h2><form id="login-form">
-<label>管理员口令<input id="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
-<label>验证方式<select id="method"><option value="otp">验证器验证码</option><option value="recovery">一次性恢复码</option></select></label>
-<label>验证码或恢复码<input id="verification" type="text" autocomplete="one-time-code" maxlength="64" required></label>
-<button id="submit" type="submit">安全登录</button></form><p id="message" role="status" aria-live="polite"></p>
-<p class="hint">首次部署请通过SSH隧道进入本机初始化向导，完成验证器绑定并保存恢复码。公网不提供注册入口。</p></section>
-<section id="dashboard" hidden><h2>系统状态</h2><p id="status"></p><button id="logout" type="button">退出登录</button>
-<hr><details id="settings-panel" hidden><summary>系统设置与证书</summary><p id="site-current" class="hint"></p>
-<form id="settings-form"><fieldset id="settings-fields"><legend id="settings-legend">网站与管理入口</legend>
-<label>域名（可留空）<input id="site-domain" maxlength="253" placeholder="例如 example.com，不带协议、路径或端口"></label>
-<label>后台HTTPS端口<input id="site-admin-port" type="number" min="1024" max="65535" required></label>
-<label>证书来源<select id="site-certificate-source"><option value="none">无域名，使用HTTP</option><option value="automatic">自动申请并续期</option><option value="imported">导入可信证书</option></select></label>
-<label>证书通知邮箱（可选）<input id="site-acme-email" type="email" maxlength="254"></label>
-<p class="hint">无域名时通过SSH隧道管理。有域名时需将DNS指向此服务器，并放行80/443。证书就绪后自动升级到HTTPS。更改后台端口时还需放行新端口；5分钟内未确认会恢复原入口。</p>
-<details><summary>VPN网络设置</summary><label>Trojan端口<input id="site-vpn-port" type="number" min="1024" max="65535" required></label><label>公网DNS解析器<input id="site-resolver" placeholder="9.9.9.9:53" required></label><label>服务器自身IP（每行一个）<textarea id="site-addresses" rows="3" placeholder="填写实际公网IP，以及需要保护的其他自身IP"></textarea></label><p class="hint">启用VPN前必须核实自身IP和云安全组。内控端口及部署保护地址始终保留保护；端口变更后需要重新下载客户端配置。</p></details>
-<details><summary>公开目录范围</summary><p class="hint">仅能选择部署时显式挂载的只读目录及其中的子目录。这里只定义范围，添加公开访问规则后才会对外提供下载。</p><div id="site-directories"></div><button id="site-add-directory" type="button" class="secondary">添加目录绑定</button></details>
-<label class="checkbox"><input id="site-ack-change" type="checkbox"> 我已保存路由草稿，确认入口或VPN设置变更可能影响现有连接</label><button id="site-propose" type="submit">创建候选设置</button></fieldset></form>
-<div id="site-pending" hidden><h3>等待入口确认</h3><p id="site-pending-summary"></p><p><a id="site-candidate-link" target="_blank" rel="noopener noreferrer"></a></p><p class="hint">如果新入口是127.0.0.1，请先建立SSH隧道。登录凭据不会自动传到新页面。</p><button id="site-confirm" type="button">确认此入口与设置</button><button id="site-cancel" class="secondary" type="button">撤回候选变更</button></div>
-<button id="site-refresh" type="button" class="secondary">刷新设置并丢弃草稿</button><p id="settings-message" role="status"></p>
-<h3>当前证书</h3><p id="certificate-status"></p><button id="certificate-refresh" class="secondary" type="button">刷新证书状态</button>
-<details><summary>导入证书与私钥</summary><p class="hint">请先在上方填写证书对应域名。导入仅暂存并校验，不立即替换当前证书。需要最近5分钟内的双因素登录。</p><form id="certificate-form"><label>完整PEM证书链<input id="certificate-chain" type="file" accept=".pem,.crt,.cer" required></label><label>PEM私钥<input id="certificate-key" type="file" accept=".pem,.key" required></label><button id="certificate-import" type="submit">校验并暂存证书</button></form><p id="certificate-message" role="status"></p></details></details>
-<hr><h2>Trojan VPN</h2><p id="vpn-status">正在读取状态…</p><p id="vpn-endpoint"></p><p id="vpn-certificate" class="hint"></p>
-<label class="checkbox"><input id="vpn-ack-change" type="checkbox"> 我确认启停或轮换口令会影响VPN连接，轮换后需重新导入配置</label>
-<button id="vpn-enable" type="button" disabled>启用Trojan</button><button id="vpn-disable" type="button" disabled>停止VPN</button><button id="vpn-rotate" type="button" disabled>轮换随机口令</button><button id="vpn-refresh" class="secondary" type="button">刷新VPN状态</button>
-<label class="checkbox"><input id="vpn-ack-secret" type="checkbox"> 下载文件包含VPN口令，我会妥善保管，不分享给他人</label><button id="vpn-export" type="button" disabled>下载Clash配置</button><p id="vpn-message" role="status" aria-live="polite"></p>
-<hr><h2>VPN流量记录</h2><p id="traffic-speed"></p><p id="traffic-live-message" class="hint"></p>
-<label>历史范围<select id="traffic-hours"><option value="1">最近1小时</option><option value="24" selected>最近24小时</option><option value="168">最近7天</option><option value="720">最近30天</option></select></label><button id="traffic-refresh" type="button" class="secondary">刷新历史记录</button>
-<p id="traffic-total"></p><p id="traffic-gap" class="hint"></p><svg id="traffic-chart" viewBox="0 0 800 140" role="img" aria-label="上下行采样网速曲线，缺失时间不连线"></svg><p class="hint">绿色为上传，蓝色为下载；速度按实际采样时长计算。目的IP只在此鉴权后台显示。</p>
-<div class="table-wrap"><table id="traffic-table"><thead><tr><th>目的IP</th><th>上传</th><th>下载</th><th>TCP连接数</th><th>采样</th></tr></thead><tbody id="traffic-targets"></tbody></table></div><button id="traffic-prev" type="button" class="secondary">上一页</button><span id="traffic-page"></span><button id="traffic-next" type="button" class="secondary">下一页</button><label class="checkbox"><input id="traffic-ack-clear" type="checkbox"> 我确认永久清空VPN统计历史，配置和服务继续保留</label><button id="traffic-clear" type="button" class="secondary">清空统计历史</button><p id="traffic-message" role="status"></p>
-<hr><h2>反向代理与公开目录</h2><p id="revision"></p><p id="route-scope-hint" class="hint"></p>
-<div class="table-wrap"><table><thead><tr><th>名称</th><th>入口</th><th>目标</th><th>草稿操作</th></tr></thead><tbody id="route-rows"></tbody></table></div>
-<form id="route-form"><h3>添加到草稿</h3>
-<label>名称<input id="route-name" maxlength="60" required></label>
-<label>公开端口<input id="route-port" type="number" min="1024" max="65535" placeholder="例如8001" required></label>
-<label>域名匹配（可留空）<input id="route-host" placeholder="留空匹配此端口所有Host" maxlength="253"></label>
-<label>路径前缀<input id="route-path" value="/" maxlength="512" required></label>
-<label>目标类型<select id="route-kind"><option value="proxy">本机HTTP服务</option><option id="files-option" value="files">公开目录下载</option></select></label>
-<div id="proxy-fields"><label>本机上游IP<input id="upstream-ip" value="127.0.0.1" required></label><label>本机上游端口<input id="upstream-port" type="number" min="1" max="65535" required></label><label class="checkbox"><input id="strip-prefix" type="checkbox"> 转发前去掉路径前缀</label></div>
-<div id="files-fields" hidden><label>已授权目录<select id="directory-id"></select></label><label class="checkbox"><input id="browse" type="checkbox"> 允许访问者列出目录（默认关闭）</label><p class="hint">目录只读，文件以附件下载；隐藏文件不发布。</p></div>
-<button type="submit">添加到草稿</button></form>
-<p class="hint">添加或移除仅修改当前草稿，点击下方按钮才会应用；刷新已生效规则会放弃草稿。</p>
-<label class="checkbox"><input id="ack-public" type="checkbox"> 我确认这些服务/目录可以公开访问，无需后台登录</label>
-<button id="apply-routes" type="button">校验并应用草稿</button><button id="refresh-routes" class="secondary" type="button">刷新已生效规则</button>
-<p id="route-message" role="status" aria-live="polite"></p></section>
-</main><script type="module" src="/main.js"></script></body></html>
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <meta content="noindex,nofollow,noarchive,nosnippet" name="robots"/>
+  <title>
+   独用代理管理 · 控制台
+  </title>
+  <link href="/style.css" rel="stylesheet"/>
+ </head>
+ <body>
+  <main class="auth-layout" id="login-panel">
+   <div class="auth-intro">
+    <a class="brand" href="#overview">
+     <span class="brand-mark">
+      P
+     </span>
+     Proxy Console
+    </a>
+    <span class="eyebrow">
+     你的服务器，你的控制台
+    </span>
+    <h1>
+     一个入口。
+     <br/>
+     让服务各就其位。
+    </h1>
+    <p>
+     管理反向代理、HTTPS证书与VPN连接。
+     <br/>
+     清晰可控，只为你一人开放。
+    </p>
+    <div class="auth-assurance">
+     ◈ 强口令 · 验证器 · 离线恢复码
+    </div>
+   </div>
+   <section class="login-card">
+    <h2>
+     管理员登录
+    </h2>
+    <form id="login-form">
+     <label>
+      管理员口令
+      <input autocomplete="current-password" id="password" maxlength="1024" required="" type="password"/>
+     </label>
+     <label>
+      验证方式
+      <select id="method">
+       <option value="otp">
+        验证器验证码
+       </option>
+       <option value="recovery">
+        一次性恢复码
+       </option>
+      </select>
+     </label>
+     <label>
+      验证码或恢复码
+      <input autocomplete="one-time-code" id="verification" maxlength="64" required="" type="text"/>
+     </label>
+     <button id="submit" type="submit">
+      安全登录
+     </button>
+    </form>
+    <p aria-live="polite" id="message" role="status">
+    </p>
+    <p class="hint">
+     首次部署请通过SSH隧道进入本机初始化向导，完成验证器绑定并保存恢复码。公网不提供注册入口。
+    </p>
+   </section>
+  </main>
+  <div class="app-shell" hidden="" id="dashboard">
+   <!-- 菜单只切换页面，不提交业务配置。 -->
+  <aside class="sidebar">
+    <a class="brand" href="#overview">
+     <span class="brand-mark">
+      P
+     </span>
+     Proxy Console
+    </a>
+    <p class="nav-label">
+     工作空间
+    </p>
+    <nav aria-label="管理功能">
+     <a data-nav="overview" href="#overview">
+      <span aria-hidden="true" class="nav-icon">
+       ◫
+      </span>
+      总览
+     </a>
+     <a data-nav="routes" href="#routes">
+      <span aria-hidden="true" class="nav-icon">
+       ⇄
+      </span>
+      反向代理
+     </a>
+     <a data-nav="vpn" href="#vpn">
+      <span aria-hidden="true" class="nav-icon">
+       ◇
+      </span>
+      Trojan VPN
+     </a>
+     <a data-nav="traffic" href="#traffic">
+      <span aria-hidden="true" class="nav-icon">
+       ▥
+      </span>
+      流量记录
+     </a>
+     <a data-nav="certificates" href="#certificates">
+      <span aria-hidden="true" class="nav-icon">
+       ▤
+      </span>
+      证书管理
+     </a>
+     <a data-nav="settings" href="#settings">
+      <span aria-hidden="true" class="nav-icon">
+       ⚙
+      </span>
+      系统设置
+     </a>
+    </nav>
+    <div class="sidebar-footer">
+     <span class="session-label">
+      <span class="status-dot">
+      </span>
+      私人管理会话
+     </span>
+     <button class="secondary" id="logout" type="button">
+      退出登录 ↗
+     </button>
+     <p>
+      刷新页面后需重新登录
+     </p>
+    </div>
+   </aside>
+   <!-- 功能页独立显示，共享内存会话及草稿。 -->
+  <main class="workspace">
+    <header class="topbar">
+     <div>
+      <p class="eyebrow">
+       PROXY CONSOLE / PRIVATE
+      </p>
+      <h1 id="page-title" tabindex="-1">
+       总览
+      </h1>
+      <p id="page-description">
+       服务与入口，一目了然
+      </p>
+     </div>
+     <span class="topbar-badge">
+      独用管理
+     </span>
+    </header>
+    <section class="page" data-page="overview" hidden="" id="page-overview">
+     <div class="welcome-banner">
+      <div>
+       <span class="eyebrow">
+        控制台概览
+       </span>
+       <h2>
+        把服务管理得井井有条。
+       </h2>
+       <p>
+        从一个安全入口，管理网站、连接与访问流量。
+       </p>
+      </div>
+      <span class="secure-badge">
+       双因素验证已通过
+      </span>
+     </div>
+     <div class="metrics-grid">
+      <article class="metric-card">
+       <span>
+        管理入口
+       </span>
+       <strong id="overview-entry">
+        正在读取…
+       </strong>
+       <a href="#settings">
+        管理入口设置 ↗
+       </a>
+      </article>
+      <article class="metric-card">
+       <span>
+        VPN状态
+       </span>
+       <strong id="overview-vpn">
+        正在读取…
+       </strong>
+       <a href="#vpn">
+        查看连接状态 ↗
+       </a>
+      </article>
+      <article class="metric-card">
+       <span>
+        实时传输
+       </span>
+       <strong id="overview-speed">
+        正在读取…
+       </strong>
+       <a href="#traffic">
+        查看流量记录 ↗
+       </a>
+      </article>
+      <article class="metric-card">
+       <span>
+        证书状态
+       </span>
+       <strong id="overview-certificate">
+        正在读取…
+       </strong>
+       <a href="#certificates">
+        管理HTTPS证书 ↗
+       </a>
+      </article>
+     </div>
+     <div class="panel">
+      <div class="section-heading">
+       <div>
+        <h2>
+         常用管理
+        </h2>
+        <p class="hint">
+         每项功能都有独立页面，修改前可先审阅草稿。
+        </p>
+       </div>
+       <span class="tag">
+        独用控制台
+       </span>
+      </div>
+      <div class="shortcut-grid">
+       <a href="#routes">
+        <span class="shortcut-icon">
+         ⇄
+        </span>
+        <h3>
+         反向代理
+        </h3>
+        <p>
+         连接本机服务，发布只读目录。
+        </p>
+        <span>
+         管理访问规则 →
+        </span>
+       </a>
+       <a href="#vpn">
+        <span class="shortcut-icon">
+         ◇
+        </span>
+        <h3>
+         Trojan VPN
+        </h3>
+        <p>
+         查看服务状态，下载客户端配置。
+        </p>
+        <span>
+         管理连接 →
+        </span>
+       </a>
+       <a href="#traffic">
+        <span class="shortcut-icon">
+         ▥
+        </span>
+        <h3>
+         流量记录
+        </h3>
+        <p>
+         查看实时速率、上下行与目的IP。
+        </p>
+        <span>
+         查看最近记录 →
+        </span>
+       </a>
+      </div>
+     </div>
+     <div class="subtle-note">
+      <span class="status-dot">
+      </span>
+      <p id="status">
+      </p>
+     </div>
+    </section>
+    <section class="page" data-page="routes" hidden="" id="page-routes">
+     <div class="panel">
+      <p id="revision">
+      </p>
+      <p class="hint" id="route-scope-hint">
+      </p>
+      <div class="table-wrap">
+       <table>
+        <thead>
+         <tr>
+          <th>
+           名称
+          </th>
+          <th>
+           入口
+          </th>
+          <th>
+           目标
+          </th>
+          <th>
+           草稿操作
+          </th>
+         </tr>
+        </thead>
+        <tbody id="route-rows">
+        </tbody>
+       </table>
+      </div>
+      <form class="form-grid" id="route-form">
+       <h3>
+        添加到草稿
+       </h3>
+       <label>
+        名称
+        <input id="route-name" maxlength="60" required=""/>
+       </label>
+       <label>
+        公开端口
+        <input id="route-port" max="65535" min="1024" placeholder="例如8001" required="" type="number"/>
+       </label>
+       <label>
+        域名匹配（可留空）
+        <input id="route-host" maxlength="253" placeholder="留空匹配此端口所有Host"/>
+       </label>
+       <label>
+        路径前缀
+        <input id="route-path" maxlength="512" required="" value="/"/>
+       </label>
+       <label>
+        目标类型
+        <select id="route-kind">
+         <option value="proxy">
+          本机HTTP服务
+         </option>
+         <option id="files-option" value="files">
+          公开目录下载
+         </option>
+        </select>
+       </label>
+       <div id="proxy-fields">
+        <label>
+         本机上游IP
+         <input id="upstream-ip" required="" value="127.0.0.1"/>
+        </label>
+        <label>
+         本机上游端口
+         <input id="upstream-port" max="65535" min="1" required="" type="number"/>
+        </label>
+        <label class="checkbox">
+         <input id="strip-prefix" type="checkbox"/>
+         转发前去掉路径前缀
+        </label>
+       </div>
+       <div hidden="" id="files-fields">
+        <label>
+         已授权目录
+         <select id="directory-id">
+         </select>
+        </label>
+        <label class="checkbox">
+         <input id="browse" type="checkbox"/>
+         允许访问者列出目录（默认关闭）
+        </label>
+        <p class="hint">
+         目录只读，文件以附件下载；隐藏文件不发布。
+        </p>
+       </div>
+       <button type="submit">
+        添加到草稿
+       </button>
+      </form>
+      <p class="hint">
+       添加或移除仅修改当前草稿，点击下方按钮才会应用；刷新已生效规则会放弃草稿。
+      </p>
+      <label class="checkbox">
+       <input id="ack-public" type="checkbox"/>
+       我确认这些服务/目录可以公开访问，无需后台登录
+      </label>
+      <button id="apply-routes" type="button">
+       校验并应用草稿
+      </button>
+      <button class="secondary" id="refresh-routes" type="button">
+       刷新已生效规则
+      </button>
+      <p aria-live="polite" id="route-message" role="status">
+      </p>
+     </div>
+    </section>
+    <section class="page" data-page="vpn" hidden="" id="page-vpn">
+     <div class="panel">
+      <h2>
+       服务与连接
+      </h2>
+      <p id="vpn-status">
+       正在读取状态…
+      </p>
+      <p id="vpn-endpoint">
+      </p>
+      <p class="hint" id="vpn-certificate">
+      </p>
+      <label class="checkbox">
+       <input id="vpn-ack-change" type="checkbox"/>
+       我确认启停或轮换口令会影响VPN连接，轮换后需重新导入配置
+      </label>
+      <button disabled="" id="vpn-enable" type="button">
+       启用Trojan
+      </button>
+      <button disabled="" id="vpn-disable" type="button">
+       停止VPN
+      </button>
+      <button disabled="" id="vpn-rotate" type="button">
+       轮换随机口令
+      </button>
+      <button class="secondary" id="vpn-refresh" type="button">
+       刷新VPN状态
+      </button>
+      <label class="checkbox">
+       <input id="vpn-ack-secret" type="checkbox"/>
+       下载文件包含VPN口令，我会妥善保管，不分享给他人
+      </label>
+      <button disabled="" id="vpn-export" type="button">
+       下载Clash配置
+      </button>
+      <p aria-live="polite" id="vpn-message" role="status">
+      </p>
+     </div>
+    </section>
+    <section class="page" data-page="traffic" hidden="" id="page-traffic">
+     <div class="panel">
+      <h2>
+       流量与速率
+      </h2>
+      <p id="traffic-speed">
+      </p>
+      <p class="hint" id="traffic-live-message">
+      </p>
+      <label>
+       历史范围
+       <select id="traffic-hours">
+        <option value="1">
+         最近1小时
+        </option>
+        <option selected="" value="24">
+         最近24小时
+        </option>
+        <option value="168">
+         最近7天
+        </option>
+        <option value="720">
+         最近30天
+        </option>
+       </select>
+      </label>
+      <button class="secondary" id="traffic-refresh" type="button">
+       刷新历史记录
+      </button>
+      <p id="traffic-total">
+      </p>
+      <p class="hint" id="traffic-gap">
+      </p>
+      <svg aria-label="上下行采样网速曲线，缺失时间不连线" id="traffic-chart" role="img" viewbox="0 0 800 140">
+      </svg>
+      <p class="hint">
+       绿色为上传，蓝色为下载；速度按实际采样时长计算。目的IP只在此鉴权后台显示。
+      </p>
+      <div class="table-wrap">
+       <table id="traffic-table">
+        <thead>
+         <tr>
+          <th>
+           目的IP
+          </th>
+          <th>
+           上传
+          </th>
+          <th>
+           下载
+          </th>
+          <th>
+           TCP连接数
+          </th>
+          <th>
+           采样
+          </th>
+         </tr>
+        </thead>
+        <tbody id="traffic-targets">
+        </tbody>
+       </table>
+      </div>
+      <button class="secondary" id="traffic-prev" type="button">
+       上一页
+      </button>
+      <span id="traffic-page">
+      </span>
+      <button class="secondary" id="traffic-next" type="button">
+       下一页
+      </button>
+      <label class="checkbox">
+       <input id="traffic-ack-clear" type="checkbox"/>
+       我确认永久清空VPN统计历史，配置和服务继续保留
+      </label>
+      <button class="secondary" id="traffic-clear" type="button">
+       清空统计历史
+      </button>
+      <p id="traffic-message" role="status">
+      </p>
+     </div>
+    </section>
+    <section class="page" data-page="certificates" hidden="" id="page-certificates">
+     <p class="hint">
+      证书来源和通知邮箱在
+      <a href="#settings">
+       系统设置
+      </a>
+      中调整。导入只暂存，确认候选设置后才会启用。
+     </p>
+     <div id="certificates-content">
+      <div class="panel">
+       <h2>
+        证书状态
+       </h2>
+       <p id="certificate-status">
+       </p>
+       <button class="secondary" id="certificate-refresh" type="button">
+        刷新证书状态
+       </button>
+       <details>
+        <summary>
+         导入证书与私钥
+        </summary>
+        <p class="hint">
+         请先在系统设置中填写证书对应域名；页面切换会保留草稿。导入仅暂存并校验，不立即替换当前证书。需要最近5分钟内的双因素登录。
+        </p>
+        <form id="certificate-form">
+         <label>
+          完整PEM证书链
+          <input accept=".pem,.crt,.cer" id="certificate-chain" required="" type="file"/>
+         </label>
+         <label>
+          PEM私钥
+          <input accept=".pem,.key" id="certificate-key" required="" type="file"/>
+         </label>
+         <button id="certificate-import" type="submit">
+          校验并暂存证书
+         </button>
+        </form>
+        <p id="certificate-message" role="status">
+        </p>
+       </details>
+      </div>
+     </div>
+    </section>
+    <section class="page" data-page="settings" hidden="" id="page-settings">
+     <div class="panel" hidden="" id="settings-panel">
+      <h2>
+       网站与管理入口
+      </h2>
+      <p class="hint" id="site-current">
+      </p>
+      <form id="settings-form">
+       <fieldset id="settings-fields">
+        <legend id="settings-legend">
+         网站与管理入口
+        </legend>
+        <label>
+         域名（可留空）
+         <input id="site-domain" maxlength="253" placeholder="例如 example.com，不带协议、路径或端口"/>
+        </label>
+        <label>
+         后台HTTPS端口
+         <input id="site-admin-port" max="65535" min="1024" required="" type="number"/>
+        </label>
+        <label>
+         证书来源
+         <select id="site-certificate-source">
+          <option value="none">
+           无域名，使用HTTP
+          </option>
+          <option value="automatic">
+           自动申请并续期
+          </option>
+          <option value="imported">
+           导入可信证书
+          </option>
+         </select>
+        </label>
+        <label>
+         证书通知邮箱（可选）
+         <input id="site-acme-email" maxlength="254" type="email"/>
+        </label>
+        <p class="hint">
+         无域名时通过SSH隧道管理。有域名时需将DNS指向此服务器，并放行80/443。证书就绪后自动升级到HTTPS。更改后台端口时还需放行新端口；5分钟内未确认会恢复原入口。
+        </p>
+        <details>
+         <summary>
+          VPN网络设置
+         </summary>
+         <label>
+          Trojan端口
+          <input id="site-vpn-port" max="65535" min="1024" required="" type="number"/>
+         </label>
+         <label>
+          公网DNS解析器
+          <input id="site-resolver" placeholder="9.9.9.9:53" required=""/>
+         </label>
+         <label>
+          服务器自身IP（每行一个）
+          <textarea id="site-addresses" placeholder="填写实际公网IP，以及需要保护的其他自身IP" rows="3"></textarea>
+         </label>
+         <p class="hint">
+          启用VPN前必须核实自身IP和云安全组。内控端口及部署保护地址始终保留保护；端口变更后需要重新下载客户端配置。
+         </p>
+        </details>
+        <details>
+         <summary>
+          公开目录范围
+         </summary>
+         <p class="hint">
+          仅能选择部署时显式挂载的只读目录及其中的子目录。这里只定义范围，添加公开访问规则后才会对外提供下载。
+         </p>
+         <div id="site-directories">
+         </div>
+         <button class="secondary" id="site-add-directory" type="button">
+          添加目录绑定
+         </button>
+        </details>
+        <label class="checkbox">
+         <input id="site-ack-change" type="checkbox"/>
+         我已保存路由草稿，确认入口或VPN设置变更可能影响现有连接
+        </label>
+        <button id="site-propose" type="submit">
+         创建候选设置
+        </button>
+       </fieldset>
+      </form>
+      <div hidden="" id="site-pending">
+       <h3>
+        等待入口确认
+       </h3>
+       <p id="site-pending-summary">
+       </p>
+       <p>
+        <a id="site-candidate-link" rel="noopener noreferrer" target="_blank">
+        </a>
+       </p>
+       <p class="hint">
+        如果新入口是127.0.0.1，请先建立SSH隧道。登录凭据不会自动传到新页面。
+       </p>
+       <button id="site-confirm" type="button">
+        确认此入口与设置
+       </button>
+       <button class="secondary" id="site-cancel" type="button">
+        撤回候选变更
+       </button>
+      </div>
+      <button class="secondary" id="site-refresh" type="button">
+       刷新设置并丢弃草稿
+      </button>
+      <p id="settings-message" role="status">
+      </p>
+     </div>
+    </section>
+    <footer class="workspace-footer">
+     PRIVATE BY DESIGN
+     <span>
+      修改先审阅，应用后生效
+     </span>
+    </footer>
+   </main>
+  </div>
+  <script src="/main.js" type="module">
+  </script>
+ </body>
+</html>
