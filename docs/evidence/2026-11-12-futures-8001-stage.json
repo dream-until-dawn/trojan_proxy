@@ -1,0 +1,88 @@
+{
+  "configured_locally": {
+    "listeners": "LISTEN 0      4096   127.0.0.1:3030 0.0.0.0:* users:((\"docker-proxy\",pid=3459292,fd=4))\nLISTEN 0      4096           *:8001       *:* users:((\"caddy\",pid=2613037,fd=18))",
+    "backend": {
+      "id": "3d594c27d62a78df6e1ba2c34f53a17118db26591baa79cca7ae2ba079b095b8",
+      "image": "sha256:170cbe9f42a8b4e6b7d7bcb23cbd4d79c0625a7fc8dfa9546e07114507abc282",
+      "started": "2026-11-12T05:59:50.481852894Z",
+      "health": "healthy",
+      "bindings": {
+        "3000/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "3030"
+          }
+        ]
+      },
+      "origin": "https://qin-xin.top:8001"
+    },
+    "/login": {
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 10150,
+      "has_login_form": true,
+      "has_server_action": true
+    },
+    "/api/overview": {
+      "status": 401,
+      "content_type": "application/json",
+      "bytes": 24,
+      "has_login_form": false,
+      "has_server_action": false
+    },
+    "tls": {
+      "443": {
+        "trusted": true,
+        "sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+        "not_after": "Feb  9 13:50:03 2027 GMT"
+      },
+      "8001": {
+        "trusted": true,
+        "sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+        "not_after": "Feb  9 13:50:03 2027 GMT"
+      }
+    },
+    "revision": 18,
+    "pending": false,
+    "rules": [
+      {
+        "id": "0158889c-5d92-4b56-8963-4a55a76cd9c8",
+        "name": "期货回测与执行 Web",
+        "port": 8001,
+        "host": "qin-xin.top",
+        "path": "/",
+        "kind": "proxy",
+        "upstream_ip": "127.0.0.1",
+        "upstream_port": 3030,
+        "strip_prefix": false,
+        "browse": false,
+        "https": true
+      }
+    ]
+  },
+  "public_probe_failed": {
+    "passed": false,
+    "origin": "https://qin-xin.top:8001",
+    "checks": {},
+    "credential_scope": "only a deliberately invalid password; no owner credentials",
+    "error": "SSLEOFError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1081)"
+  },
+  "physical_socket_comparison": {
+    "interface_index": 14,
+    "scope": "per-socket IP_UNICAST_IF only",
+    "ports": {
+      "443": {
+        "tcp_connected": true,
+        "trusted_tls": true,
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+        "elapsed_seconds": 0.856
+      },
+      "8001": {
+        "error_type": "TimeoutError",
+        "elapsed_seconds": 6.013
+      }
+    }
+  },
+  "owner_reported_cloud_port_already_allowed": true,
+  "superseded_by": "https://qin-xin.top/futures with prefix preserved; stop further port 8001 diagnosis"
+}

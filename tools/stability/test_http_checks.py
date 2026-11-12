@@ -55,6 +55,8 @@ class HTTPDiagnosticsTest(unittest.TestCase):
     def test_optional_route_contract_rejects_bad_metadata(self):
         good = {'port':8001,'path':'/api/overview','expected':401}
         self.assertEqual(validate_https_routes([good]),[good])
+        standard = dict(good,port=443,path='/futures/api/overview')
+        self.assertEqual(validate_https_routes([standard]),[standard])
         for value in [None, {}, [dict(good,port=True)], [dict(good,port=80)], [dict(good,path='/login?token=secret')], [dict(good,expected=201)], [good,good]]:
             with self.assertRaises(CheckFailure): validate_https_routes(value)
 

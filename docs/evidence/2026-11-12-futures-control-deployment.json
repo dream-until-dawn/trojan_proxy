@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "source_commit": "0349da92b64b3ada6806a5401d61683d11587fb9",
+  "control_image": {
+    "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:e44e6473217726f748ce940409595591a65b50413b1f75a493251191bf60ce31",
+    "manifest_digest": "sha256:e44e6473217726f748ce940409595591a65b50413b1f75a493251191bf60ce31",
+    "config_digest": "sha256:ba459f878f1e0bc6be343ae5761fedfe9ce1bd2fc89b733e414d251e7978ec62",
+    "platform": "linux/amd64"
+  },
+  "stage": "vpn_positive_negative",
+  "historical_stability": {
+    "samples": 195,
+    "failures": 0,
+    "passed": false
+  },
+  "runtime_internal_keepalive_disabled": true,
+  "revision_before": 16,
+  "revision_after": 17,
+  "https_rule_form_ready": true,
+  "private_backup": "/opt/trojan-proxy-refactor/backups/before-custom-https-8001-20261112T065739Z",
+  "six_menu_page_html_and_navigation_served": true,
+  "authorization_checks": {
+    "/api/settings/status https://qin-xin.top:8007": 401,
+    "/api/traffic/dashboard https://qin-xin.top:8007": 401,
+    "/api/settings/status https://qin-xin.top:8008": 403
+  },
+  "settings_routes_vpn_and_account_preserved": true,
+  "gateway_vpn_and_unrelated_processes_unchanged": true,
+  "vpn": {
+    "port": 18443,
+    "runner_started": "2026-11-11T15:00:36.79856231Z",
+    "checks": {
+      "local_tls": {
+        "tls": "TLSv1.3",
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+      },
+      "direct_google_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_domain_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_ip_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_https": {
+        "status_line": "HTTP/1.1 204 No Content",
+        "inner_tls_verified": true
+      },
+      "wrong_password": {
+        "rejected": true,
+        "error_type": "ConnectionResetError"
+      }
+    }
+  }
+}

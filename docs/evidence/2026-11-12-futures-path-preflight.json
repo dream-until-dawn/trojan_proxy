@@ -1,0 +1,57 @@
+{
+  "revision": 18,
+  "pending": false,
+  "rules": [
+    {
+      "id": "0158889c-5d92-4b56-8963-4a55a76cd9c8",
+      "name": "期货回测与执行 Web",
+      "port": 8001,
+      "host": "qin-xin.top",
+      "path": "/",
+      "kind": "proxy",
+      "upstream_ip": "127.0.0.1",
+      "upstream_port": 3030,
+      "strip_prefix": false,
+      "browse": false,
+      "https": true
+    }
+  ],
+  "checks": {
+    "http /futures": {
+      "status": 308,
+      "location": "https://qin-xin.top/futures",
+      "welcome_page": false,
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "http /futures/login": {
+      "status": 308,
+      "location": "https://qin-xin.top/futures/login",
+      "welcome_page": false,
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "https /": {
+      "status": 200,
+      "location": null,
+      "welcome_page": true,
+      "body_sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "https /futures": {
+      "status": 200,
+      "location": null,
+      "welcome_page": true,
+      "body_sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "https /futures/login": {
+      "status": 200,
+      "location": null,
+      "welcome_page": true,
+      "body_sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "https /futures-other": {
+      "status": 200,
+      "location": null,
+      "welcome_page": true,
+      "body_sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    }
+  }
+}

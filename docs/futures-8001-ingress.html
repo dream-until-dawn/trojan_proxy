@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>8001期货Web HTTPS入口接入方案</title><link rel="stylesheet" href="assets/docs.css"></head>
-<body><header><h1>单条8001 HTTPS反代接入</h1><nav><a href="plan.html">开发计划</a><a href="stability.html">长稳窗口</a></nav></header><main>
+<body><header><h1>单条8001 HTTPS反代接入</h1><nav><a href="plan.html">开发计划</a><a href="stability.html">长稳窗口</a></nav></header><main><section><h2>此入口方案已被替代</h2><p>当前最终方案为<a href="futures-path-ingress.html">HTTPS /futures保留前缀</a>。8001已完成受控本地配置，但公网验证未通过；所有者反馈云侧原本已放行。按新决定停止其外网诊断，替代路径验收后撤销。下文保留原设计和阶段证据，不表示当前仍将8001作为交付入口。</p></section>
 <section><h2>授权与现场核验</h2><p>已在来源会话核对用户授权：由Trojan Proxy负责安排8001反代。目标为 https://qin-xin.top:8001 → http://127.0.0.1:3030，不修改后端、不新增Nginx、不改其他业务路由。</p><p>2026-11-12独立只读核验：8001没有监听；futures-engine-ops-v02-web-1为healthy，3000仅发布到127.0.0.1:3030，WEB_ORIGIN为目标HTTPS地址。携带目标Host与HTTPS转发头访问/login为200，/api/overview为401。443现有可信证书匹配qin-xin.top，有效至2027-02-09；8001本机连接被拒绝。路由修订16，没有待提交事务、没有业务规则。本方案未应用到生产。</p></section>
 <section><h2>当前功能缺口与受控边界</h2><p>现有Rule模型没有入口协议字段；Compile仅为443和后台设置TLS策略，自定义8001生成明文HTTP。不能把“新增一条规则”当成HTTPS已经可用，也不能通过临时修改Caddy运行态绕过持久修订与自动收敛。后台公开路由修改要求最近五分钟内的双因素登录，现有proxyctl没有路由写入命令；不读取所有者凭据或伪造会话。</p></section>
 <section><h2>实现与受控发布</h2><ol>

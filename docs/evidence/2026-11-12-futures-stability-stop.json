@@ -1,0 +1,33 @@
+{
+  "reason": "owner chose immediate custom HTTPS extension and a fresh full 24-hour run after ingress acceptance",
+  "at_utc": "2026-11-12T06:55:35.643338Z",
+  "before": {
+    "passed": false,
+    "completed": false,
+    "started_utc": "2026-11-12T03:41:29.107542Z",
+    "duration_seconds": 86400,
+    "source_commit": "8fbe8e58f4f9101c1b4b2dc774f0d0b52a7e0dd9",
+    "samples": 195,
+    "failures": 0,
+    "deep_checks": 4,
+    "recent_failures": [],
+    "updated_utc": "2026-11-12T06:55:31.843816Z",
+    "elapsed_seconds": 11642.736271598376
+  },
+  "observer_source_commit": "5ef7054eeb7b04dd5acfef82bf21101ad1ffeb3f",
+  "stopped": true,
+  "after": {
+    "passed": false,
+    "completed": false,
+    "started_utc": "2026-11-12T03:41:29.107542Z",
+    "duration_seconds": 86400,
+    "source_commit": "8fbe8e58f4f9101c1b4b2dc774f0d0b52a7e0dd9",
+    "samples": 195,
+    "failures": 0,
+    "deep_checks": 4,
+    "recent_failures": [],
+    "updated_utc": "2026-11-12T06:55:35.850455Z",
+    "elapsed_seconds": 11646.742903628387
+  },
+  "business_services_unchanged": true
+}

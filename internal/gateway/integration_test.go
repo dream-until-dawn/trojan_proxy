@@ -195,6 +195,7 @@ func TestRealGatewayLifecycle(t *testing.T) {
 	testRejectTLSReservation(t, engine, settings)
 	testInternalKeepalive(t, engine, settings)
 	t.Run("custom-https-origin-post-cookie-stream", func(t *testing.T) { testCustomHTTPS(t, engine, settings) })
+	t.Run("prefix-preserve-strip-and-response-boundaries", func(t *testing.T) { testPrefixRoutingContract(t, engine, settings) })
 	testStandardIngress(t, engine, settings, backendPort)
 	testAdminEntryTransition(t, engine, settings, ruleset)
 	testLegacySettingsMigration(t, engine, settings, backendPort)

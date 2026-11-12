@@ -59,7 +59,7 @@ def validate_https_routes(specs):
     for spec in specs:
         if not isinstance(spec, dict) or set(spec) != {'port', 'path', 'expected'}: raise CheckFailure('invalid_https_route_probe')
         port, path, expected = spec['port'], spec['path'], spec['expected']
-        if type(port) is not int or not 1024 <= port <= 65535 or type(expected) is not int or expected not in (200, 401, 403, 404): raise CheckFailure('invalid_https_route_probe')
+        if type(port) is not int or not (port == 443 or 1024 <= port <= 65535) or type(expected) is not int or expected not in (200, 401, 403, 404): raise CheckFailure('invalid_https_route_probe')
         if not isinstance(path, str) or not path.startswith('/') or len(path) > 512 or any(x in path for x in ['\r', '\n', '?', '#']): raise CheckFailure('invalid_https_route_probe')
         if (port, path) in seen: raise CheckFailure('duplicate_https_route_probe')
         seen.add((port, path))
@@ -70,7 +70,8 @@ def extra_https_checks(domain, specs, results):
     for spec in validate_https_routes(specs):
         port = spec['port']
         connection = DirectHTTPS(domain, port, timeout=5)
-        check_response(connection, port, spec['path'], 'GET', domain + ':' + str(port), spec['expected'], results)
+        host = domain if port == 443 else domain + ':' + str(port)
+        check_response(connection, port, spec['path'], 'GET', host, spec['expected'], results)
 
 
 def web_checks(domain, admin, vpn, control, results=None, https_routes=None):
