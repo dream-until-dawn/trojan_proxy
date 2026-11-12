@@ -1,0 +1,86 @@
+{
+  "production_errors": [
+    {
+      "at": "2026-11-11T16:50:42.610014996Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "readfrom tcp 127.0.0.1:34474->127.0.0.1:18090: write tcp 127.0.0.1:34474->127.0.0.1:18090: write: broken pipe",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    },
+    {
+      "at": "2026-11-11T17:23:42.608755245Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "readfrom tcp 127.0.0.1:43240->127.0.0.1:18090: write tcp 127.0.0.1:43240->127.0.0.1:18090: write: broken pipe",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    },
+    {
+      "at": "2026-11-11T18:17:42.603131870Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "read tcp 127.0.0.1:34762->127.0.0.1:18090: read: connection reset by peer",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    },
+    {
+      "at": "2026-11-11T22:21:42.606692636Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "readfrom tcp 127.0.0.1:56132->127.0.0.1:18090: write tcp 127.0.0.1:56132->127.0.0.1:18090: write: connection reset by peer",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    },
+    {
+      "at": "2026-11-11T22:29:42.605502179Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "readfrom tcp 127.0.0.1:32854->127.0.0.1:18090: write tcp 127.0.0.1:32854->127.0.0.1:18090: write: broken pipe",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    },
+    {
+      "at": "2026-11-12T01:00:42.606327933Z",
+      "level": "error",
+      "logger": "http.log.error",
+      "message": "readfrom tcp 127.0.0.1:33716->127.0.0.1:18090: write tcp 127.0.0.1:33716->127.0.0.1:18090: write: connection reset by peer",
+      "status": 502,
+      "method": "POST",
+      "path": "/api/vpn/status"
+    }
+  ],
+  "native_positive_negative": {
+    "phases": {
+      "first": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealGatewayLifecycle\n--- PASS: TestRealGatewayLifecycle (0.21s)\nPASS\n"
+      },
+      "restart": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealGatewayLifecycle\n--- PASS: TestRealGatewayLifecycle (0.18s)\nPASS\n"
+      }
+    },
+    "limitations": [
+      "测试使用临时证书和临时数据，不等于生产证书续期验收。"
+    ],
+    "gateway_image": "sha256:17a93dda98e60a2cec8a4a0cd93e97ec8fd81cf418a409eaadc4123920fdf70b",
+    "passed": true
+  },
+  "short_interval_baseline": {
+    "source_commit": "83c6c51bd972f4ca50c5ee409d5bca20b399e867",
+    "private_output": "/opt/trojan-proxy-refactor/backups/http-diagnosis-20261112T031430Z-0bde3f/results",
+    "summary": {
+      "completed": true,
+      "samples": 200,
+      "failures": 0,
+      "failure_details": []
+    }
+  },
+  "limitation": "Short intervals do not exercise the 60-second idle boundary; full post-fix observation is pending."
+}

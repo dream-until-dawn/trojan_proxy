@@ -193,6 +193,7 @@ func TestRealGatewayLifecycle(t *testing.T) {
 		t.Fatal("目录标准化跳转失败", status)
 	}
 	testRejectTLSReservation(t, engine, settings)
+	testInternalKeepalive(t, engine, settings)
 	testStandardIngress(t, engine, settings, backendPort)
 	testAdminEntryTransition(t, engine, settings, ruleset)
 	testLegacySettingsMigration(t, engine, settings, backendPort)

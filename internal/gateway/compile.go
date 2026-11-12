@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 4, Settings: settings})
+	}{Version: 5, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -69,6 +69,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		}
 		proxy := map[string]any{"handler": "reverse_proxy", "upstreams": []any{map[string]any{"dial": upstream}}}
 		if r.Kind == "files" {
+			proxy["transport"] = internalTransport()
 			proxy["headers"] = map[string]any{"request": map[string]any{"set": map[string]any{"X-Trojan-Original-URI": []string{"{http.request.orig_uri}"}}}}
 		}
 		handles = append(handles, proxy)
@@ -97,7 +98,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		servers[fmt.Sprintf("public_%d", port)] = server
 	}
 	servers["admin"] = map[string]any{"listen": []string{fmt.Sprintf(":%d", settings.AdminPort)}, "automatic_https": map[string]any{"disable": true}, "tls_connection_policies": []any{map[string]any{}},
-		"routes": []any{map[string]any{"match": []any{map[string]any{"host": []string{settings.Domain}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.ControlPort))}}}}}}}
+		"routes": []any{map[string]any{"match": []any{map[string]any{"host": []string{settings.Domain}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "transport": internalTransport(), "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.ControlPort))}}}}}}}
 	tlsApp := map[string]any{"certificates": map[string]any{"load_files": []any{map[string]any{"certificate": "/certs/fullchain.cer", "key": "/certs/private.key"}}}}
 	if settings.Ingress != nil {
 		if err := configureIngress(settings, servers, tlsApp); err != nil {
@@ -117,4 +118,10 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		"http": map[string]any{"servers": servers}, "tls": tlsApp}}
 	body, err := json.Marshal(root)
 	return string(body), err
+}
+
+// internalTransport 为低流量内置服务逐次建立回环连接，避开上游空闲关闭与复用的竞争。
+// 不对POST重试，避免管理写入被重复执行；用户自定义业务上游仍保留引擎默认策略。
+func internalTransport() map[string]any {
+	return map[string]any{"protocol": "http", "keep_alive": map[string]any{"enabled": false}}
 }
