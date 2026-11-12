@@ -1,0 +1,141 @@
+{
+  "passed": true,
+  "source_commit": "8fbe8e58f4f9101c1b4b2dc774f0d0b52a7e0dd9",
+  "control_image": {
+    "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:25c4a857b5048d645aaee51ecaded5c85d18fbb0aa638512d86b7e5eaf943862",
+    "manifest_digest": "sha256:25c4a857b5048d645aaee51ecaded5c85d18fbb0aa638512d86b7e5eaf943862",
+    "config_digest": "sha256:3fc79e8723bf048e20440a79d7bab9485d7b930111191470afe93c78b9d4fac6",
+    "platform": "linux/amd64"
+  },
+  "stage": "vpn_positive_negative",
+  "historical_stability": {
+    "samples": 692,
+    "failures": 6,
+    "passed": false
+  },
+  "runtime_internal_keepalive_disabled": true,
+  "revision_before": 15,
+  "revision_after": 16,
+  "private_backup": "/opt/trojan-proxy-refactor/backups/before-http-keepalive-20261112T033915Z",
+  "six_menu_page_html_and_navigation_served": true,
+  "authorization_checks": {
+    "/api/settings/status https://qin-xin.top:8007": 401,
+    "/api/traffic/dashboard https://qin-xin.top:8007": 401,
+    "/api/settings/status https://qin-xin.top:8008": 403
+  },
+  "settings_routes_vpn_and_account_preserved": true,
+  "gateway_vpn_and_unrelated_processes_unchanged": true,
+  "vpn": {
+    "port": 18443,
+    "runner_started": "2026-11-11T15:00:36.79856231Z",
+    "checks": {
+      "local_tls": {
+        "tls": "TLSv1.3",
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+      },
+      "direct_google_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_domain_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_ip_http": {
+        "status_line": "HTTP/1.1 204 No Content"
+      },
+      "trojan_google_https": {
+        "status_line": "HTTP/1.1 204 No Content",
+        "inner_tls_verified": true
+      },
+      "wrong_password": {
+        "rejected": true,
+        "error_type": "ConnectionResetError"
+      }
+    }
+  },
+  "public_admin": {
+    "origin": "https://qin-xin.top:8007",
+    "checks": {
+      "GET /": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "GET /vpn.js": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "GET /traffic.js": {
+        "status": 200,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/status": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/export": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/live": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/dashboard": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/clear": {
+        "status": 401,
+        "cache_control": "no-store"
+      },
+      "POST /api/traffic/dashboard wrong-origin": {
+        "status": 403,
+        "cache_control": "no-store"
+      },
+      "POST /api/vpn/export wrong-origin": {
+        "status": 403,
+        "cache_control": "no-store"
+      }
+    },
+    "passed": true,
+    "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+  },
+  "public_web": {
+    "passed": true,
+    "checks": {
+      "HTTP qin-xin.top/": {
+        "status": 308
+      },
+      "HTTP qin-xin.top/robots.txt": {
+        "status": 200
+      },
+      "HTTPS qin-xin.top/": {
+        "status": 200,
+        "welcome_and_privacy": true
+      },
+      "HTTPS qin-xin.top/robots.txt": {
+        "status": 200
+      },
+      "HTTPS wrong.example/": {
+        "status": 404
+      }
+    },
+    "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+  },
+  "earlier_attempt": {
+    "passed": false,
+    "source_commit": "8fbe8e58f4f9101c1b4b2dc774f0d0b52a7e0dd9",
+    "control_image": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:25c4a857b5048d645aaee51ecaded5c85d18fbb0aa638512d86b7e5eaf943862",
+      "manifest_digest": "sha256:25c4a857b5048d645aaee51ecaded5c85d18fbb0aa638512d86b7e5eaf943862",
+      "config_digest": "sha256:3fc79e8723bf048e20440a79d7bab9485d7b930111191470afe93c78b9d4fac6",
+      "platform": "linux/amd64"
+    },
+    "historical_stability": {
+      "samples": 692,
+      "failures": 6,
+      "passed": false
+    },
+    "error": "Remote end closed connection without response",
+    "rollback": "previous control image restored; authentication database untouched"
+  }
+}
