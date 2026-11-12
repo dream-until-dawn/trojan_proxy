@@ -19,11 +19,11 @@ import (
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("用法: proxyctl init|doctor|setup-token|backup|restore|admin-reset --config <配置文件>")
+		return fmt.Errorf("用法: proxyctl init|doctor|setup-token|backup|restore|admin-reset|downgrade-http-format --config <配置文件>")
 	}
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	defaultPath := "proxy.json"
-	if args[0] == "setup-token" || args[0] == "prepare" || args[0] == "admin-reset" || args[0] == "backup" || args[0] == "restore" {
+	if args[0] == "setup-token" || args[0] == "prepare" || args[0] == "admin-reset" || args[0] == "backup" || args[0] == "restore" || args[0] == "downgrade-http-format" {
 		defaultPath = "/etc/trojan-proxy/proxy.json"
 	}
 	path := flags.String("config", defaultPath, "部署配置文件")
@@ -42,6 +42,8 @@ func run(args []string) error {
 		return fmt.Errorf("存在未知位置参数")
 	}
 	switch args[0] {
+	case "downgrade-http-format":
+		return downgradeHTTPFormat(*path)
 	case "admin-reset":
 		return resetAdministrator(*path)
 	case "backup":

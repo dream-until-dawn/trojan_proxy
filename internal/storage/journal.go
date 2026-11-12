@@ -62,7 +62,7 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 	if err := s.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return err
 	}
-	if version > 3 {
+	if version > 4 {
 		return errors.New("数据库版本高于当前程序支持的版本")
 	}
 	if _, err := s.db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {
@@ -105,8 +105,12 @@ func (s *JournalStore) initialize(ctx context.Context, initial control.Revision)
 		version = 2
 	}
 	// 写入可变业务设置后拒绝旧程序打开，避免旧Revision结构丢弃未知字段后回写。
-	if current.Applied.Settings != "" || (current.Pending != nil && current.Pending.Settings != "") {
-		version = 3
+	required, err := RequiredJournalVersion(current)
+	if err != nil {
+		return err
+	}
+	if required > version {
+		version = required
 	}
 	if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", version)); err != nil {
 		return err
@@ -194,8 +198,16 @@ func (s *JournalStore) Save(ctx context.Context, j control.Journal) error {
 	if n != 1 {
 		return errors.New("修订日志缺失")
 	}
-	if j.Applied.Settings != "" || (j.Pending != nil && j.Pending.Settings != "") {
-		if _, err = tx.ExecContext(ctx, "PRAGMA user_version=3"); err != nil {
+	required, err := RequiredJournalVersion(j)
+	if err != nil {
+		return err
+	}
+	var version int
+	if err = tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return err
+	}
+	if required > version {
+		if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", required)); err != nil {
 			return err
 		}
 	}

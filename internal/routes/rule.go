@@ -22,6 +22,7 @@ type Rule struct {
 	DirectoryID  string `json:"directory_id,omitempty"`
 	StripPrefix  bool   `json:"strip_prefix"`
 	Browse       bool   `json:"browse"`
+	HTTPS        bool   `json:"https,omitempty"` // 显式开启自定义端口TLS；省略保持原有HTTP行为。
 }
 
 // Policy 描述部署阶段与受保护的端口/目录范围。
@@ -56,7 +57,16 @@ func ValidateSet(rules []Rule, policy Policy) (validationErr error) {
 		listen[r.Port] = true
 	}
 	ids, matches := map[string]bool{}, map[string]bool{}
+	protocols := map[int]bool{}
 	for _, r := range rules {
+		secure := r.HTTPS || r.Port == 443
+		if previous, exists := protocols[r.Port]; exists && previous != secure {
+			return fmt.Errorf("同一端口不能混用HTTP与HTTPS规则")
+		}
+		protocols[r.Port] = secure
+		if r.HTTPS && (r.Port == 80 || r.Host == "") {
+			return fmt.Errorf("HTTPS规则需要明确域名且不能监听80")
+		}
 		if !identifier.MatchString(r.ID) || ids[r.ID] {
 			return fmt.Errorf("规则ID无效或重复")
 		}

@@ -321,6 +321,9 @@
         公开端口
         <input id="route-port" max="65535" min="1024" placeholder="例如8001" required="" type="number"/>
        </label>
+       <label>入口协议
+        <select id="route-protocol"><option value="http">HTTP</option><option value="https">HTTPS（当前域名证书）</option></select>
+       </label>
        <label>
         域名匹配（可留空）
         <input id="route-host" maxlength="253" placeholder="留空匹配此端口所有Host"/>

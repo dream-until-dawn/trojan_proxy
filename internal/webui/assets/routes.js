@@ -13,7 +13,7 @@ function render() {
   for (const rule of rules) {
     const row = document.createElement("tr");
     const target = rule.kind === "files" ? `目录 ${rule.directory_id}` : `${rule.upstream_ip}:${rule.upstream_port}`;
-    for (const value of [rule.name, `${rule.port} · ${rule.host || "所有Host"}${rule.path}`, target]) {
+    for (const value of [rule.name, `${rule.https || rule.port === 443 ? "HTTPS" : "HTTP"} ${rule.port} · ${rule.host || "所有Host"}${rule.path}`, target]) {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     const cell = document.createElement("td");
@@ -38,8 +38,8 @@ export async function refreshRoutes() {
     revision = snapshot.revision; rules = snapshot.rules || [];
     document.querySelector("#route-port").min = snapshot.standard_ingress ? "1" : "1024";
     document.querySelector("#route-scope-hint").textContent = snapshot.standard_ingress
-      ? "80为网站入口；有效域名证书就绪后自动升级到443。也可使用其他自定义HTTP端口。业务发布无需后台登录。"
-      : "当前阶段开放自定义HTTP端口；80/443仍由旧服务持有。业务发布无需后台登录。";
+      ? "80为网站入口；证书就绪后自动升级到443。自定义端口可选择HTTP或HTTPS；HTTPS需要当前域名及就绪证书。业务发布无需后台登录。"
+      : "自定义端口可选择HTTP或HTTPS；HTTPS需要部署域名及有效证书。80/443仍由旧服务持有。业务发布无需后台登录。";
     document.querySelector("#apply-routes").disabled = Boolean(snapshot.pending);
     const directories = document.querySelector("#directory-id"); directories.replaceChildren();
     for (const id of snapshot.directories || []) {
@@ -58,6 +58,7 @@ form.addEventListener("submit", (event) => {
     id: crypto.randomUUID(), name: document.querySelector("#route-name").value.trim(),
     port: Number(document.querySelector("#route-port").value), host: document.querySelector("#route-host").value.trim(),
     path: document.querySelector("#route-path").value.trim(), kind: kind.value,
+    https: document.querySelector("#route-protocol").value === "https",
     strip_prefix: kind.value === "proxy" && document.querySelector("#strip-prefix").checked,
     browse: kind.value === "files" && document.querySelector("#browse").checked,
   };

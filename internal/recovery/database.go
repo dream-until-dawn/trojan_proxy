@@ -13,6 +13,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/settings"
+	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
 )
 
 func validateDatabase(ctx context.Context, path string, key []byte, deployment config.Config) error {
@@ -35,7 +36,7 @@ func validateDatabase(ctx context.Context, path string, key []byte, deployment c
 	defer db.Close()
 	var version int
 	var integrity string
-	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version < 2 || version > 3 {
+	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version < 2 || version > 4 {
 		return errors.New("备份数据库版本不受支持")
 	}
 	if err = db.QueryRowContext(ctx, "PRAGMA integrity_check").Scan(&integrity); err != nil || integrity != "ok" {
@@ -50,6 +51,10 @@ func validateDatabase(ctx context.Context, path string, key []byte, deployment c
 	decoder.DisallowUnknownFields()
 	if decoder.Decode(&journal) != nil || journal.Applied.Number < 1 {
 		return errors.New("备份配置修订无效")
+	}
+	required, err := storage.RequiredJournalVersion(journal)
+	if err != nil || version < required {
+		return errors.New("备份格式版本不足以保护HTTPS规则")
 	}
 	if journal.Applied.Settings != "" {
 		if _, err = settings.Decode(journal.Applied.Settings, deployment); err != nil {

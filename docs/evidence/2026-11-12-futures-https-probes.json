@@ -1,0 +1,104 @@
+{
+  "preflight": {
+    "listeners": "LISTEN 0      4096   127.0.0.1:3030 0.0.0.0:* users:((\"docker-proxy\",pid=3459292,fd=4))",
+    "backend": {
+      "id": "3d594c27d62a78df6e1ba2c34f53a17118db26591baa79cca7ae2ba079b095b8",
+      "image": "sha256:170cbe9f42a8b4e6b7d7bcb23cbd4d79c0625a7fc8dfa9546e07114507abc282",
+      "started": "2026-11-12T05:59:50.481852894Z",
+      "health": "healthy",
+      "bindings": {
+        "3000/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "3030"
+          }
+        ]
+      },
+      "origin": "https://qin-xin.top:8001"
+    },
+    "/login": {
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 10150,
+      "has_login_form": true,
+      "has_server_action": true
+    },
+    "/api/overview": {
+      "status": 401,
+      "content_type": "application/json",
+      "bytes": 24,
+      "has_login_form": false,
+      "has_server_action": false
+    },
+    "tls": {
+      "443": {
+        "trusted": true,
+        "sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+        "not_after": "Feb  9 13:50:03 2027 GMT"
+      },
+      "8001": {
+        "trusted": false,
+        "error_type": "ConnectionRefusedError"
+      }
+    },
+    "revision": 16,
+    "pending": false,
+    "rules": []
+  },
+  "native_gateway": {
+    "phases": {
+      "first": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.30s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
+      },
+      "restart": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.19s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
+      }
+    },
+    "limitations": [
+      "测试使用临时证书和临时数据，不等于生产证书续期验收。"
+    ],
+    "gateway_image": "sha256:17a93dda98e60a2cec8a4a0cd93e97ec8fd81cf418a409eaadc4123920fdf70b",
+    "passed": true
+  },
+  "mutations": {
+    "passed": true,
+    "mutations": {
+      "tls-policy": {
+        "passed": true,
+        "expected_failure": "custom HTTPS TLS policy missing"
+      },
+      "certificate-ready": {
+        "passed": true,
+        "expected_failure": "unsafe HTTPS rule accepted await-certificate"
+      },
+      "mixed-protocol": {
+        "passed": true,
+        "expected_failure": "unsafe HTTPS rule accepted mixed-port"
+      },
+      "legacy-downgrade": {
+        "passed": true,
+        "expected_failure": "HTTPS preparation did not reject legacy readers"
+      },
+      "offline-downgrade": {
+        "passed": true,
+        "expected_failure": "active HTTPS format downgrade accepted"
+      }
+    }
+  },
+  "public_tls_before_deployment": {
+    "checked_utc": "2026-11-12T06:11:52.796659+00:00",
+    "domain": "qin-xin.top",
+    "ports": {
+      "443": {
+        "trusted": true,
+        "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+      },
+      "8001": {
+        "trusted": false,
+        "error_type": "SSLEOFError"
+      }
+    }
+  }
+}

@@ -19,6 +19,16 @@ type Ingress struct {
 }
 
 func validateIngress(s Settings, rules []routes.Rule) error {
+	for _, rule := range rules {
+		if rule.HTTPS {
+			if s.Domain == "" || rule.Host != s.Domain {
+				return errors.New("HTTPS规则仅允许当前授权域名")
+			}
+			if s.Ingress != nil && (s.Ingress.AwaitCertificate || (s.Ingress.Mode != "automatic" && s.Ingress.Mode != "manual")) {
+				return errors.New("HTTPS规则需要已就绪的可信证书")
+			}
+		}
+	}
 	if s.Ingress == nil {
 		return nil
 	}

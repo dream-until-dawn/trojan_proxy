@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 5, Settings: settings})
+	}{Version: 6, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -43,6 +43,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		return "", err
 	}
 	serverRoutes := map[int][]any{}
+	securePorts := map[int]bool{}
 	ordered := append([]routes.Rule(nil), rules...)
 	sort.SliceStable(ordered, func(i, j int) bool {
 		if (ordered[i].Host != "") != (ordered[j].Host != "") {
@@ -51,6 +52,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		return len(ordered[i].Path) > len(ordered[j].Path)
 	})
 	for _, r := range ordered {
+		if r.HTTPS {
+			securePorts[r.Port] = true
+		}
 		match := map[string]any{}
 		if r.Host != "" {
 			match["host"] = []string{r.Host}
@@ -68,6 +72,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 			upstream = net.JoinHostPort("127.0.0.1", strconv.Itoa(settings.FilePort))
 		}
 		proxy := map[string]any{"handler": "reverse_proxy", "upstreams": []any{map[string]any{"dial": upstream}}}
+		if r.HTTPS {
+			proxy["transport"] = internalTransport()
+		}
 		if r.Kind == "files" {
 			proxy["transport"] = internalTransport()
 			proxy["headers"] = map[string]any{"request": map[string]any{"set": map[string]any{"X-Trojan-Original-URI": []string{"{http.request.orig_uri}"}}}}
@@ -92,8 +99,14 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		}
 		rs = append(rs, fallback)
 		server := map[string]any{"listen": []string{fmt.Sprintf(":%d", port)}, "automatic_https": map[string]any{"disable": true}, "routes": rs}
-		if port == 443 {
+		if port == 443 || securePorts[port] {
 			server["tls_connection_policies"] = []any{map[string]any{}}
+		}
+		if securePorts[port] && port != 443 {
+			server["tls_connection_policies"] = []any{
+				map[string]any{"match": map[string]any{"sni": []string{settings.Domain}}},
+				map[string]any{"drop": true},
+			}
 		}
 		servers[fmt.Sprintf("public_%d", port)] = server
 	}

@@ -20,7 +20,7 @@ func TestOfflineAccountResetReplacesCredentialsButKeepsBusiness(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	initial := control.Revision{Number: 7, Gateway: "unchanged-gateway", VPN: "unchanged-vpn", Rules: "unchanged-rules"}
+	initial := control.Revision{Number: 7, Gateway: "unchanged-gateway", VPN: "unchanged-vpn", Rules: `[{"id":"unchanged"}]`}
 	db, err := storage.OpenJournal(ctx, filepath.Join(t.TempDir(), "control.db"), initial)
 	if err != nil {
 		t.Fatal(err)
