@@ -1,0 +1,28 @@
+{
+  "port": 18443,
+  "runner_started": "2026-11-11T15:00:36.79856231Z",
+  "checks": {
+    "local_tls": {
+      "tls": "TLSv1.3",
+      "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+    },
+    "direct_google_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "trojan_google_domain_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "trojan_google_ip_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "trojan_google_https": {
+      "status_line": "HTTP/1.1 204 No Content",
+      "inner_tls_verified": true
+    },
+    "wrong_password": {
+      "rejected": true,
+      "error_type": "ConnectionResetError"
+    }
+  },
+  "passed": true
+}

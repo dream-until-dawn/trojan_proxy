@@ -1,7 +1,7 @@
 {
   "passed": true,
   "commit": "020b7e58b6401d16a15c94cb475ffdbcf82c2d3a",
-  "scope": "actual mixed-version runtime; only control upgraded; paths pending confirmation",
+  "scope": "actual mixed-version runtime; management path confirmed; temporary ports closed",
   "images": {
     "control": {
       "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:970e9e1da87029e3169799b3815164904b3d50e8279776b97c296d5d9fc65fae",
@@ -33,5 +33,8 @@
       "path": "/futures/api/overview",
       "expected": 401
     }
-  ]
+  ],
+  "admin_path": "/proxy",
+  "admin_port": 443,
+  "revision": 24
 }

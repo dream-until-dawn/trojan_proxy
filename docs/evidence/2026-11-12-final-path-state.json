@@ -1,0 +1,40 @@
+{
+  "checked_utc": "2026-11-12T08:25:15.973845Z",
+  "revision": 24,
+  "schema_version": 5,
+  "journal_pending": false,
+  "site": {
+    "domain": "qin-xin.top",
+    "admin_port": 8007,
+    "admin_path": "/proxy",
+    "certificate_source": "automatic"
+  },
+  "settings_pending": false,
+  "listeners": {
+    "80": true,
+    "443": true,
+    "8001": false,
+    "8007": false,
+    "18443": true,
+    "18090": true
+  },
+  "rules": [
+    {
+      "id": "6b30219b-7376-4e3d-b60c-933f2d464344",
+      "name": "期货 Web · futures 路径",
+      "port": 443,
+      "host": "qin-xin.top",
+      "path": "/futures",
+      "kind": "proxy",
+      "upstream_ip": "127.0.0.1",
+      "upstream_port": 3030,
+      "strip_prefix": false,
+      "browse": false,
+      "https": true
+    }
+  ],
+  "passed": true,
+  "all_container_ids_and_started_times_preserved_since_candidate": true,
+  "owner_confirmed_new_admin_entry": true,
+  "owner_confirmed_futures_login_data_logout": true
+}

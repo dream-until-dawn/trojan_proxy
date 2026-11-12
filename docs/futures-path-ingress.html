@@ -28,5 +28,5 @@
 <li>验证正常TLS、80跳转、匿名401、错误口令和跨站拒绝；比较根欢迎页、/futures-other及其他网关服务与变更前一致。</li>
 <li>后端会话独立完成公网正式登录、退出与引擎数据核验，再撤销8001规则。</li>
 <li>以最终运行镜像与路径清单重新开始完整24小时；分钟检查额外覆盖/futures/login与/futures/api/overview。</li>
-</ol><p>修订20已应用/futures；公网入口307转/futures/login，登录页和8个静态资源200，匿名API401。真实multipart错误口令303回同源/futures/login?error=1且无会话Cookie，跨来源请求500且无会话Cookie；根页与相似路径的欢迎页散列均与变更前一致。等待后端会话独立正式登录/数据验收，再撤销8001。</p></section>
+</ol><p>修订20已应用/futures；公网入口307转/futures/login，登录页和8个静态资源200，匿名API401。真实multipart错误口令303回同源/futures/login?error=1且无会话Cookie，跨来源请求500且无会话Cookie；根页与相似路径的欢迎页散列均与变更前一致。所有者已完成正式登录、账户/引擎数据和退出验收；修订24已撤销8001并停止监听。</p></section>
 <section><h2>生产路径已生效</h2><figure><img src="evidence/2026-11-12-futures-path-live.jpg" alt="修订20同时保留8001与futures路径规则" style="max-width:100%"><figcaption>修订20，8001临时保留至后端独立验收。</figcaption></figure></section></main></body></html>

@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "entry": "https://qin-xin.top/proxy/",
+  "checks": {
+    "canonical_redirect": true,
+    "/proxy/": 200,
+    "/proxy/auth.js": 200,
+    "/proxy/settings.js": 200,
+    "/proxy/style.css": 200,
+    "api_401": true,
+    "api_403": true,
+    "/": {
+      "status": 200,
+      "sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "/proxy-other": {
+      "status": 200,
+      "sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "/api/status": {
+      "status": 200,
+      "sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "/futures/login": 200,
+    "/futures/api/overview": 401
+  },
+  "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+}
