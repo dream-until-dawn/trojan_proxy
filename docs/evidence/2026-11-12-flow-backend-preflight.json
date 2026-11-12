@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "backend": {
+    "id": "908d6978f37c63a22f0898056fdeb6cb6d087244e885e9c814aded4f2132f1dc",
+    "image_reference": "flow-analysis:flow-bc8b353",
+    "image_id": "sha256:112b0f29e19aff3533c445fe6a75600d482798da009e71639b636a157695feb9",
+    "started": "2026-11-12T13:48:29.561229196Z",
+    "health": "healthy",
+    "bindings": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "3031"
+      }
+    ],
+    "oom": false,
+    "restarts": 0
+  },
+  "checks": {
+    "/flow/api/health": {
+      "status": 200,
+      "location": null,
+      "prefixed_assets": false,
+      "body_sha256": "755219a8403629b9011c2a2af8f4d7c4f5b0617cd882bdb546373d06a634d1bd",
+      "health": {
+        "status": "ok",
+        "db": "ok",
+        "mode": "accounts"
+      }
+    },
+    "/flow/login": {
+      "status": 200,
+      "location": null,
+      "prefixed_assets": true,
+      "body_sha256": "d859107bcd1fa3ae8fb04662005eceb490269fcb0ba8e1f55661216ef0ced2d4"
+    },
+    "/flow/api/accounts": {
+      "status": 401,
+      "location": null,
+      "prefixed_assets": false,
+      "body_sha256": "782eeaa7f1915f6783146f8180751785584f0f24bd4e503165c7fc4a597da600"
+    },
+    "/flow/accounts": {
+      "status": 307,
+      "location": "/flow/login?next=%2Faccounts",
+      "prefixed_assets": false,
+      "body_sha256": "a04307f2ef9fd15a265f749fcc881c6b4486269b529f1a2ec58f5bcd494ede12"
+    }
+  }
+}

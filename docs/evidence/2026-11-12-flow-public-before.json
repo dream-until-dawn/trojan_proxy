@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "entry": "https://qin-xin.top/flow",
+  "checks": {
+    "/": {
+      "status": 200,
+      "sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "/flow-other": {
+      "status": 200,
+      "sha256": "23ac66711fb48db56453e11cb5833076d5df9367822c87f313f5653317e7eff7"
+    },
+    "/proxy/": {
+      "status": 200,
+      "sha256": "c6fa496d630d992a4d73832cca85545ed1ca83e3f566ac58ecf63b04d42bbedb"
+    },
+    "/futures/login": {
+      "status": 200,
+      "sha256": "51e92a3f093999bfe7ff9433ac8950c1c2cde1d9c02382c0b1730c58357ae5a4"
+    }
+  },
+  "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+}
