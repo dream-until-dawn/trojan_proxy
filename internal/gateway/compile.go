@@ -120,7 +120,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	}
 	for name, value := range servers {
 		domain := ""
-		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443")) {
+		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443" || value.(map[string]any)["tls_connection_policies"] != nil)) {
 			domain = settings.Domain
 		}
 		crawlPolicy(value.(map[string]any), domain)

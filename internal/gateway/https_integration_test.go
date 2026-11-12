@@ -115,16 +115,18 @@ func testCustomHTTPS(t *testing.T, engine *gateway.Client, settings gateway.Sett
 		t.Fatal("custom HTTPS stripped cookie attributes")
 	}
 	// 匹配证书的正确SNI但未知Host也不能转发。
-	request, _ = http.NewRequest("GET", "https://"+host+"/", nil)
-	request.Host = "unknown.invalid"
-	response, err = client.Do(request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	io.Copy(io.Discard, response.Body)
-	response.Body.Close()
-	if response.StatusCode != 404 {
-		t.Fatal("custom HTTPS accepted unknown Host", response.StatusCode)
+	for _, path := range []string{"/", "/robots.txt"} {
+		request, _ = http.NewRequest("GET", "https://"+host+path, nil)
+		request.Host = "unknown.invalid"
+		response, err = client.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		io.Copy(io.Discard, response.Body)
+		response.Body.Close()
+		if response.StatusCode != 404 {
+			t.Fatal("custom HTTPS accepted unknown Host", path, response.StatusCode)
+		}
 	}
 	for _, serverName := range []string{"localhost", "untrusted.invalid"} {
 		connection, err := tls.DialWithDialer(&net.Dialer{Timeout: 3 * time.Second}, "tcp", address, &tls.Config{RootCAs: roots, ServerName: serverName, MinVersion: tls.VersionTLS12})

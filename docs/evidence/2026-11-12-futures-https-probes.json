@@ -49,11 +49,11 @@
     "phases": {
       "first": {
         "exit_code": 0,
-        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.30s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
+        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.15s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
       },
       "restart": {
         "exit_code": 0,
-        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.19s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
+        "output": "=== RUN   TestRealGatewayLifecycle\n=== RUN   TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream\n--- PASS: TestRealGatewayLifecycle (0.13s)\n    --- PASS: TestRealGatewayLifecycle/custom-https-origin-post-cookie-stream (0.01s)\nPASS\n"
       }
     },
     "limitations": [
