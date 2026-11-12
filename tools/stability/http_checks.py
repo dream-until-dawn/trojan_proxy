@@ -52,8 +52,30 @@ def check_response(connection, port, path, method, host, expected, results, orig
         connection.close()
 
 
-def web_checks(domain, admin, vpn, control, results=None):
+def validate_https_routes(specs):
+    """可选附加入口只接受有界GET路径与明确状态，不记录查询参数或凭据。"""
+    if not isinstance(specs, list) or len(specs) > 20: raise CheckFailure('invalid_https_route_probe')
+    seen = set()
+    for spec in specs:
+        if not isinstance(spec, dict) or set(spec) != {'port', 'path', 'expected'}: raise CheckFailure('invalid_https_route_probe')
+        port, path, expected = spec['port'], spec['path'], spec['expected']
+        if type(port) is not int or not 1024 <= port <= 65535 or type(expected) is not int or expected not in (200, 401, 403, 404): raise CheckFailure('invalid_https_route_probe')
+        if not isinstance(path, str) or not path.startswith('/') or len(path) > 512 or any(x in path for x in ['\r', '\n', '?', '#']): raise CheckFailure('invalid_https_route_probe')
+        if (port, path) in seen: raise CheckFailure('duplicate_https_route_probe')
+        seen.add((port, path))
+    return specs
+
+
+def extra_https_checks(domain, specs, results):
+    for spec in validate_https_routes(specs):
+        port = spec['port']
+        connection = DirectHTTPS(domain, port, timeout=5)
+        check_response(connection, port, spec['path'], 'GET', domain + ':' + str(port), spec['expected'], results)
+
+
+def web_checks(domain, admin, vpn, control, results=None, https_routes=None):
     results = results if results is not None else []
+    https_routes = validate_https_routes(https_routes if https_routes is not None else [])
     for port, path, method, expected in [(control, '/healthz', 'GET', 200), (80, '/', 'GET', 308),
                                          (80, '/robots.txt', 'GET', 200), (443, '/', 'GET', 200),
                                          (admin, '/api/vpn/status', 'POST', 401)]:
@@ -67,8 +89,9 @@ def web_checks(domain, admin, vpn, control, results=None):
         if port == 80 and path == '/' and location != 'https://' + domain + '/': raise CheckFailure('wrong_http_redirect', details)
         if path == '/robots.txt' and b'Disallow: /' not in body: raise CheckFailure('robots_missing', details)
         if port == 443 and (not robots or domain.encode() not in body): raise CheckFailure('welcome_or_noindex_missing', details)
+    extra_https_checks(domain, https_routes, results)
     fingerprints = {}
-    for port in (443, admin, vpn):
+    for port in dict.fromkeys([443, admin, vpn] + [spec['port'] for spec in https_routes]):
         try:
             with socket.create_connection(('127.0.0.1', port), timeout=5) as raw:
                 with ssl.create_default_context().wrap_socket(raw, server_hostname=domain) as tls:
