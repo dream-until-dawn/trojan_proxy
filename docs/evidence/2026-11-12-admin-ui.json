@@ -14,8 +14,13 @@
     "logged_out_deep_link_cannot_reveal_workspace": true,
     "mobile_390px_no_document_horizontal_overflow": true,
     "browser_console_no_errors": true,
-    "existing_business_element_ids_preserved_without_duplicates": true
+    "existing_business_element_ids_preserved_without_duplicates": true,
+    "final_1280px_desktop_no_horizontal_overflow": true,
+    "public_login_page_no_browser_console_errors": true
   },
-  "screenshots": ["2026-11-12-admin-desktop.jpg", "2026-11-12-admin-mobile.jpg"],
-  "production_deployment": "pending exact-commit candidate verification"
+  "screenshots": [
+    "2026-11-12-admin-desktop.jpg",
+    "2026-11-12-admin-mobile.jpg"
+  ],
+  "production_deployment": "verified control-only upgrade; see 2026-11-12-admin-ui-deployment.json"
 }

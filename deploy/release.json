@@ -1,0 +1,6 @@
+{
+  "format": 1,
+  "candidate_only": true,
+  "registry_proof": "docs/evidence/2026-11-12-admin-ui-images.json",
+  "ci_gate": "docs/evidence/2026-11-12-admin-ui-ci-gate.json"
+}

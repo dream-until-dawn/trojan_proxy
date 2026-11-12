@@ -19,8 +19,18 @@ def git(arguments):
 
 if git(['status', '--porcelain']): raise SystemExit('必须先提交源码，再生成绑定干净提交的候选包')
 commit = git(['rev-parse', 'HEAD'])
-registry = json.loads((root / 'docs/evidence/2026-11-11-public-images.json').read_text(encoding='utf-8'))
-gate = json.loads((root / 'docs/evidence/2026-11-11-candidate-ci-gate.json').read_text(encoding='utf-8'))
+pointer = root / 'deploy/release.json'
+proofs = json.loads(pointer.read_text(encoding='utf-8')) if pointer.exists() else {
+    'registry_proof': 'docs/evidence/2026-11-11-public-images.json',
+    'ci_gate': 'docs/evidence/2026-11-11-candidate-ci-gate.json',
+}
+# 只读取仓库内的公开证据，拒绝把本机其他文件作为打包清单输入。
+for key in ['registry_proof', 'ci_gate']:
+    path = Path(proofs[key])
+    if path.is_absolute() or '..' in path.parts or not path.as_posix().startswith('docs/evidence/'):
+        raise SystemExit('发布证据路径必须位于docs/evidence内')
+registry = json.loads((root / proofs['registry_proof']).read_text(encoding='utf-8'))
+gate = json.loads((root / proofs['ci_gate']).read_text(encoding='utf-8'))
 if not registry['passed'] or not registry['complete_anonymous_pull_verified'] or not gate['passed'] or registry['commit'] != gate['commit']:
     raise SystemExit('公开镜像与实际CI门槛不匹配')
 compose = (root / 'deploy/compose.yaml').read_text(encoding='utf-8')
