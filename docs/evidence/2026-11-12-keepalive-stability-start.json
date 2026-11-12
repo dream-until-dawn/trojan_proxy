@@ -1,0 +1,22 @@
+{
+  "launch_verified": true,
+  "completed": false,
+  "observation_passed": false,
+  "observer_source_commit": "5ef7054eeb7b04dd5acfef82bf21101ad1ffeb3f",
+  "pid": 3324866,
+  "script": "/opt/trojan-proxy-refactor/backups/stability-20261112T034120Z-67e96e/code/observe.py",
+  "output": "/opt/trojan-proxy-refactor/backups/stability-20261112T034120Z-67e96e/24h",
+  "started_utc": "2026-11-12T03:41:29.107542Z",
+  "expected_finish_utc": "2026-11-13T03:41:29Z",
+  "smoke_passed": true,
+  "first_sample_and_VPN_positive_negative_passed": true,
+  "code_sha256": {
+    "observe.py": "fccd9b696f5b158fba03ac45967d66aea24ac5838e68fd2a88f07718a1f29bc3",
+    "checks.py": "8ebffda560612f51e04262a68484ce17672f90bcfd0a5875f8e739de23e1b3f7",
+    "http_checks.py": "48d8a2edf7a4e5c461e9a284007dde87552856e9eeb3229f37ed3330de993d67",
+    "test_checks.py": "bf04b8a6b7d81ab4c13c836f1d8b220aeb64c7a7cd14d26a0c10687bcf88fb86",
+    "test_http_checks.py": "b4bdcae778d42ddd6ddeb755297a199fef52e0461be7448682760b772030b26f",
+    "vpn_connectivity_probe.py": "2504d2745069e2e426377d68d17126a50e4f1e27ed4b09d625f379dc6857e319",
+    "manifest.json": "d3d736b097c15d0bee1057ec1ae7a85b1a24c6e5ba8aa151b681a36a86aeaa36"
+  }
+}
