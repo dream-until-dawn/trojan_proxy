@@ -11,8 +11,14 @@ type passiveAuth struct {
 	active, passive int
 }
 
-func (a *passiveAuth) Validate(string) bool        { a.active++; return true }
-func (a *passiveAuth) ValidatePassive(string) bool { a.passive++; return false }
+func (a *passiveAuth) ValidateAt(token, endpoint string, passive bool) bool {
+	if passive {
+		a.passive++
+		return false
+	}
+	a.active++
+	return true
+}
 
 func TestAutomaticLivePollingUsesPassiveAuthentication(t *testing.T) {
 	auth := &passiveAuth{}

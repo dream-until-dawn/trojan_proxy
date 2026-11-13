@@ -8,6 +8,7 @@ repo=Path(__file__).resolve().parents[2]
 target=repo/'.work/auth-mutations'
 target.mkdir(parents=True,exist_ok=True)
 cases=[
+    ('session_entry','../auth/service.go','if endpoint != "" && state.endpoint != endpoint {','if false {','old entry bearer authorized candidate'),
     ('path_boundary','endpoint.go','strings.HasPrefix(r.URL.Path, entry.Prefix+"/")','strings.HasPrefix(r.URL.Path, entry.Prefix)','management prefix matched sibling path'),
     ('authentication','server.go','if !valid {','if !valid && false {','未认证读取未拒绝: 200'),
     ('origin','endpoint.go','if strings.HasPrefix(request.URL.Path, "/api/") && r.Header.Get("Origin") != selected.Origin {','if false {','跨来源未拒绝:'),
@@ -36,7 +37,7 @@ for name,filename,old,new,reason in cases:
         assert source.count(old)==1,name
         source=source.replace(old,new)
     path.write_text(source,encoding='utf-8')
-    result=subprocess.run(['go','test','-C',str(directory),'./internal/api','-run','TestAdminPathSegmentBoundary|TestAdminPathEndpointBoundary|TestAPIOriginAuthenticationAndLogout|TestRouteAPIRecentMFAAndRevisions|TestVPNAPIRequiresAuthOriginAndRecentMFA','-count=1'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=90)
+    result=subprocess.run(['go','test','-C',str(directory),'./internal/api','-run','TestSessionCannotMoveBetweenAdminEntries|TestAdminPathSegmentBoundary|TestAdminPathEndpointBoundary|TestAPIOriginAuthenticationAndLogout|TestRouteAPIRecentMFAAndRevisions|TestVPNAPIRequiresAuthOriginAndRecentMFA','-count=1'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=90)
     assert result.returncode!=0 and reason in result.stdout,(name,result.returncode,result.stdout)
     results[name]={'expected_test_failure':True,'reason':reason}
 print(json.dumps({'mutations':results,'passed':True},ensure_ascii=False,indent=2))

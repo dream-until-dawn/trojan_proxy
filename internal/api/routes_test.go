@@ -22,8 +22,14 @@ func (a *testAuthentication) Login(context.Context, string, string, string) (str
 	return "", errors.New("not used")
 }
 func (a *testAuthentication) Validate(token string) bool { return token == "fixture-session" }
-func (a *testAuthentication) Recent(string) bool         { return a.recent }
-func (a *testAuthentication) Logout(string)              {}
+func (a *testAuthentication) LoginAt(ctx context.Context, password, otp, recovery, endpoint string) (string, error) {
+	return a.Login(ctx, password, otp, recovery)
+}
+func (a *testAuthentication) ValidateAt(token, endpoint string, passive bool) bool {
+	return a.Validate(token)
+}
+func (a *testAuthentication) Recent(string) bool { return a.recent }
+func (a *testAuthentication) Logout(string)      {}
 
 type routeEngine struct{ config string }
 

@@ -22,7 +22,10 @@ type AccountStore interface {
 	ConsumeRecovery(context.Context, string) (bool, error)
 }
 
-type session struct{ created, last time.Time }
+type session struct {
+	created, last time.Time
+	endpoint      string
+}
 
 // Service 持有短期内存会话；进程重启后所有旧令牌自然失效。
 type Service struct {
@@ -108,6 +111,31 @@ func (s *Service) Login(ctx context.Context, password, otp, recovery string) (st
 	return token, nil
 }
 
+// LoginAt 将双因素会话绑定到服务器选中的完整入口；绑定不接受客户端自选身份。
+func (s *Service) LoginAt(ctx context.Context, password, otp, recovery, endpoint string) (string, error) {
+	if endpoint == "" {
+		return "", ErrUnavailable
+	}
+	token, err := s.Login(ctx, password, otp, recovery)
+	if err != nil {
+		return "", err
+	}
+	s.mu.Lock()
+	state := s.sessions[TokenHash(token)]
+	state.endpoint = endpoint
+	s.sessions[TokenHash(token)] = state
+	s.mu.Unlock()
+	return token, nil
+}
+
+// ValidateAt 同时校验会话入口和期限；被动轮询不续期，错误入口也不能续期。
+func (s *Service) ValidateAt(token, endpoint string, passive bool) bool {
+	if endpoint == "" {
+		return false
+	}
+	return s.validateAt(token, !passive, endpoint)
+}
+
 // Validate 检查并滑动空闲期限，最长12小时不滑动。
 func (s *Service) Validate(token string) bool {
 	return s.validate(token, true)
@@ -117,6 +145,10 @@ func (s *Service) Validate(token string) bool {
 func (s *Service) ValidatePassive(token string) bool { return s.validate(token, false) }
 
 func (s *Service) validate(token string, touch bool) bool {
+	return s.validateAt(token, touch, "")
+}
+
+func (s *Service) validateAt(token string, touch bool, endpoint string) bool {
 	if len(token) != 43 {
 		return false
 	}
@@ -125,6 +157,9 @@ func (s *Service) validate(token string, touch bool) bool {
 	hash := TokenHash(token)
 	state, ok := s.sessions[hash]
 	if !ok {
+		return false
+	}
+	if endpoint != "" && state.endpoint != endpoint {
 		return false
 	}
 	now := s.now()

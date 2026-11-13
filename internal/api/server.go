@@ -19,10 +19,10 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/webaccess"
 )
 
-// Authentication 允许独立验证权限边界，生产实现必须同时支持会话与近期MFA校验。
+// Authentication 允许独立验证权限边界，生产实现必须支持绑定入口的会话与近期MFA校验。
 type Authentication interface {
-	Login(context.Context, string, string, string) (string, error)
-	Validate(string) bool
+	LoginAt(context.Context, string, string, string, string) (string, error)
+	ValidateAt(string, string, bool) bool
 	Recent(string) bool
 	Logout(string)
 }
@@ -129,12 +129,7 @@ func bearer(r *http.Request) string {
 
 func (s *Server) protected(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		valid := false
-		if passive, ok := s.Auth.(interface{ ValidatePassive(string) bool }); ok && r.URL.Path == "/api/traffic/live" {
-			valid = passive.ValidatePassive(bearer(r))
-		} else {
-			valid = s.Auth.Validate(bearer(r))
-		}
+		valid := s.Auth.ValidateAt(bearer(r), requestEndpoint(r), r.URL.Path == "/api/traffic/live")
 		if !valid {
 			respond(w, 401, map[string]string{"error": "请重新登录"})
 			return
@@ -163,7 +158,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		respond(w, 400, map[string]string{"error": "请求格式错误"})
 		return
 	}
-	token, err := s.Auth.Login(r.Context(), input.Password, input.OTP, input.Recovery)
+	token, err := s.Auth.LoginAt(r.Context(), input.Password, input.OTP, input.Recovery, requestEndpoint(r))
 	if err != nil {
 		status := 401
 		if errors.Is(err, auth.ErrLimited) {
