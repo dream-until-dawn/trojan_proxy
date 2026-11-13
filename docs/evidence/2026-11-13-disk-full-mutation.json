@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "expected_failure": "failed prepare still applied engine configuration",
+  "actual_storage_fault": "real ENOSPC and SQLite FULL",
+  "disposable_container_removed": true
+}

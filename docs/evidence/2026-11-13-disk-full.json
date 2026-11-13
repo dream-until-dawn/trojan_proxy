@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "scope": "disposable local Docker tmpfs only; no production server changes",
+  "exit_code": 0,
+  "output": "=== RUN   TestRealJournalDiskFullRecovery\n=== RUN   TestRealJournalDiskFullRecovery/prepare\n    disk_full_integration_test.go:104: real ENOSPC after 8331264 filler bytes\n    disk_full_integration_test.go:123: prepare storage error: database or disk is full (13)\n=== RUN   TestRealJournalDiskFullRecovery/commit\n    disk_full_integration_test.go:108: real ENOSPC after 7106560 filler bytes\n    disk_full_integration_test.go:123: commit storage error: database or disk is full (13)\n        database or disk is full (13)\n--- PASS: TestRealJournalDiskFullRecovery (0.19s)\n    --- PASS: TestRealJournalDiskFullRecovery/prepare (0.08s)\n    --- PASS: TestRealJournalDiskFullRecovery/commit (0.11s)\nPASS\n",
+  "oom_killed": false,
+  "disposable_container_removed": true
+}
