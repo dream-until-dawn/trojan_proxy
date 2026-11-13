@@ -1,0 +1,72 @@
+{
+  "passed": true,
+  "operation": "online expansion into existing 40GiB system disk; no cloud disk size change",
+  "completed_utc": "2026-11-13T01:50:55.229892Z",
+  "backup": {
+    "cloud_snapshot_completion": "confirmed directly by owner; API identity unavailable",
+    "cloud_snapshot_id_sha256": "622d9c909ff780656e9fa3aef55f9868ed3753ddb0e550b00a0faf75768e3a40",
+    "private_server_directory": "/opt/trojan-proxy-refactor/backups/root-grow-20261113T014535Z",
+    "archive_sha256": "0aaa446d3d3480174d0db56ce67101397865bf3cd62e9ef49ef11cbd8aa666df",
+    "archive_bytes": 425535,
+    "off_host_copy_and_all_member_hashes_verified": true,
+    "proxy_sqlite_integrity_ok": true,
+    "partition_backup_restore_in_isolated_image_verified": true,
+    "backup_scope": "Partition/boot metadata and proxy backup have local copies; whole-disk snapshot resides in owner cloud account"
+  },
+  "partition": {
+    "device": "/dev/vda3",
+    "start_sector_before": 415744,
+    "start_sector_after": 415744,
+    "sectors_before": 62498783,
+    "sectors_after": 83470303,
+    "other_partitions_and_uuids_preserved": true,
+    "gpt_verify": "No problems found. 2014 free sectors (1007.0 KiB) available in 1\nsegments, the largest of which is 2014 (1007.0 KiB) in size.",
+    "kernel_bytes": 42736795136
+  },
+  "filesystem": {
+    "uuid_preserved": true,
+    "blocks_before": 7812347,
+    "blocks_after": 10433787,
+    "block_bytes": 4096,
+    "df_before": "Filesystem       1B-blocks        Used  Available Use% Mounted on\n/dev/vda3      31316774912 21947142144 7863476224  74% /",
+    "df_after": "Filesystem       1B-blocks        Used   Available Use% Mounted on\n/dev/vda3      41881894912 21948194816 18001207296  55% /",
+    "df_h_after": "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/vda3      ext4   40G   21G   17G  55% /",
+    "write_fsync_read_hash_verified": true,
+    "new_storage_errors": []
+  },
+  "services": {
+    "server_not_rebooted": true,
+    "all_container_ids_images_start_times_restart_counts_oom_and_health_preserved": true,
+    "fstab_preserved": true,
+    "proxy_futures_flow_public_checks_passed": true,
+    "trojan_google_204_and_wrong_password_rejection_passed": true
+  },
+  "negative_check": {
+    "passed": true,
+    "already_full_negative_check_exit_code": 1,
+    "dry_run_output": "NOCHANGE: partition 3 is size 83470303. it cannot be grown",
+    "partition_table_unchanged": true,
+    "production_disk_written": false
+  },
+  "stability": {
+    "passed": true,
+    "active_stability_record_unchanged": true,
+    "observer_running": true,
+    "observer_source_unchanged": true,
+    "summary": {
+      "passed": false,
+      "completed": false,
+      "started_utc": "2026-11-12T08:26:48.816206Z",
+      "duration_seconds": 86400,
+      "source_commit": "020b7e58b6401d16a15c94cb475ffdbcf82c2d3a",
+      "samples": 1047,
+      "failures": 0,
+      "deep_checks": 18,
+      "recent_failures": [],
+      "updated_utc": "2026-11-13T01:52:51.141338Z",
+      "elapsed_seconds": 62762.325157599524
+    },
+    "df_h": "Filesystem     Type  Size  Used Avail Use% Mounted on\n/dev/vda3      ext4   40G   21G   17G  55% /",
+    "root_boot_unchanged": true
+  }
+}
