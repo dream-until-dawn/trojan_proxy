@@ -1,0 +1,35 @@
+{
+  "futures": {
+    "passed": true,
+    "image_config": "sha256:f135f0b7300532f9f8358ab4254bf08ba29cef6a565e2929aa61f60a85d73677",
+    "loopback_ports": [
+      3030,
+      3033
+    ],
+    "public_upstream_kept": 3033,
+    "other_service_specs_preserved": true,
+    "temporary_project_removed": true,
+    "auth_state_preserved": true,
+    "engine_and_other_processes_preserved": true
+  },
+  "owner_futures_domain_acceptance": true,
+  "control": {
+    "passed": true,
+    "source_commit": "2019de61da6a29453e40f49785540b3034b8968f",
+    "revision": 31,
+    "config_digest": "sha256:3f915f98e0435d4b0d494e370952714a92fe3641a0c7bfebde91d2435cdb0d8e",
+    "frontend_deadline_served": true,
+    "auth_origin_checks_passed": true,
+    "settings_auth_and_other_processes_preserved": true
+  },
+  "ci": {
+    "run_id": 43402601965,
+    "artifact_id": 14026223540,
+    "artifact_zip_sha256": "a17801821c5c3a9ff2b9bfe86751da005cb0ac59e7e642d26355ed110cafd08b",
+    "all_37_checks_verified": true,
+    "complete_anonymous_pull_verified": true
+  },
+  "new_24h_started": false,
+  "flow_domain_route_applied": false,
+  "note": "Formal Web readiness helper initially shadowed Python http module and triggered rollback twice. Isolated root Web worked; corrected helper was verified against real local HTTP, then formal handoff passed. Failed attempts remain in private backups. No auth database rewind."
+}
