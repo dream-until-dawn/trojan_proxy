@@ -16,6 +16,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/settings"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
+	"github.com/dream-until-dawn/trojan_proxy/internal/webaccess"
 )
 
 // Authentication 允许独立验证权限边界，生产实现必须同时支持会话与近期MFA校验。
@@ -52,6 +53,14 @@ type CertificateManagement interface {
 	Import(string, []byte, []byte) (certificates.Prepared, error)
 }
 
+// WebAccessManagement 与VPN统计完全隔离，仅管理员可读取或调整保留分类。
+type WebAccessManagement interface {
+	State() webaccess.State
+	Policy(context.Context) (webaccess.Policy, error)
+	SetWhitelist(context.Context, uint64, []string) error
+	Dashboard(context.Context, webaccess.Filter) (webaccess.Dashboard, error)
+}
+
 // Server 只信任配置来源，不根据Host或转发头动态扩大允许范围。
 type Server struct {
 	Auth              Authentication
@@ -65,6 +74,7 @@ type Server struct {
 	WriteGuard        func(context.Context) error
 	Traffic           TrafficManagement
 	Certificates      CertificateManagement
+	WebAccess         WebAccessManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -97,6 +107,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/traffic/live", s.protected(s.trafficLive))
 	mux.HandleFunc("POST /api/traffic/dashboard", s.protected(s.trafficDashboard))
 	mux.HandleFunc("POST /api/traffic/clear", s.protected(s.trafficClear))
+	mux.HandleFunc("POST /api/access/status", s.protected(s.accessStatus))
+	mux.HandleFunc("POST /api/access/dashboard", s.protected(s.accessDashboard))
+	mux.HandleFunc("POST /api/access/policy", s.protected(s.accessPolicy))
+	mux.HandleFunc("POST /api/access/policy/apply", s.protected(s.accessApply))
 	mux.HandleFunc("POST /api/certificates/status", s.protected(s.certificateStatus))
 	mux.HandleFunc("POST /api/certificates/import", s.protected(s.certificateImport))
 	if s.Static != nil {

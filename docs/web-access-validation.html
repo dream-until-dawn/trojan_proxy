@@ -1,0 +1,12 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>网站访问验证与上线</title><link rel="stylesheet" href="assets/docs.css"></head><body><header><h1>网站访问：验证与上线边界</h1><nav><a href="web-access-design.html">设计契约</a><a href="plan.html">开发计划</a><a href="release-readiness.html">发布差距</a></nav></header><main>
+<section><h2>当前状态</h2><p>2026-11-13：代码及本地正反向验证已推进，生产未部署、未开始采集。白名单只用于分类与保留：当前名单来源7天，其他30天；修改名单追溯历史，已清理的数据不能恢复。配置恢复包当前不包含访问库及名单；普通升级保留数据卷，冷恢复后需重新设置名单。</p></section>
+<section><h2>可行性发现与修正</h2><ol><li>原裁剪网关没有注册filter编码器，真实启动明确拒绝，已引入Caddy原生日志模块；必须同步升级gateway和control，不能先把新配置交给旧网关。</li><li>独立临时网关确认请求/响应头、查询、正文及伪造XFF不在原始文件，502运行错误日志也已去除请求秘密。正式编译器实测80跳转、robots、443默认页、/proxy、HTTP自定义端口、HTTPS错误、404，共7条且原始路径未因StripPrefix改变。</li><li>roll_interval仅在新写入时判定，不能单独保证完全空闲时清理。改为roll_minutes=[0]整点定时轮转，加上大小和间隔轮转。真实夹具仅把整点提前到下一分钟，无新请求时也确实产生备份文件；不是用第二次写入冒充空闲验证。</li><li>日志从共享caddy-data专用子目录只读采集，未扩大control挂载权限。目录0700、文件0600；真实连接IP取remote_ip，不读client_ip/XFF。原生日志无采样，故障或耗尽有限缓冲时明确报告可能缺口。</li></ol></section>
+<section><h2>测试覆盖</h2><table><thead><tr><th>范围</th><th>正向、反向与边界</th></tr></thead><tbody>
+<tr><td>保留与分类</td><td>精确7天/30天截止毫秒；加入/移出名单立即重分类和清理；旧修订拒绝；查询TTL独立于清理；IPv4/IPv6/CIDR与映射IPv4，::/0不误匹配IPv4。</td></tr>
+<tr><td>可靠采集</td><td>轮转与重开数据库续采、尾部半行等待、重复采集不重复计数；非法批次整笔回滚；分页及筛选；数据库不可用返回错误；真实SQLite FULL使明细及游标一起回滚，恢复容量后原批次正确补采。</td></tr>
+<tr><td>隐私与权限</td><td>查询/绝对URL用户信息不进入记录；假转发IP不替换真实来源；畸形日志拒绝；所有读取须认证并禁止缓存、跨来源拒绝；修改须近期MFA/明确确认/修订/合法CIDR，故障503、冲突409。</td></tr>
+<tr><td>指定破坏</td><td>移除独立7天查询TTL、物理清理、真实来源及近期MFA保护，分别要求指定断言失败；实际网关移除URI查询过滤后，必须在原始文件隐私断言失败。</td></tr>
+<tr><td>浏览器</td><td>本机回环虚构数据夹具，桌面与390px窄屏；菜单、统计和白名单显示，未确认写入提示、确认后更新提示；恶意HTML路径只显示文本，退出后明细与名单清空。不使用真实凭据、不冒充生产验收。</td></tr>
+</tbody></table><p>发布门槛加入网站访问真实探针与指定破坏，目标34项；尚未完成的新候选CI不得称作通过。Linux race显式加入internal/webaccess。</p></section>
+<section><h2>剩余上线步骤</h2><ol><li>提交源码，执行精确提交候选构建、全部34项门槛和固定镜像核验；如失败先修复再继续。</li><li>原24小时观察完成后，只读审阅全部原始样本及运行身份。该窗口与新增访问功能分开出具结论。</li><li>备份现有配置、编译快照、镜像与运行参数，备好回退；先确保新gateway支持脱敏模块，再升级control收敛日志配置；只涉及本项目组件，不改runner或其他服务。</li><li>公网验证业务、默认页、/proxy与VPN健康，鉴权读取日志确认真实请求、失败路径、脱敏和滚动保留。需要所有者近期MFA时才请求登录，不索取凭据。</li><li>新版本独立观察，原24小时通过不能覆盖此次网关与采集改动。</li></ol></section>
+</main></body></html>

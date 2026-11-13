@@ -23,6 +23,7 @@ import (
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
+	"github.com/dream-until-dawn/trojan_proxy/internal/webaccess"
 	"github.com/dream-until-dawn/trojan_proxy/internal/webui"
 )
 
@@ -78,6 +79,11 @@ func run() error {
 	management.API.Auth = auth.NewService(s, key)
 	management.API.Static = webui.Handler()
 	management.API.Traffic = statistics
+	access := webaccess.NewService(filepath.Join(c.DataDir, "access.db"), "/caddy-data/access")
+	accessDone := make(chan struct{})
+	go func() { defer close(accessDone); access.Run(ctx) }()
+	defer func() { stop(); <-accessDone }()
+	management.API.WebAccess = access
 	handler := management.API.Handler()
 	server := &http.Server{Addr: net.JoinHostPort("127.0.0.1", strconv.Itoa(c.ControlPort)), Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 8192}
 	fileHandler := &files.Handler{Roots: roots, Resolver: router}

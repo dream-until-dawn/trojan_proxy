@@ -10,6 +10,7 @@ import (
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/rewrite"      // 路径前缀处理。
 	_ "github.com/caddyserver/caddy/v2/modules/caddypki"               // 隔离生命周期测试的内部CA。
 	_ "github.com/caddyserver/caddy/v2/modules/caddytls"               // TLS、自动ACME与证书缓存。
+	_ "github.com/caddyserver/caddy/v2/modules/logging"                // 访问日志落盘前脱敏与有界轮转。
 )
 
 func main() { caddycmd.Main() }

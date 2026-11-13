@@ -5,12 +5,14 @@ import { startTraffic, stopTraffic } from "./traffic.js";
 import { refreshSettings, clearSettings } from "./settings.js";
 import { showWorkspace, hideWorkspace } from "./navigation.js";
 
+import { startAccess, clearAccess } from "./access.js";
+
 const form = document.querySelector("#login-form");
 const message = document.querySelector("#message");
 const submit = document.querySelector("#submit");
 
 function showLogin() {
-  stopTraffic(); clearSettings();
+  stopTraffic(); clearSettings(); clearAccess();
   hideWorkspace();
   document.querySelector("#login-panel").hidden = false;
   document.querySelector("#dashboard").hidden = true;
@@ -37,6 +39,7 @@ form.addEventListener("submit", async (event) => {
 	await refreshRoutes();
 	await refreshVPN();
     await startTraffic();
+    startAccess();
     message.textContent = "";
   } catch (error) { message.textContent = error.message; }
   finally { submit.disabled = false; }

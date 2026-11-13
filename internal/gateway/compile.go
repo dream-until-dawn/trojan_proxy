@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 7, Settings: settings})
+	}{Version: 8, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -33,6 +33,7 @@ type Settings struct {
 	Socket                           string
 	Policy                           routes.Policy
 	Ingress                          *Ingress
+	AccessLog                        bool
 }
 
 // Compile 生成完整配置，始终保留后台入口，绝不拼接原始配置文本。
@@ -134,6 +135,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	}
 	root := map[string]any{"admin": map[string]any{"listen": "unix/" + settings.Socket + "|0660"}, "apps": map[string]any{
 		"http": map[string]any{"servers": servers}, "tls": tlsApp}}
+	if settings.AccessLog {
+		configureAccessLog(root, servers)
+	}
 	body, err := json.Marshal(root)
 	return string(body), err
 }

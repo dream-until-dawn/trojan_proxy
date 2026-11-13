@@ -1,7 +1,7 @@
 // hash仅包含菜单名，不存储凭据。独立功能页共用内存会话与未提交草稿。
 const pages = {
   overview: ["总览", "服务与入口，一目了然"], routes: ["反向代理", "管理公开服务与只读目录"],
-  vpn: ["Trojan VPN", "连接状态与客户端配置"], traffic: ["流量记录", "实际目的IP与最近30天流量"],
+  vpn: ["Trojan VPN", "连接状态与客户端配置"], access: ["网站访问", "HTTP请求明细、来源分类与滚动保留"], traffic: ["VPN 流量", "实际目的IP与最近30天流量"],
   certificates: ["证书管理", "自动签发、有效期与证书导入"], settings: ["系统设置", "网站、管理入口与网络范围"],
 };
 let active = false;

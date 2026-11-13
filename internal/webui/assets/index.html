@@ -101,11 +101,12 @@
       </span>
       Trojan VPN
      </a>
+     <a data-nav="access" href="#access"><span aria-hidden="true" class="nav-icon">▦</span>网站访问</a>
      <a data-nav="traffic" href="#traffic">
       <span aria-hidden="true" class="nav-icon">
        ▥
       </span>
-      流量记录
+      VPN 流量
      </a>
      <a data-nav="certificates" href="#certificates">
       <span aria-hidden="true" class="nav-icon">
@@ -200,7 +201,7 @@
         正在读取…
        </strong>
        <a href="#traffic">
-        查看流量记录 ↗
+        查看VPN 流量 ↗
        </a>
       </article>
       <article class="metric-card">
@@ -263,7 +264,7 @@
          ▥
         </span>
         <h3>
-         流量记录
+         VPN 流量
         </h3>
         <p>
          查看实时速率、上下行与目的IP。
@@ -429,6 +430,37 @@
       </button>
       <p aria-live="polite" id="vpn-message" role="status">
       </p>
+     </div>
+    </section>
+    <section class="page" data-page="access" hidden id="page-access">
+     <div class="panel">
+      <div class="section-heading"><h2>网站请求访问统计</h2><span class="tag">HTTP / HTTPS</span></div>
+      <p class="hint">记录经本项目网关完成的请求。白名单仅分类、不限制访问；保留7天，其他来源保留30天。按当前名单重新分类。此处与VPN目的IP和速率统计独立。</p>
+      <p id="access-state" role="status"></p>
+      <form id="access-filters" class="access-filters">
+       <label>时间范围<select id="access-hours"><option value="1">最近1小时</option><option value="24" selected>最近24小时</option><option value="168">最近7天</option><option value="720">最近30天</option></select></label>
+       <label>连接来源IP<input id="access-ip" placeholder="IPv4 / IPv6" maxlength="64"></label>
+       <label>访问域名<input id="access-host" placeholder="留空为全部" maxlength="512"></label>
+       <label>路径前缀<input id="access-path" placeholder="/futures" maxlength="2048"></label>
+       <label>状态码<select id="access-class"><option value="0">全部</option><option value="2">2xx</option><option value="3">3xx</option><option value="4">4xx</option><option value="5">5xx</option><option value="1">1xx</option></select></label>
+       <label>来源分类<select id="access-trust"><option value="all">全部</option><option value="trusted">白名单 / 7天</option><option value="other">其他 / 30天</option></select></label>
+       <button id="access-refresh" type="submit">筛选并刷新</button>
+      </form>
+      <p id="access-total" class="access-total"></p>
+      <svg id="access-chart" viewBox="0 0 800 120" role="img" aria-label="筛选范围内每小时请求次数；悬停查看详情"></svg>
+      <p class="hint">记录完成时间与原始路径，不保存查询参数、请求头或正文。上下行仅计HTTP请求体与响应体字节，不等同于网络流量；WebSocket在连接关闭后记一条。包含管理及健康探测请求。</p>
+      <div class="table-wrap"><table id="access-table"><thead><tr><th>完成时间</th><th>连接IP</th><th>来源分类</th><th>域名 / 端口</th><th>方法</th><th>路径</th><th>状态</th><th>耗时</th><th>请求 / 响应</th></tr></thead><tbody id="access-rows"></tbody></table></div>
+      <div class="access-pagination"><button id="access-prev" class="secondary" type="button" disabled>上一页</button><span id="access-page"></span><button id="access-next" class="secondary" type="button" disabled>下一页</button></div>
+      <p id="access-message" role="status"></p>
+     </div>
+     <div class="panel">
+      <div class="section-heading"><h2>IP 白名单与保留期</h2><span class="tag" id="access-revision"></span></div>
+      <p class="hint">每行一个IPv4、IPv6或CIDR，最多128项。名单不提供访问授权或封禁。加入名单会立即删除该来源7天以前的历史；移出不会恢复已删除记录。修改需要最近5分钟内的双因素登录。</p>
+      <label>白名单<textarea id="access-whitelist" rows="6" spellcheck="false" placeholder="192.0.2.1&#10;2001:db8::/32"></textarea></label>
+      <label class="checkbox"><input id="access-ack" type="checkbox">我确认按当前名单重新分类，并永久清理已到期的历史记录</label>
+      <button id="access-apply" type="button">保存白名单</button>
+      <button id="access-policy-refresh" class="secondary" type="button">重新读取白名单</button>
+      <p id="access-policy-message" role="status"></p>
      </div>
     </section>
     <section class="page" data-page="traffic" hidden="" id="page-traffic">

@@ -164,7 +164,7 @@ func Prepare(ctx context.Context, c config.Config, paths Paths) error {
 	if owned {
 		return nil
 	}
-	settings := gateway.Settings{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, Socket: socket, Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, VPNPort: c.VPNPort, AllowStandardPorts: true}, Ingress: &gateway.Ingress{Mode: "reserved"}}
+	settings := gateway.Settings{AccessLog: true, AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, Socket: socket, Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, VPNPort: c.VPNPort, AllowStandardPorts: true}, Ingress: &gateway.Ingress{Mode: "reserved"}}
 	body, err := gateway.Compile(settings, nil)
 	if err != nil {
 		return err

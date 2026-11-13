@@ -937,3 +937,12 @@ p[role=status]:empty {
   }
 
 }
+
+/* 网站访问独立页：长路径局部换行，表格仅在自身容器横向滚动。 */
+.access-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; align-items:end; }
+.access-total { margin-top:22px; font-weight:600; color:var(--accent); }
+#access-chart { width:100%; max-height:140px; background:#f6faf9; border-radius:8px; margin-bottom:16px; }
+#access-table { min-width:1050px; }
+#access-table td:nth-child(6) { max-width:300px; overflow-wrap:anywhere; white-space:normal; }
+.access-pagination { display:flex; align-items:center; gap:16px; margin:16px 0; }
+#access-whitelist { width:100%; font-family:Consolas,monospace; }

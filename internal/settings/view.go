@@ -65,6 +65,7 @@ func (v *View) ForSite(ctx context.Context, site Site) (gateway.Settings, error)
 	result := gateway.Settings{Domain: c.Domain, AdminPath: site.AdminPath, AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, Socket: "/run/caddy/admin.sock",
 		Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, VPNPort: c.VPNPort, Directories: c.PublicDirectories, AllowStandardPorts: v.Standard}}
 	if v.Standard {
+		result.AccessLog = true
 		if v.Ingress == nil {
 			return gateway.Settings{}, errors.New("标准入口证书适配器未连接")
 		}
