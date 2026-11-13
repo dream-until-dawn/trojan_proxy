@@ -1,6 +1,6 @@
 {
   "format": 1,
   "candidate_only": true,
-  "registry_proof": "docs/evidence/2026-11-13-subdomain-images.json",
-  "ci_gate": "docs/evidence/2026-11-13-subdomain-ci-gate.json"
+  "registry_proof": "docs/evidence/2026-11-13-subdomain-bound-images.json",
+  "ci_gate": "docs/evidence/2026-11-13-subdomain-bound-ci-gate.json"
 }

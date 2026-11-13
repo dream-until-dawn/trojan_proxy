@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "checks": {
+    "packaged_binaries_and_local_images": "passed",
+    "three_modules_test_vet": "passed",
+    "stability_positive_negative_verdicts": "passed",
+    "linux_race": "passed",
+    "control_linux_source_scan": "passed",
+    "trojan_linux_source_scan": "passed",
+    "gateway_linux_source_scan": "passed",
+    "explicit_probe_fixtures": "passed",
+    "gateway_lifecycle": "passed",
+    "keepalive_mutation": "passed",
+    "https_mutation": "passed",
+    "access_logs": "passed",
+    "access_mutation": "passed",
+    "multidomain": "passed",
+    "multidomain_mutation": "passed",
+    "acme_lifecycle": "passed",
+    "certificate_cache": "passed",
+    "vpn_egress": "passed",
+    "runner_lifecycle": "passed",
+    "auth_mutation": "passed",
+    "certificate_mutation": "passed",
+    "bootstrap_mutation": "passed",
+    "welcome_mutation": "passed",
+    "settings_mutation": "passed",
+    "telemetry": "passed",
+    "telemetry_mutation": "passed",
+    "traffic_mutation": "passed",
+    "profile_mutation": "passed",
+    "settings_view_mutation": "passed",
+    "certificate_control_mutation": "passed",
+    "recovery_mutation": "passed",
+    "disk_full": "passed",
+    "disk_full_mutation": "passed",
+    "default_deployment": "passed",
+    "vpn_egress_mutation": "passed",
+    "gateway_cache_mount_mutation": "passed"
+  },
+  "images": {
+    "trojan-control:m6": "sha256:f6a6c230ef3e3d3cef8f5386f9d81971af41832039712bbc82a0d88c96e63109",
+    "trojan-runner:dev": "sha256:14ad0a26499549a45ec37228999711c36564ac1b0f0d5d3ae0aa4a5972224b33",
+    "trojan-gateway:dev": "sha256:cb64d3d73aed61fd610321fb188c4e142ac8c706abdab0c3ac42e3e66f11e929"
+  },
+  "binaries": {
+    "trojan-control-m6-control": {
+      "sha256": "1fc851d4bfdc618987bb95607b87ca59d6e6eb8a4bae49d10386882819f4525b",
+      "bytes": 14278818,
+      "scan": "passed"
+    },
+    "trojan-control-m6-proxyctl": {
+      "sha256": "71e9566017a485b25a3db0e211d9c8871722d9149e4a4cd6ebc01613eee2b6ce",
+      "bytes": 13185186,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-trojan-engine": {
+      "sha256": "2d8a4927ff88179bf2c7fb43cd234cb592edaa1a6e36b4ee6c0f2fe55274bf31",
+      "bytes": 16859298,
+      "scan": "passed"
+    },
+    "trojan-runner-dev-vpnrunner": {
+      "sha256": "c62fd49231b38bcac96249943a5f9262bf261c75a7fd762f905309995deb3e18",
+      "bytes": 6574242,
+      "scan": "passed"
+    },
+    "trojan-gateway-dev-caddy": {
+      "sha256": "5430833233015e6d2c64b70bd32cbcffb78b29852b6517485f95011d290a104f",
+      "bytes": 48537762,
+      "scan": "passed"
+    },
+    "trojan-gateway-dev-gateway-entry": {
+      "sha256": "cf3a31619f4a4a26afd31067d4c6581057286c641b296f5a94e3cd88f85182f1",
+      "bytes": 1605794,
+      "scan": "passed"
+    }
+  },
+  "created_utc": "2026-11-13T08:06:00.490180+00:00",
+  "commit": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+  "archive_sha256": "d28a8017345fb4b9afd8371eae10f7b83b186a7e3b8d38e2c84ad2a05b088ed0",
+  "scanner": "Go: go1.26.11\nScanner: govulncheck@v1.9.0\nDB: https://vuln.go.dev\nDB updated: 2026-11-11 02:51:11 +0000 UTC",
+  "verification_source": {
+    "run_id": 43389890231,
+    "job_id": 131767006571,
+    "url": "https://github.com/dream-until-dawn/trojan_proxy/actions/runs/43389890231",
+    "artifact_id": 14020727262,
+    "artifact_zip_sha256": "ce7cbeaddfa5aaba47575a65ec9d715064e4007b6007ac99c467b2d0034abbac"
+  }
+}
