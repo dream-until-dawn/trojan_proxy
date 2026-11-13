@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "phase": "root candidate ready; public route awaiting owner recent MFA",
+  "source": "efb0f48fadd693f674d29f3fc4a5e36ac574cc21",
+  "config_digest": "sha256:b0a48237a686e5fc71934da7fc6931ba12d095c70dba18f6b11e68d453b582bb",
+  "private_image_all_members_verified": true,
+  "synthetic_account_fixture": {
+    "root_login_and_logout": true,
+    "wrong_password_and_origin_rejected": true,
+    "host_only_cookie": true,
+    "static_assets": 9
+  },
+  "old_flow_web_stopped_with_owner_authorization": true,
+  "flow_sync_worker_identity_preserved": true,
+  "public_flow_domain_route_applied": false,
+  "root_candidate_loopback_port": 3034,
+  "owner_flow_domain_acceptance": false,
+  "canonical_flow_web_converged": false,
+  "new_24h_started": false
+}
