@@ -9,7 +9,7 @@ import (
 )
 
 // Ingress 只由部署工具设置。nil保留阶段性高端口后台，非nil固定占用80/443。
-// 自动签发始终限定单个授权域名，不允许业务Host触发任意域名申请。
+// 自动签发限定显式登记的主站和附加域名，不允许任意业务Host触发证书申请。
 type Ingress struct {
 	Mode             string // reserved（无域名）、automatic、manual。
 	Certificate      string // manual时必须是不可变发布目录内的固定路径。

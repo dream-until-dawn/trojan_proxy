@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "runtime": {
+    "passed": true,
+    "core": {
+      "control": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:d2847867c72079abef84467b9a9d69ca44634a992950bc096c547f97ffb54f20",
+        "config_digest": "sha256:f6a6c230ef3e3d3cef8f5386f9d81971af41832039712bbc82a0d88c96e63109",
+        "source": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+        "started": "2026-11-13T08:29:11.616225001Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "admin-gateway": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:18216cd296b155555dc0cb190bd7698943d54d470482bc4fb3ff826d3e4fe1e5",
+        "config_digest": "sha256:cb64d3d73aed61fd610321fb188c4e142ac8c706abdab0c3ac42e3e66f11e929",
+        "source": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+        "started": "2026-11-13T08:29:11.144928407Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "vpn-runner": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+        "config_digest": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+        "source": "2dfb4dcd556949c32aeb176a77a6daafe3506259",
+        "started": "2026-11-11T15:00:36.79856231Z",
+        "restarts": 0,
+        "runtime_uid": 10002,
+        "runtime_capabilities_verified": true
+      }
+    },
+    "revision": 30,
+    "format": 6,
+    "pending": false,
+    "admin_domain": "proxy.qin-xin.top",
+    "admin_path": "",
+    "registered_domains": [
+      "proxy.qin-xin.top",
+      "futures.qin-xin.top",
+      "flow.qin-xin.top",
+      "okx.qin-xin.top"
+    ],
+    "access_logging_configured": true
+  },
+  "trusted_tls": {
+    "qin-xin.top": {
+      "trusted_hostname_tls": true,
+      "fingerprint": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723",
+      "not_after": "Feb  9 13:50:03 2027 GMT"
+    },
+    "proxy.qin-xin.top": {
+      "trusted_hostname_tls": true,
+      "fingerprint": "c22bb260d567b57bd2f6949fe640c5eb685130d255dae27b79e0b05e4d4e306a",
+      "not_after": "Feb 11 07:50:15 2027 GMT"
+    },
+    "futures.qin-xin.top": {
+      "trusted_hostname_tls": true,
+      "fingerprint": "bf29b89b56474bcb54ad5420b7ba042714a66b0f0e542e032117c07a5cbd11e6",
+      "not_after": "Feb 11 07:50:14 2027 GMT"
+    },
+    "flow.qin-xin.top": {
+      "trusted_hostname_tls": true,
+      "fingerprint": "5e3cd59403a3fb765798929cf237b27cb059aee15301b76f48f61ec493e2e55f",
+      "not_after": "Feb 11 07:50:14 2027 GMT"
+    },
+    "okx.qin-xin.top": {
+      "trusted_hostname_tls": true,
+      "fingerprint": "a8ad1678fb26518a0008e1832e3210995ae840a9f3a1830a4256c61fdbcf808b",
+      "not_after": "Feb 11 07:50:14 2027 GMT"
+    }
+  },
+  "owner_independent_new_entry_login_and_confirmation": true,
+  "trojan_child_unchanged": true,
+  "first_candidate_expired_and_rolled_back": {
+    "expired_beijing": "2026-11-13 16:53:38",
+    "rollback_revision": 28,
+    "completed_new_entry_login_requests": 0
+  },
+  "futures_root_staged": {
+    "passed": true,
+    "public_route_changed": false,
+    "original_web_stopped": false,
+    "private_compose": "/opt/trojan-proxy-refactor/backups/futures-root-20261113T092139Z/compose.json",
+    "local_port": 3033,
+    "domain": "futures.qin-xin.top",
+    "root_login": 200,
+    "unauthenticated_api": 401,
+    "original_web_unchanged": true,
+    "image_config": "sha256:f135f0b7300532f9f8358ab4254bf08ba29cef6a565e2929aa61f60a85d73677",
+    "container": "ead866340813d3d27d950819525cb7933aa68406ad2bdf81a6de5acbc7b9bc44"
+  },
+  "business_domain_rules_applied": false
+}

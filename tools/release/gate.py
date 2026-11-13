@@ -99,6 +99,7 @@ try:
         report['checks'][name+'_linux_source_scan']='passed'
     progress('显式准备固定探针夹具，不依赖开发机缓存或旧产品镜像')
     fixtures=['alpine:3.22','python:3.12-slim',
+        'node:22.13.1-bookworm-slim@sha256:e71b848e62e2c32bf5572b327b032a0da79b6a390bc924cdb827249c81e13a88',
         'alpine/openssl@sha256:f6def4887e8413b228b66f314d0bcf5c25b128d918a258f3b0b9d66a0327edcb',
         'ghcr.io/letsencrypt/pebble@sha256:0c81f05db371f436c97fb894bd6d2ab8fc9c8e2ce40f8bef8a8e15941bcd75ef',
         'metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c']
@@ -108,7 +109,7 @@ try:
     report['checks']['explicit_probe_fixtures']='passed'
     for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner'),('deployment','deployment'),('storage','storage')]:
         command(['go','test','-c','-tags','integration','-o','.work/'+name+'-integration.test','./internal/'+package],env=linux,log=name+'-build.log')
-    probes=['gateway_lifecycle','keepalive_mutation','https_mutation','access_logs','access_mutation','multidomain','multidomain_mutation','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','recovery_mutation','disk_full','disk_full_mutation','default_deployment']
+    probes=['frontend_auth','gateway_lifecycle','keepalive_mutation','https_mutation','access_logs','access_mutation','multidomain','multidomain_mutation','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','recovery_mutation','disk_full','disk_full_mutation','default_deployment']
     for name in probes:
         progress('真实探针 '+name)
         output=command([sys.executable,'tools/probes/'+name+'_probe.py'],log=name+'.json')
