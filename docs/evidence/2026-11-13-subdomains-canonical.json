@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "revision": 32,
+  "owner_futures_domain_accepted": true,
+  "owner_flow_domain_accepted": true,
+  "flow": {
+    "source_commit": "efb0f48fadd693f674d29f3fc4a5e36ac574cc21",
+    "config_digest": "sha256:b0a48237a686e5fc71934da7fc6931ba12d095c70dba18f6b11e68d453b582bb",
+    "loopback_ports": [
+      3031,
+      3034
+    ],
+    "upstream_kept": 3034,
+    "non_web_specs_preserved": true,
+    "temporary_project_removed": true,
+    "auth_database_never_rewound": true,
+    "sync_worker_preserved": true,
+    "docker_health": "healthy"
+  },
+  "public_checks": {
+    "passed": true,
+    "revision": 32,
+    "domain": "flow.qin-xin.top",
+    "trusted_hostname_tls": true,
+    "root_login": 200,
+    "static_assets": 9,
+    "private_api_without_session": 401,
+    "cross_origin_login": 403,
+    "legacy_paths_retired": true,
+    "public_rule_count": 2,
+    "futures_and_admin_boundaries_preserved": true
+  },
+  "core_runtime": {
+    "passed": true,
+    "core": {
+      "control": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:1761328200914469ec1bb7b285743c59f633ae8c75fe484d5dd178ae2db45bb8",
+        "config_digest": "sha256:3f915f98e0435d4b0d494e370952714a92fe3641a0c7bfebde91d2435cdb0d8e",
+        "source": "2019de61da6a29453e40f49785540b3034b8968f",
+        "started": "2026-11-13T10:58:59.404354095Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "admin-gateway": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:18216cd296b155555dc0cb190bd7698943d54d470482bc4fb3ff826d3e4fe1e5",
+        "config_digest": "sha256:cb64d3d73aed61fd610321fb188c4e142ac8c706abdab0c3ac42e3e66f11e929",
+        "source": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+        "started": "2026-11-13T08:29:11.144928407Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "vpn-runner": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+        "config_digest": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+        "source": "2dfb4dcd556949c32aeb176a77a6daafe3506259",
+        "started": "2026-11-11T15:00:36.79856231Z",
+        "restarts": 0,
+        "runtime_uid": 10002,
+        "runtime_capabilities_verified": true
+      }
+    },
+    "revision": 32,
+    "format": 6,
+    "pending": false,
+    "admin_domain": "proxy.qin-xin.top",
+    "admin_path": "",
+    "registered_domains": [
+      "proxy.qin-xin.top",
+      "futures.qin-xin.top",
+      "flow.qin-xin.top",
+      "okx.qin-xin.top"
+    ],
+    "access_logging_configured": true
+  },
+  "trojan_exact_child_identity_preserved": true,
+  "new_24h_started": false
+}
