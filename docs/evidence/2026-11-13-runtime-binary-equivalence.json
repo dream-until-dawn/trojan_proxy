@@ -1,0 +1,57 @@
+{
+  "passed": true,
+  "candidate_commit": "008936b220495b07a2e955bede39a820119f052e",
+  "scope": "six actual production program files compared with new 32-check gated candidate; image labels may differ",
+  "files": {
+    "trojan-control-m6-control": {
+      "runtime_sha256": "e162c95b21c262c31ec1690c62f7db9d9b25241d9acbd0186a55605994a92ea1",
+      "gated_sha256": "e162c95b21c262c31ec1690c62f7db9d9b25241d9acbd0186a55605994a92ea1",
+      "bytes": 14135458,
+      "identical": true
+    },
+    "trojan-control-m6-proxyctl": {
+      "runtime_sha256": "6ec821fbd3131f93d44b8a3174affafbeaf5f63e9a4a66987988ee1f06cd00cf",
+      "gated_sha256": "6ec821fbd3131f93d44b8a3174affafbeaf5f63e9a4a66987988ee1f06cd00cf",
+      "bytes": 13152418,
+      "identical": true
+    },
+    "trojan-gateway-dev-caddy": {
+      "runtime_sha256": "d5fe590df861eeceabfed9a958006577aac10e860683981d28e4f89806a505f9",
+      "gated_sha256": "d5fe590df861eeceabfed9a958006577aac10e860683981d28e4f89806a505f9",
+      "bytes": 48160930,
+      "identical": true
+    },
+    "trojan-gateway-dev-gateway-entry": {
+      "runtime_sha256": "cf3a31619f4a4a26afd31067d4c6581057286c641b296f5a94e3cd88f85182f1",
+      "gated_sha256": "cf3a31619f4a4a26afd31067d4c6581057286c641b296f5a94e3cd88f85182f1",
+      "bytes": 1605794,
+      "identical": true
+    },
+    "trojan-runner-dev-vpnrunner": {
+      "runtime_sha256": "c62fd49231b38bcac96249943a5f9262bf261c75a7fd762f905309995deb3e18",
+      "gated_sha256": "c62fd49231b38bcac96249943a5f9262bf261c75a7fd762f905309995deb3e18",
+      "bytes": 6574242,
+      "identical": true
+    },
+    "trojan-runner-dev-trojan-engine": {
+      "runtime_sha256": "2d8a4927ff88179bf2c7fb43cd234cb592edaa1a6e36b4ee6c0f2fe55274bf31",
+      "gated_sha256": "2d8a4927ff88179bf2c7fb43cd234cb592edaa1a6e36b4ee6c0f2fe55274bf31",
+      "bytes": 16859298,
+      "identical": true
+    }
+  },
+  "candidate_image_configuration_comparison": {
+    "control": {
+      "runtime_image_configuration_preserved_except_source_revision_label": true,
+      "config_sha256_excluding_source_label": "91a69bfb6da6e1da9f341692b88234ce3003d808e57cf0d42d48618d9b7c34db"
+    },
+    "runner": {
+      "runtime_image_configuration_preserved_except_source_revision_label": true,
+      "config_sha256_excluding_source_label": "32812b58ebdb52433f713aa999eeedd29d4c6bf5db8de82e47c2c1bb8e04d781"
+    },
+    "gateway": {
+      "runtime_image_configuration_preserved_except_source_revision_label": true,
+      "config_sha256_excluding_source_label": "3a545ee6efca030ea14ec36858979a7cfcdc24f24114163b1f04bd3d50f937c3"
+    }
+  }
+}

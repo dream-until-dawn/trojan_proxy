@@ -1,6 +1,6 @@
 {
   "format": 1,
   "candidate_only": true,
-  "registry_proof": "docs/evidence/2026-11-12-admin-path-images.json",
-  "ci_gate": "docs/evidence/2026-11-12-admin-path-ci-gate.json"
+  "registry_proof": "docs/evidence/2026-11-13-disk-full-images.json",
+  "ci_gate": "docs/evidence/2026-11-13-disk-full-ci-gate.json"
 }

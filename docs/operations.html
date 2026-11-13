@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>部署与维护手册</title><link rel="stylesheet" href="assets/docs.css"></head><body><header><h1>启动一次，业务在后台配置</h1><nav><a href="plan.html">验收计划</a><a href="deployment-design.html">部署边界</a><a href="recovery-design.html">恢复设计</a></nav></header><main>
-<section><h2>发布状态</h2><p class="note">当前为验证中的候选版本：三个镜像已通过完整CI门槛并完成匿名拉取，Compose固定到不可变摘要。真实80/443交接和公共自动证书已通过，正式版本仍待24小时长稳。<a href="evidence/2026-11-12-admin-path-images.json">镜像清单与证据</a>。支持 Linux x86_64、Docker Engine 和 Compose v2。DNS、云安全组及宿主机目录挂载仍需所有者处理。</p></section>
+<section><h2>发布状态</h2><p class="note">当前为验证中的候选版本：三个镜像已通过完整CI门槛并完成匿名拉取，Compose固定到不可变摘要。真实80/443交接和公共自动证书已通过，正式版本仍待24小时长稳。<a href="evidence/2026-11-13-disk-full-images.json">镜像清单与证据</a>。支持 Linux x86_64、Docker Engine 和 Compose v2。DNS、云安全组及宿主机目录挂载仍需所有者处理。</p></section>
 <section><h2>首次启动</h2><p>从<a href="https://github.com/dream-until-dawn/trojan_proxy/blob/codex/refactor-design/deploy/compose.yaml">当前候选Compose</a>下载到空部署目录并命名为compose.yaml，再执行以下命令。80/443 必须空闲；发现占用时预检退出，不杀占用进程。准备容器退出码为0是正常结果。</p><pre>mkdir -p public
 docker compose up -d --pull missing
 docker compose ps -a
