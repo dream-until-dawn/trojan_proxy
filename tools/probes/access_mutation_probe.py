@@ -9,6 +9,7 @@ cases=[
  ('physical-expiry','webaccess/store.go','DELETE FROM requests WHERE at<=? OR (','DELETE FROM requests WHERE 0 AND (at<=? OR (','./internal/webaccess','TestRetentionCurrentWhitelistAndExactBoundaries','到期记录未物理删除'),
  ('actual-connection-ip','webaccess/parse.go','json:"remote_ip"','json:"client_ip"','./internal/webaccess','TestParserPrivacyAndHostileInput','隐私字段或真实来源错误'),
  ('recent-mfa','api/access.go','if !s.Auth.Recent(bearer(r)) {','if false && !s.Auth.Recent(bearer(r)) {','./internal/api','TestWebAccessAuthenticationMFAAndValidation','访问白名单绕过近期MFA'),
+ ('full-store-cleanup','webaccess/service.go','if now.Sub(lastPrune) >= time.Minute {','if false && now.Sub(lastPrune) >= time.Minute {','./internal/webaccess','TestFullCollectorPrunesBeforeRetry','满库阻止到期清理与采集恢复'),
 ]
 report={}
 for name,filename,old,new,package,test,reason in cases:

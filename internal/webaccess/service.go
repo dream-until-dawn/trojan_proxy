@@ -88,12 +88,16 @@ func (s *Service) Run(ctx context.Context) {
 		state := s.State()
 		if err == nil {
 			now := time.Now()
-			state.Backlog, err = db.Collect(check, s.directory, now)
-			if err == nil && now.Sub(lastPrune) >= time.Minute {
+			// 清理必须先于采集、且独立于上一轮采集结果。否则写满后一直采集失败，
+			// 到期记录也永远无法释放空间，服务便不能自行恢复。
+			if now.Sub(lastPrune) >= time.Minute {
 				err = db.Prune(check, now)
 				if err == nil {
 					lastPrune = now
 				}
+			}
+			if err == nil {
+				state.Backlog, err = db.Collect(check, s.directory, now)
 			}
 			if err == nil {
 				state.Invalid, state.Gaps, err = db.Diagnostics(check)
