@@ -1,0 +1,29 @@
+{
+  "record_consistency_and_checks_valid": true,
+  "observation_complete": false,
+  "review_passed": false,
+  "raw_samples_reviewed": 1201,
+  "raw_failures": 0,
+  "raw_deep_checks": 21,
+  "observed_span_seconds": 72000.0,
+  "max_sample_gap_seconds": 60.029,
+  "max_deep_gap_seconds": 3600.018,
+  "certificate_fingerprint_count": 1,
+  "findings": [],
+  "raw_prefix_sha256": "f105fb276273eb1a60cbc088e233fa97a33a67a96ed31ec1ca133ed942a3e69e",
+  "hash_scope": "first captured summary.samples complete original lines",
+  "audit_source_sha256": "7f181b3d15eb436541600854f95d2598aba3dda57cc79b94845079836790c0a3",
+  "observer_running": true,
+  "observer_source_unchanged": true,
+  "started_utc": "2026-11-12T08:26:48.816206Z",
+  "updated_utc": "2026-11-13T04:26:52.566439Z",
+  "summary_passed": false,
+  "summary_completed": false,
+  "expected_finish_utc": "2026-11-13T08:26:48Z",
+  "production_core_identity_unchanged": true,
+  "production_core_restart_counts": {
+    "control": 0,
+    "gateway": 0,
+    "runner": 0
+  }
+}
