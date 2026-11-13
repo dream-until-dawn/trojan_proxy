@@ -1,0 +1,16 @@
+{
+  "local_only": true,
+  "production_observer_changed": false,
+  "unit_tests_passed": 16,
+  "targeted_mutations": {
+    "per_host_audit": {
+      "passed": true,
+      "target_failure": "domain_inventory_mismatch_at_2"
+    },
+    "admin_origin": {
+      "passed": true,
+      "target_failure": "admin_domain_request_failed"
+    }
+  },
+  "scope": "domain-aware observation and raw audit; after image candidate 0a1a73a; not claimed as part of its CI"
+}

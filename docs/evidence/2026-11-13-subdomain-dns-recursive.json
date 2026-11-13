@@ -1,0 +1,276 @@
+{
+  "checked_utc": "2026-11-13T06:44:39.128246Z",
+  "expected_ipv4": "47.82.112.245",
+  "queries": [
+    {
+      "provider": "cloudflare",
+      "name": "qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 3601,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "cloudflare",
+      "name": "qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "proxy.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "cloudflare",
+      "name": "proxy.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "proxy.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "futures.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "cloudflare",
+      "name": "futures.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "futures.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "flow.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "cloudflare",
+      "name": "flow.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "flow.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "okx.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "cloudflare",
+      "name": "okx.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "cloudflare",
+      "name": "okx.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 3601,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "google",
+      "name": "qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "proxy.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "google",
+      "name": "proxy.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "proxy.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "futures.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "google",
+      "name": "futures.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "futures.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "flow.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "google",
+      "name": "flow.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "flow.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "okx.qin-xin.top",
+      "type": "A",
+      "status": 0,
+      "answer": [
+        {
+          "type": 1,
+          "ttl": 7207,
+          "data": "47.82.112.245"
+        }
+      ]
+    },
+    {
+      "provider": "google",
+      "name": "okx.qin-xin.top",
+      "type": "AAAA",
+      "status": 0,
+      "answer": []
+    },
+    {
+      "provider": "google",
+      "name": "okx.qin-xin.top",
+      "type": "CAA",
+      "status": 0,
+      "answer": []
+    }
+  ]
+}

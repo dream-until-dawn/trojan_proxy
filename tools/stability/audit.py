@@ -27,6 +27,12 @@ def required_http(manifest):
 def audit_records(summary, records, manifest, now=None, interval=60):
     findings = []
     expected = required_http(manifest)
+    # 原单域观察的只读终审器可独立注入服务器，不强制部署新的观察依赖。
+    domain_specs, expected_domains = [], {}
+    if manifest.get('domain_probes') or manifest.get('admin_domain'):
+        from domain_checks import required_domain_http, validate_domains
+        domain_specs = validate_domains(manifest.get('domain_probes', []), manifest.get('admin_domain'))
+        expected_domains = required_domain_http(domain_specs)
     times, deep_times, certificates = [], [], set()
     failures = 0
     for number, sample in enumerate(records, 1):
@@ -46,10 +52,28 @@ def audit_records(summary, records, manifest, now=None, interval=60):
             check = actual.get(key, {})
             if check.get('expected') != status or check.get('actual') != status or 'exception_type' in check:
                 findings.append('http_verdict_mismatch_at_' + str(number))
+            if manifest.get('admin_domain') and key[2] == 'POST' and check.get('domain') != manifest['admin_domain']:
+                findings.append('admin_domain_mismatch_at_' + str(number))
         certificate = sample.get('certificate_sha256', '')
         if not isinstance(certificate, str) or not re.fullmatch('[0-9a-f]{64}', certificate):
             findings.append('certificate_missing_at_' + str(number))
         else: certificates.add(certificate)
+        if domain_specs:
+            actual_domains = {}
+            for check in sample.get('domain_checks', []):
+                key = (check.get('domain'), check.get('port'), check.get('path'), check.get('method'))
+                if key in actual_domains: findings.append('duplicate_domain_check_at_' + str(number))
+                actual_domains[key] = check
+            if set(actual_domains) != set(expected_domains): findings.append('domain_inventory_mismatch_at_' + str(number))
+            for key, status in expected_domains.items():
+                check = actual_domains.get(key, {})
+                if check.get('expected') != status or check.get('actual') != status or 'exception_type' in check:
+                    findings.append('domain_verdict_mismatch_at_' + str(number))
+            fingerprints = sample.get('domain_certificates', {})
+            if not isinstance(fingerprints, dict) or set(fingerprints) != {spec['domain'] for spec in domain_specs}:
+                findings.append('domain_certificates_missing_at_' + str(number))
+            elif any(not isinstance(value, str) or not re.fullmatch('[0-9a-f]{64}', value) for value in fingerprints.values()):
+                findings.append('domain_certificate_invalid_at_' + str(number))
     if len(records) != summary.get('samples'): findings.append('sample_count_mismatch')
     if failures != summary.get('failures'): findings.append('failure_count_mismatch')
     if len(deep_times) != summary.get('deep_checks'): findings.append('deep_count_mismatch')

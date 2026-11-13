@@ -1,0 +1,23 @@
+{
+  "record_consistency_and_checks_valid": true,
+  "observation_complete": false,
+  "review_passed": false,
+  "raw_samples_reviewed": 1338,
+  "raw_failures": 0,
+  "raw_deep_checks": 23,
+  "observed_span_seconds": 80220.005,
+  "max_sample_gap_seconds": 60.029,
+  "max_deep_gap_seconds": 3600.018,
+  "certificate_fingerprint_count": 1,
+  "findings": [],
+  "raw_prefix_sha256": "40c76c2f04af39d1e859af2215f8fc125ba0da56c127e3853a26c85899189038",
+  "hash_scope": "first captured summary.samples complete original lines",
+  "audit_source_sha256": "45ec379666a7b621a4e05701fb4ef908bb7f352c4797882ab5dd75f96054b3fc",
+  "observer_running": true,
+  "observer_source_unchanged": true,
+  "started_utc": "2026-11-12T08:26:48.816206Z",
+  "updated_utc": "2026-11-13T06:43:51.856521Z",
+  "summary_passed": false,
+  "summary_completed": false,
+  "expected_finish_utc": "2026-11-13T08:26:48Z"
+}

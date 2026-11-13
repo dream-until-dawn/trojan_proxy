@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "core_runtime_unchanged": {
+    "control": {
+      "identity_unchanged": true,
+      "running": true,
+      "restart_count": 0
+    },
+    "gateway": {
+      "identity_unchanged": true,
+      "running": true,
+      "restart_count": 0
+    },
+    "runner": {
+      "identity_unchanged": true,
+      "running": true,
+      "restart_count": 0
+    }
+  }
+}

@@ -11,6 +11,7 @@ import sys
 import time
 from checks import CheckFailure, SERVICE_ROLES, completed_pass, validate_containers, validate_vpn
 from http_checks import web_checks
+from domain_checks import domain_checks, validate_domains
 
 
 def command(arguments, timeout=20):
@@ -74,6 +75,7 @@ def main():
     if not 1 <= args.duration_seconds <= 86400 or not 1 <= args.interval_seconds <= 300: parser.error('只允许1至86400秒的有界观察及1至300秒间隔')
     with open(args.manifest) as source: manifest = json.load(source)
     if manifest.get('passed') is not True: raise CheckFailure('verified_manifest_required')
+    domains = validate_domains(manifest.get('domain_probes', []), manifest.get('admin_domain'))
     initial = inspect(args.project)
     output = private_output(args.output, initial)
     lock = os.fdopen(os.open(str(output / 'observer.lock'), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), 'w')
@@ -104,7 +106,10 @@ def main():
                 sample['resources'] = runtime_resources(containers)
                 if previous_sample is not None and now - previous_sample > args.interval_seconds + 90: raise CheckFailure('sampling_gap')
                 sample['http_checks'] = []
-                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'], manifest.get('https_routes', []), manifest.get('admin_path', ''))['443']
+                sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'], manifest.get('https_routes', []), manifest.get('admin_path', ''), manifest.get('admin_domain'))['443']
+                if domains:
+                    sample['domain_checks'] = []
+                    sample['domain_certificates'] = domain_checks(domains, sample['domain_checks'])
                 if now >= next_deep or final:
                     raw = command([sys.executable, args.vpn_diagnostic, '--project', args.project, '--domain', args.domain], timeout=85)
                     validate_vpn(json.loads(raw));summary['deep_checks'] += 1;sample['vpn_positive_and_negative'] = True
