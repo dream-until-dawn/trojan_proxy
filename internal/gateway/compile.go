@@ -17,7 +17,7 @@ func Fingerprint(settings Settings) (string, error) {
 	body, err := json.Marshal(struct {
 		Version  int
 		Settings Settings
-	}{Version: 8, Settings: settings})
+	}{Version: 9, Settings: settings})
 	if err != nil {
 		return "", err
 	}
@@ -34,6 +34,8 @@ type Settings struct {
 	Policy                           routes.Policy
 	Ingress                          *Ingress
 	AccessLog                        bool
+	Hosts                            []Host
+	AdminDomain                      string
 }
 
 // Compile 生成完整配置，始终保留后台入口，绝不拼接原始配置文本。
@@ -49,6 +51,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	}
 	serverRoutes := map[int][]any{}
 	securePorts := map[int]bool{}
+	secureHosts := map[int][]string{}
 	ordered := append([]routes.Rule(nil), rules...)
 	sort.SliceStable(ordered, func(i, j int) bool {
 		if (ordered[i].Host != "") != (ordered[j].Host != "") {
@@ -59,10 +62,14 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 	for _, r := range ordered {
 		if r.HTTPS {
 			securePorts[r.Port] = true
+			secureHosts[r.Port] = append(secureHosts[r.Port], r.Host)
 		}
 		match := map[string]any{}
 		if r.Host != "" {
 			match["host"] = []string{r.Host}
+		}
+		if len(settings.Hosts) > 0 && r.Host == "" && (r.Port == 80 || r.Port == 443) {
+			match["host"] = []string{settings.Domain}
 		}
 		if r.Path != "/" {
 			match["path"] = []string{r.Path, r.Path + "/*"}
@@ -85,6 +92,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 			proxy["headers"] = map[string]any{"request": map[string]any{"set": map[string]any{"X-Trojan-Original-URI": []string{"{http.request.orig_uri}"}}}}
 		}
 		handles = append(handles, proxy)
+		if host, ok := additionalHost(settings, r.Host); ok && !ingressReady(host.Ingress) {
+			handles = []any{map[string]any{"handler": "static_response", "status_code": 503}}
+		}
 		listenPort := r.Port
 		if settings.Ingress != nil && settings.Domain != "" && !settings.Ingress.AwaitCertificate && settings.Ingress.Mode != "unavailable" && r.Port == 80 {
 			// 标准HTTP规则代表公开网站入口；域名模式实际由HTTPS承载。
@@ -109,7 +119,7 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		}
 		if securePorts[port] && port != 443 {
 			server["tls_connection_policies"] = []any{
-				map[string]any{"match": map[string]any{"sni": []string{settings.Domain}}},
+				map[string]any{"match": map[string]any{"sni": secureHosts[port]}},
 				map[string]any{"drop": true},
 			}
 		}
@@ -128,6 +138,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		domain := ""
 		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443" || value.(map[string]any)["tls_connection_policies"] != nil)) {
 			domain = settings.Domain
+		}
+		if len(settings.Hosts) > 0 {
+			domain = ""
 		}
 		crawlPolicy(value.(map[string]any), domain)
 		// 首版不开放UDP/HTTP3，避免TCP预检通过但UDP监听冲突。

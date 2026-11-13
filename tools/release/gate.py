@@ -108,7 +108,7 @@ try:
     report['checks']['explicit_probe_fixtures']='passed'
     for name,package in [('gateway','gateway'),('certificates','certificates'),('vpn','vpn'),('runner','vpnrunner'),('deployment','deployment'),('storage','storage')]:
         command(['go','test','-c','-tags','integration','-o','.work/'+name+'-integration.test','./internal/'+package],env=linux,log=name+'-build.log')
-    probes=['gateway_lifecycle','keepalive_mutation','https_mutation','access_logs','access_mutation','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','recovery_mutation','disk_full','disk_full_mutation','default_deployment']
+    probes=['gateway_lifecycle','keepalive_mutation','https_mutation','access_logs','access_mutation','multidomain','multidomain_mutation','acme_lifecycle','certificate_cache','vpn_egress','runner_lifecycle','auth_mutation','certificate_mutation','bootstrap_mutation','welcome_mutation','settings_mutation','telemetry','telemetry_mutation','traffic_mutation','profile_mutation','settings_view_mutation','certificate_control_mutation','recovery_mutation','disk_full','disk_full_mutation','default_deployment']
     for name in probes:
         progress('真实探针 '+name)
         output=command([sys.executable,'tools/probes/'+name+'_probe.py'],log=name+'.json')

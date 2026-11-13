@@ -53,13 +53,26 @@ func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) 
 			oldServers["candidate_admin"] = newAdmin
 		}
 	}
-	if candidate.AdminPath != "" {
+	if candidate.AdminPath != "" || candidate.AdminDomain != "" {
 		oldPublic, ok := oldServers["public_443"].(map[string]any)
 		if !ok {
 			return "", errors.New("路径迁移需要当前标准HTTPS入口")
 		}
-		newPublic := newServers["public_443"].(map[string]any)
-		oldPublic["tls_connection_policies"] = newPublic["tls_connection_policies"]
+		if len(current.Hosts) > 0 || len(candidate.Hosts) > 0 {
+			names := []string{}
+			seen := map[string]bool{}
+			for _, site := range []Settings{current, candidate} {
+				for _, h := range append([]Host{{Name: site.Domain, Ingress: site.Ingress}}, site.Hosts...) {
+					if h.Name != "" && !seen[h.Name] && h.Ingress != nil && h.Ingress.Mode != "unavailable" {
+						names = append(names, h.Name)
+						seen[h.Name] = true
+					}
+				}
+			}
+			oldPublic["tls_connection_policies"] = []any{map[string]any{"match": map[string]any{"sni": names}}, map[string]any{"drop": true}}
+		} else {
+			oldPublic["tls_connection_policies"] = newServers["public_443"].(map[string]any)["tls_connection_policies"]
+		}
 		insertCandidatePath(oldPublic, adminPathRoute(candidate))
 	}
 	mergeCertificates(oldApps["tls"].(map[string]any), newApps["tls"].(map[string]any))

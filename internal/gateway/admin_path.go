@@ -29,15 +29,18 @@ func validateAdminPath(s Settings, ruleset []routes.Rule) error {
 
 // adminPathRoute 保留原始路径交给控制面验证，不把入口身份放进可伪造的请求头。
 func adminPathRoute(s Settings) map[string]any {
+	if s.AdminDomain != "" {
+		return map[string]any{"match": []any{map[string]any{"host": []string{s.AdminDomain}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "transport": internalTransport(), "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(s.ControlPort))}}}}, "terminal": true}
+	}
 	return map[string]any{"match": []any{map[string]any{"host": []string{s.Domain}, "path": []string{s.AdminPath, s.AdminPath + "/*"}}}, "handle": []any{map[string]any{"handler": "reverse_proxy", "transport": internalTransport(), "upstreams": []any{map[string]any{"dial": net.JoinHostPort("127.0.0.1", strconv.Itoa(s.ControlPort))}}}}, "terminal": true}
 }
 
 func configureAdminPath(s Settings, servers map[string]any) {
-	if s.AdminPath == "" {
+	if s.AdminPath == "" && s.AdminDomain == "" {
 		return
 	}
 	delete(servers, "admin")
-	if s.Ingress.Mode == "unavailable" {
+	if s.Ingress.Mode == "unavailable" && s.AdminDomain == "" {
 		return
 	}
 	server := servers["public_443"].(map[string]any)

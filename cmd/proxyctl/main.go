@@ -35,7 +35,7 @@ func run(args []string) error {
 	output := flags.String("output", "", "私有备份归档输出位置")
 	archive := flags.String("archive", "", "冷还原归档路径")
 	digest := flags.String("sha256", "", "从归档之外可信记录取得的SHA256")
-	targetVersion := flags.Int("target-version", 0, "离线兼容回退的明确目标版本2、3或4")
+	targetVersion := flags.Int("target-version", 0, "离线兼容回退的明确目标版本2、3、4或5")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -44,8 +44,8 @@ func run(args []string) error {
 	}
 	switch args[0] {
 	case "downgrade-format":
-		if *targetVersion < 2 || *targetVersion > 4 {
-			return fmt.Errorf("请明确指定 --target-version 2、3或4")
+		if *targetVersion < 2 || *targetVersion > 5 {
+			return fmt.Errorf("请明确指定 --target-version 2、3、4或5")
 		}
 		return downgradeFormat(*path, *targetVersion)
 	case "downgrade-http-format":

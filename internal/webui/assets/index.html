@@ -558,7 +558,8 @@
        <h2>
         证书状态
        </h2>
-       <p id="certificate-status">
+       <div id="certificate-domains"></div>
+      <p id="certificate-status">
        </p>
        <button class="secondary" id="certificate-refresh" type="button">
         刷新证书状态
@@ -602,11 +603,18 @@
          网站与管理入口
         </legend>
         <label>
-         域名（可留空）
+         主站 / Trojan 域名（可留空）
          <input id="site-domain" maxlength="253" placeholder="例如 example.com，不带协议、路径或端口"/>
         </label>
+        <label>附加业务域名（每行一个，最多20个）
+         <textarea id="site-domains" rows="5" placeholder="proxy.qin-xin.top&#10;futures.qin-xin.top&#10;flow.qin-xin.top&#10;okx.qin-xin.top"></textarea>
+        </label>
+        <p class="hint">附加域名必须是主站的子域名；各自自动申请及续期证书，不需要DNS密钥。先登记域名，再添加对应Host的HTTPS反代。证书未就绪不会转发该域业务；主站与Trojan身份继续保留。</p>
         <label>管理入口方式
-         <select id="site-admin-mode"><option value="port">独立HTTPS端口</option><option value="path">网站HTTPS路径</option></select>
+         <select id="site-admin-mode"><option value="port">独立HTTPS端口</option><option value="path">网站HTTPS路径</option><option value="domain">独立子域名（推荐）</option></select>
+        </label>
+        <label id="site-admin-domain-field" hidden>后台子域名
+         <input id="site-admin-domain" maxlength="253" placeholder="proxy.qin-xin.top，须在上方登记" disabled>
         </label>
         <label id="site-admin-port-field">
          后台HTTPS端口

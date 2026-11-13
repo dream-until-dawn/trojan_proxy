@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dream-until-dawn/trojan_proxy/internal/adminentry"
 	"github.com/dream-until-dawn/trojan_proxy/internal/config"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 )
@@ -143,11 +142,11 @@ func (m *Manager) Propose(ctx context.Context, expected uint64, candidate Site) 
 }
 
 func (m *Manager) candidateOrigin(site Site) string {
-	return adminentry.ForSite(site.Domain, site.AdminPort, m.deployment.ControlPort, site.AdminPath).Origin
+	return AdminEndpoint(site, m.deployment.ControlPort).Origin
 }
 
 func (m *Manager) candidateEntry(site Site) string {
-	return adminentry.ForSite(site.Domain, site.AdminPort, m.deployment.ControlPort, site.AdminPath).Identity()
+	return AdminEndpoint(site, m.deployment.ControlPort).Identity()
 }
 
 // Confirm 由HTTP层先执行近期MFA，再在此核对新入口来源、期限及证书就绪。

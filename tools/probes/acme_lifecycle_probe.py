@@ -1,5 +1,6 @@
 """隔离网络真实HTTP-01签发、短期续期和实际握手；不访问公共CA。"""
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -11,6 +12,7 @@ from images import gateway_image, container_logs
 CADDY=gateway_image()
 PEBBLE='ghcr.io/letsencrypt/pebble@sha256:0c81f05db371f436c97fb894bd6d2ab8fc9c8e2ce40f8bef8a8e15941bcd75ef'
 prefix='trojan-acme-'+uuid.uuid4().hex[:10]
+multi=os.environ.get('TROJAN_MULTI_HOST')=='1'
 network=None
 volumes=[]
 containers=[]
@@ -38,16 +40,18 @@ try:
         path.write_text(json.dumps({'pebble':{'listenAddress':'0.0.0.0:14000','managementListenAddress':'0.0.0.0:15000',
             'certificate':'/fixture/ca.pem','privateKey':'/fixture/key.pem','httpPort':80,'tlsPort':443,
             'profiles':{'default':{'description':'bounded lifecycle fixture','validityPeriod':30}}}}),encoding='utf-8')
-        pebble=command(['docker','run','-d','--name',prefix+'-pebble','--network',network,'--network-alias','pebble',
-            '--add-host','probe.test:'+caddy_ip,'--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
+        host_args=[]
+        for host in (['probe.test','one.probe.test','two.probe.test','proxy.probe.test'] if multi else ['probe.test']):host_args+=['--add-host',host+':'+caddy_ip]
+        pebble=command(['docker','run','-d','--name',prefix+'-pebble','--network',network,'--network-alias','pebble']+host_args+[
+            '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
             '--memory','128m','--cpus','1','-e','PEBBLE_VA_NOSLEEP=1','-e','PEBBLE_WFE_NONCEREJECT=0',
             '-v',str(path.resolve())+':/pebble.json:ro','-v',fixture+':/fixture:ro',PEBBLE,'-config','/pebble.json','-strict'])
         containers.append(pebble)
-        binary=str(Path('.work/gateway-integration.test').resolve())+':/probe:ro'
+        binary=str(Path(os.environ.get('TROJAN_GATEWAY_PROBE_BINARY','.work/gateway-integration.test')).resolve())+':/probe:ro'
         result=subprocess.run(['docker','run','--rm','--network','container:'+caddy,'--user','10001:10001','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges','--memory','128m','--tmpfs','/tmp','-v',binary,
             '-v',sock+':/run/caddy:ro','-v',fixture+':/fixture:ro','-v',cache+':/cache:ro','-v',published+':/published',
-            '--entrypoint','/probe',control_image(),'-test.run','^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
+            '--entrypoint','/probe',control_image(),'-test.run','^TestRealMultiHostHTTP01$' if multi else '^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=100)
         report['test']={'exit_code':result.returncode,'output':result.stdout}
         if result.returncode:raise RuntimeError('ACME生命周期验收失败')

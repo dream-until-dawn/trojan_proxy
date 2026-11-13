@@ -21,16 +21,22 @@ type Ingress struct {
 func validateIngress(s Settings, rules []routes.Rule) error {
 	for _, rule := range rules {
 		if rule.HTTPS {
-			if s.Domain == "" || rule.Host != s.Domain {
+			if s.Domain == "" || !allowedHost(s, rule.Host) {
 				return errors.New("HTTPS规则仅允许当前授权域名")
 			}
-			if s.Ingress != nil && (s.Ingress.AwaitCertificate || (s.Ingress.Mode != "automatic" && s.Ingress.Mode != "manual")) {
+			if rule.Host == s.Domain && s.Ingress != nil && (s.Ingress.AwaitCertificate || (s.Ingress.Mode != "automatic" && s.Ingress.Mode != "manual")) {
 				return errors.New("HTTPS规则需要已就绪的可信证书")
 			}
 		}
 	}
 	if s.Ingress == nil {
+		if len(s.Hosts) > 0 || s.AdminDomain != "" {
+			return errors.New("多域名需要标准入口")
+		}
 		return nil
+	}
+	if err := validateHosts(s, rules); err != nil {
+		return err
 	}
 	i := s.Ingress
 	if i.AwaitCertificate && i.Mode != "automatic" {
@@ -74,19 +80,26 @@ func validateIngress(s Settings, rules []routes.Rule) error {
 			return errors.New("无域名模式443仅保留，不能发布规则")
 		}
 		if s.Domain != "" {
-			if r.Host != "" && r.Host != s.Domain {
+			if r.Host != "" && !allowedHost(s, r.Host) {
 				return errors.New("标准HTTPS入口仅支持部署授权的域名")
 			}
-			if seen[r.Path] {
+			key := r.Host + "|" + r.Path
+			if r.Host == "" {
+				key = s.Domain + "|" + r.Path
+			}
+			if seen[key] {
 				return errors.New("80和443规则合并后路径重复")
 			}
-			seen[r.Path] = true
+			seen[key] = true
 		}
 	}
 	return nil
 }
 
 func configureIngress(s Settings, servers map[string]any, tlsApp map[string]any) error {
+	if len(s.Hosts) > 0 {
+		return configureHosts(s, servers, tlsApp)
+	}
 	// 不生成任何公网明文后台；无域名时只保留控制服务的SSH隧道入口。
 	if s.Domain == "" {
 		delete(servers, "admin")

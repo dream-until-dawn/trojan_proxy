@@ -9,8 +9,11 @@ const message = document.querySelector("#settings-message");
 const field = name => document.querySelector(`#site-${name}`);
 
 function toggleAdminMode() {
-  const byPath = field("admin-mode").value === "path";
-  document.querySelector("#site-admin-port-field").hidden = byPath;
+  const mode = field("admin-mode").value;
+  const byPath = mode === "path";
+  document.querySelector("#site-admin-port-field").hidden = mode !== "port";
+  document.querySelector("#site-admin-domain-field").hidden = mode !== "domain";
+  field("admin-domain").disabled = mode !== "domain";
   document.querySelector("#site-admin-path-field").hidden = !byPath;
   field("admin-path").disabled = !byPath;
 }
@@ -37,8 +40,10 @@ function render() {
   const site = snapshot.candidate || snapshot.site;
   document.querySelector("#settings-legend").textContent = snapshot.candidate ? "候选设置（待确认）" : "网站与管理入口";
   field("domain").value = site.domain;
+  field("domains").value = (site.domains || []).join("\n");
+  field("admin-domain").value = site.admin_domain || "";
   field("admin-port").value = site.admin_port;
-  field("admin-mode").value = site.admin_path ? "path" : "port";
+  field("admin-mode").value = site.admin_domain ? "domain" : site.admin_path ? "path" : "port";
   field("admin-path").value = site.admin_path || "/proxy";
   toggleAdminMode();
   field("vpn-port").value = site.vpn_port;
@@ -68,6 +73,7 @@ function render() {
 }
 
 export function clearSettings() {
+  document.querySelector("#certificate-domains").replaceChildren();
   generation++; snapshot = null; imported = null;
   form.reset(); document.querySelector("#certificate-form").reset();
   toggleAdminMode();
@@ -98,6 +104,13 @@ async function refreshCertificate() {
   try {
     const state = await request("/api/certificates/status");
     if (current !== generation) return;
+    const domains = document.querySelector("#certificate-domains"); domains.replaceChildren();
+    for (const item of state.domains || []) {
+      const line = document.createElement("p");
+      line.textContent = `${item.ready ? "✓" : "…"} ${item.domain} · ${item.message}${item.info ? " · 有效至 " + new Date(item.info.not_after).toLocaleString() : ""}`;
+      domains.append(line);
+    }
+    if (current !== generation) return;
     document.querySelector("#certificate-status").textContent = state.available
       ? `${state.message}${state.info ? ` · 有效至 ${new Date(state.info.not_after).toLocaleString()}` : ""}` : "证书管理尚未连接。";
   } catch (error) { if (current === generation) document.querySelector("#certificate-status").textContent = error.message; }
@@ -107,7 +120,7 @@ function draftSite() {
   const source = field("certificate-source").value;
   const domain = field("domain").value.trim();
   return {
-    domain, admin_port: Number(field("admin-port").value), vpn_port: Number(field("vpn-port").value),
+    domain, domains: field("domains").value.split(/\s+/).filter(Boolean), admin_domain: field("admin-mode").value === "domain" ? field("admin-domain").value.trim() : "", admin_port: Number(field("admin-port").value), vpn_port: Number(field("vpn-port").value),
     admin_path: field("admin-mode").value === "path" ? field("admin-path").value.trim() : "",
     vpn_resolver: field("resolver").value.trim(), vpn_own_addresses: field("addresses").value.split(/[\s,，]+/).filter(Boolean),
     certificate_source: source, acme_email: field("acme-email").value.trim(),

@@ -31,6 +31,7 @@ type Manager struct {
 	Roots              *x509.CertPool
 	Now                func() time.Time
 	Current            func(context.Context) (Selection, error)
+	Additional         func(context.Context) ([]Selection, error)
 }
 
 // State 只返回当前选择的公开证书元数据，不包含材料、缓存路径或账户信息。
@@ -41,6 +42,7 @@ type State struct {
 	Ready     bool      `json:"ready"`
 	Info      *Metadata `json:"info,omitempty"`
 	Message   string    `json:"message"`
+	Domains   []State   `json:"domains,omitempty"`
 }
 
 func (m *Manager) Status(ctx context.Context) (State, error) {
@@ -62,6 +64,22 @@ func (m *Manager) Status(ctx context.Context) (State, error) {
 		state.Info = &info
 		state.Ready = true
 		state.Message = "证书可信且在有效期内"
+	}
+	if m.Additional != nil {
+		selections, e := m.Additional(ctx)
+		if e != nil {
+			return State{}, e
+		}
+		for _, selected := range selections {
+			item := State{Available: true, Domain: selected.Domain, Source: selected.Source, Message: "证书尚未就绪，请核对DNS和80端口"}
+			if pair, e := m.Pair(selected); e == nil {
+				metadata := pair.Metadata()
+				item.Ready = true
+				item.Info = &metadata
+				item.Message = "证书可信且在有效期内"
+			}
+			state.Domains = append(state.Domains, item)
+		}
 	}
 	return state, nil
 }

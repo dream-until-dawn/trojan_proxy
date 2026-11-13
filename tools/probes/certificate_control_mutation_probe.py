@@ -27,8 +27,9 @@ for name, filename, old, new, package, test, reason in cases:
         shutil.copyfile(root / module, directory / module)
     path = directory / 'internal' / filename
     source = path.read_text(encoding='utf-8')
-    assert source.count(old) == 1, (name, source.count(old))
-    path.write_text(source.replace(old, new), encoding='utf-8')
+    # 主站及附加域复用同一就绪推导；本例只破坏主站分支，避免把多个位置算作一次守卫。
+    assert source.count(old) == (2 if name == 'automatic-readiness' else 1), (name, source.count(old))
+    path.write_text(source.replace(old, new, 1), encoding='utf-8')
     result = subprocess.run(['go', 'test', '-C', str(directory), './internal/'+package, '-run', '^'+test+'$', '-count=1'],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', timeout=90)
     assert result.returncode != 0 and reason in result.stdout, (name, result.returncode, result.stdout)

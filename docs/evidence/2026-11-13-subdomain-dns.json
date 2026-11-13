@@ -1,0 +1,149 @@
+{
+  "checked_utc": "2026-11-13T06:05:03.697376Z",
+  "queries": [
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "proxy.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "proxy.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "futures.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "futures.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "flow.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "flow.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "okx.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns1.dnsowl.com",
+      "name": "okx.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "proxy.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "proxy.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "futures.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "futures.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "flow.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "flow.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "okx.qin-xin.top",
+      "type": 1,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": [
+        "47.82.112.245"
+      ]
+    },
+    {
+      "server": "ns2.dnsowl.com",
+      "name": "okx.qin-xin.top",
+      "type": 28,
+      "authoritative": true,
+      "rcode": 0,
+      "addresses": []
+    }
+  ]
+}

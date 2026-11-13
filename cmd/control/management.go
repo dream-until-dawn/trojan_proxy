@@ -73,9 +73,31 @@ func newManagement(c config.Config, store control.Store, key []byte, roots map[s
 			}
 			return site.Selection(d.Site), nil
 		}
+		certificateManager.Additional = func(ctx context.Context) ([]certificates.Selection, error) {
+			d, err := m.View.Read(ctx)
+			if err != nil {
+				return nil, err
+			}
+			sites := []settings.Site{d.Site}
+			if d.Pending != nil {
+				sites = append(sites, d.Pending.Candidate)
+			}
+			result := []certificates.Selection{}
+			seen := map[string]bool{d.Site.Domain: true}
+			for _, site := range sites {
+				for _, name := range site.Domains {
+					if !seen[name] {
+						seen[name] = true
+						result = append(result, certificates.Selection{Domain: name, Source: "automatic"})
+					}
+				}
+			}
+			return result, nil
+		}
 		planner := &site.Planner{View: m.View, Certificates: certificateManager, VPNBase: base, Key: append([]byte(nil), key...)}
 		m.planner = planner
 		m.View.Ingress = planner.Ingress
+		m.View.DomainIngress = planner.DomainIngress
 		m.Settings = settings.NewManager(store, m.coordinator, planner, c)
 		m.Router = routing.NewServiceWithProvider(store, engine, compiled, m.coordinator, m.View.Gateway)
 		guard := func(ctx context.Context) error { return settings.RequireStable(ctx, store, c) }

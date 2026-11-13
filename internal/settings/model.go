@@ -25,6 +25,8 @@ type Directory struct {
 // Site 不含管理员、VPN口令、私钥、宿主路径及内控socket。
 type Site struct {
 	Domain            string      `json:"domain"`
+	Domains           []string    `json:"domains,omitempty"`
+	AdminDomain       string      `json:"admin_domain,omitempty"`
 	AdminPort         int         `json:"admin_port"`
 	AdminPath         string      `json:"admin_path,omitempty"`
 	VPNPort           int         `json:"vpn_port"`
@@ -53,6 +55,7 @@ type Transition struct {
 }
 
 var identifier = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$`)
+var domainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
 var publishedVersion = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // FromLegacy 仅供首次导入；不可将此函数用于覆盖已有网页设置。
@@ -79,6 +82,12 @@ func FromLegacy(c config.Config) Document {
 func (d Document) Validate(deployment config.Config) error {
 	if d.Version != 1 {
 		return errors.New("业务设置版本不受支持")
+	}
+	if err := ValidateDomains(d.Site); err != nil {
+		return err
+	}
+	if (len(d.Site.Domains) > 0 || d.Site.AdminDomain != "") && !deployment.StandardIngress {
+		return errors.New("多域名需要标准80/443入口")
 	}
 	if err := adminentry.ValidatePath(d.Site.AdminPath); err != nil {
 		return err

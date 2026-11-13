@@ -36,7 +36,7 @@ func validateDatabase(ctx context.Context, path string, key []byte, deployment c
 	defer db.Close()
 	var version int
 	var integrity string
-	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version < 2 || version > 5 {
+	if err = db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil || version < 2 || version > 6 {
 		return errors.New("备份数据库版本不受支持")
 	}
 	if err = db.QueryRowContext(ctx, "PRAGMA integrity_check").Scan(&integrity); err != nil || integrity != "ok" {

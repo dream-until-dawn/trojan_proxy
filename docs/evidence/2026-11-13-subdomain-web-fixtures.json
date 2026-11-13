@@ -1,0 +1,33 @@
+{
+  "sources": {
+    "futures": {
+      "source_commit": "277882cbe575b79e8ea55da787123118fe0776c3",
+      "source_tar_sha256": "813bc02058b8b9f9d02f0042d31fd3d52c43b72bca1c29ff562969842d33359d",
+      "variant": "root path; existing production code, build argument only"
+    },
+    "flow": {
+      "source_commit": "02c81c6ea637391b068374c7f5439517a4e4aa6e",
+      "source_tar_sha256": "ee1f03ab62cc49b1a857902026fee006043e555d492d1e58c4f8db9f51f46c53",
+      "variant": "root path; existing production code, build argument only"
+    }
+  },
+  "local_fixture": {
+    "passed": true,
+    "production_used": false,
+    "stage": "flow_start",
+    "futures": {
+      "root_login_and_logout": true,
+      "wrong_password_and_origin_rejected": true,
+      "host_only_cookie": true,
+      "private_data_no_store": true,
+      "static_assets": 8
+    },
+    "flow": {
+      "root_login_and_logout": true,
+      "wrong_password_and_origin_rejected": true,
+      "host_only_cookie": true,
+      "static_assets": 9
+    }
+  },
+  "production_changed": false
+}

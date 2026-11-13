@@ -61,6 +61,15 @@ func (p *Planner) Ingress(_ context.Context, site settings.Site) (*gateway.Ingre
 	return &gateway.Ingress{Mode: "manual", Certificate: root + "fullchain.pem", Key: root + "private.key"}, nil
 }
 
+// DomainIngress 附加域名独立使用HTTP-01；缓存未就绪只影响该域的业务开放。
+func (p *Planner) DomainIngress(_ context.Context, domain, email string) (*gateway.Ingress, error) {
+	if p.Certificates == nil {
+		return nil, errors.New("证书管理未连接")
+	}
+	_, err := p.Certificates.Pair(certificates.Selection{Domain: domain, Source: "automatic"})
+	return &gateway.Ingress{Mode: "automatic", AwaitCertificate: err != nil, ACMEEmail: email}, nil
+}
+
 func revisionRules(revision control.Revision) ([]routes.Rule, error) {
 	if revision.Rules == "" {
 		return nil, nil
@@ -131,6 +140,9 @@ func (p *Planner) Ready(_ context.Context, site settings.Site) error {
 		return errors.New("证书管理未连接")
 	}
 	_, err := p.Certificates.Pair(Selection(site))
+	if err == nil && site.AdminDomain != "" {
+		_, err = p.Certificates.Pair(certificates.Selection{Domain: site.AdminDomain, Source: "automatic"})
+	}
 	return err
 }
 

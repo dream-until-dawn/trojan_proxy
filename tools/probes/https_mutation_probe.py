@@ -9,7 +9,7 @@ root=Path(__file__).resolve().parents[2]
 base=root/'.work/https-mutations'/uuid.uuid4().hex[:10]
 cases=[
  ('tls-policy','gateway/compile.go','if securePorts[port] && port != 443 {','if false && securePorts[port] && port != 443 {','gateway','TestCustomHTTPSRequiresAuthorizedReadyCertificate','custom HTTPS TLS policy missing'),
- ('certificate-ready','gateway/ingress.go','if s.Ingress != nil && (s.Ingress.AwaitCertificate ||','if s.Ingress != nil && (false ||','gateway','TestCustomHTTPSRequiresAuthorizedReadyCertificate','unsafe HTTPS rule accepted await-certificate'),
+ ('certificate-ready','gateway/ingress.go','if rule.Host == s.Domain && s.Ingress != nil && (s.Ingress.AwaitCertificate ||','if rule.Host == s.Domain && s.Ingress != nil && (false ||','gateway','TestCustomHTTPSRequiresAuthorizedReadyCertificate','unsafe HTTPS rule accepted await-certificate'),
  ('mixed-protocol','routes/rule.go','exists && previous != secure','false && exists && previous != secure','gateway','TestCustomHTTPSRequiresAuthorizedReadyCertificate','unsafe HTTPS rule accepted mixed-port'),
  ('legacy-downgrade','storage/format.go','version = 4','version = 3','storage','TestHTTPSFormatProtectsPreparedAndRolledBackRules','HTTPS preparation did not reject legacy readers'),
  ('offline-downgrade','storage/format.go','if required >= 4 {','if false && required >= 4 {','storage','TestHTTPSFormatProtectsPreparedAndRolledBackRules','active HTTPS format downgrade accepted'),

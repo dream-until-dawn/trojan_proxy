@@ -16,12 +16,13 @@ import (
 
 // View 把持久设置投影到各组件；挂载根和socket来自部署，网页不能替换。
 type View struct {
-	Store      control.Store
-	Deployment config.Config
-	Roots      map[string]*files.Root
-	Standard   bool
-	Ingress    func(context.Context, Site) (*gateway.Ingress, error)
-	Now        func() time.Time
+	Store         control.Store
+	Deployment    config.Config
+	Roots         map[string]*files.Root
+	Standard      bool
+	Ingress       func(context.Context, Site) (*gateway.Ingress, error)
+	DomainIngress func(context.Context, string, string) (*gateway.Ingress, error)
+	Now           func() time.Time
 }
 
 func (v *View) now() time.Time {
@@ -66,6 +67,17 @@ func (v *View) ForSite(ctx context.Context, site Site) (gateway.Settings, error)
 		Policy: routes.Policy{AdminPort: c.AdminPort, ControlPort: c.ControlPort, FilePort: c.ControlPort + 1, VPNPort: c.VPNPort, Directories: c.PublicDirectories, AllowStandardPorts: v.Standard}}
 	if v.Standard {
 		result.AccessLog = true
+		result.AdminDomain = site.AdminDomain
+		for _, name := range site.Domains {
+			if v.DomainIngress == nil {
+				return gateway.Settings{}, errors.New("附加域名证书适配器未连接")
+			}
+			i, e := v.DomainIngress(ctx, name, site.ACMEEmail)
+			if e != nil {
+				return gateway.Settings{}, e
+			}
+			result.Hosts = append(result.Hosts, gateway.Host{Name: name, Ingress: i})
+		}
 		if v.Ingress == nil {
 			return gateway.Settings{}, errors.New("标准入口证书适配器未连接")
 		}
@@ -112,7 +124,7 @@ func (v *View) Endpoints(ctx context.Context) ([]adminentry.Endpoint, error) {
 	result := adminentry.Loopback(v.Deployment.ControlPort)
 	add := func(site Site) {
 		if site.Domain != "" {
-			result = append(result, adminentry.ForSite(site.Domain, site.AdminPort, v.Deployment.ControlPort, site.AdminPath))
+			result = append(result, AdminEndpoint(site, v.Deployment.ControlPort))
 		}
 	}
 	add(d.Site)

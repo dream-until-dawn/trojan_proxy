@@ -23,19 +23,26 @@ func RequiredJournalVersion(j control.Journal) (int, error) {
 		if json.Valid([]byte(revision.Settings)) {
 			var document struct {
 				Site struct {
-					AdminPath string `json:"admin_path"`
+					AdminPath   string   `json:"admin_path"`
+					Domains     []string `json:"domains"`
+					AdminDomain string   `json:"admin_domain"`
 				} `json:"site"`
 				Pending *struct {
 					Candidate struct {
-						AdminPath string `json:"admin_path"`
+						AdminPath   string   `json:"admin_path"`
+						Domains     []string `json:"domains"`
+						AdminDomain string   `json:"admin_domain"`
 					} `json:"candidate"`
 				} `json:"pending"`
 			}
 			if err := json.Unmarshal([]byte(revision.Settings), &document); err != nil {
 				return 0, err
 			}
-			if document.Site.AdminPath != "" || (document.Pending != nil && document.Pending.Candidate.AdminPath != "") {
+			if version < 5 && (document.Site.AdminPath != "" || (document.Pending != nil && document.Pending.Candidate.AdminPath != "")) {
 				version = 5
+			}
+			if len(document.Site.Domains) > 0 || document.Site.AdminDomain != "" || (document.Pending != nil && (len(document.Pending.Candidate.Domains) > 0 || document.Pending.Candidate.AdminDomain != "")) {
+				version = 6
 			}
 		}
 		if revision.Rules == "" {
@@ -62,10 +69,10 @@ func (s *JournalStore) DowngradeHTTPFormat(ctx context.Context) (int, error) {
 	return s.downgradeFormat(ctx, 0)
 }
 
-// DowngradeCompatibleFormat 仅供独占维护工具指定目标2/3/4，不允许仍在使用的新特性降级。
+// DowngradeCompatibleFormat 仅供独占维护工具指定目标2/3/4/5，不允许仍在使用的新特性降级。
 func (s *JournalStore) DowngradeCompatibleFormat(ctx context.Context, target int) (int, error) {
-	if target < 2 || target > 4 {
-		return 0, errors.New("兼容回退目标只允许2、3或4")
+	if target < 2 || target > 5 {
+		return 0, errors.New("兼容回退目标只允许2、3、4或5")
 	}
 	return s.downgradeFormat(ctx, target)
 }
@@ -104,7 +111,7 @@ func (s *JournalStore) downgradeFormat(ctx context.Context, target int) (int, er
 	if err = tx.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return 0, err
 	}
-	if version > 5 {
+	if version > 6 {
 		return 0, errors.New("未知新格式不能由本工具降级")
 	}
 	if _, err = tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version=%d", target)); err != nil {
