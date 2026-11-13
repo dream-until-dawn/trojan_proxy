@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "source_commit": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+  "original_24h_passed": true,
+  "private_backup": "/opt/trojan-proxy-refactor/backups/before-subdomains-20261113T082907Z",
+  "runtime": {
+    "passed": true,
+    "core": {
+      "control": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:d2847867c72079abef84467b9a9d69ca44634a992950bc096c547f97ffb54f20",
+        "config_digest": "sha256:f6a6c230ef3e3d3cef8f5386f9d81971af41832039712bbc82a0d88c96e63109",
+        "source": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+        "started": "2026-11-13T08:29:11.616225001Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "admin-gateway": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:18216cd296b155555dc0cb190bd7698943d54d470482bc4fb3ff826d3e4fe1e5",
+        "config_digest": "sha256:cb64d3d73aed61fd610321fb188c4e142ac8c706abdab0c3ac42e3e66f11e929",
+        "source": "9684bfe563cb2ff90f179ac3cbc4e3bb5e194234",
+        "started": "2026-11-13T08:29:11.144928407Z",
+        "restarts": 0,
+        "runtime_uid": 10001,
+        "runtime_capabilities_verified": true
+      },
+      "vpn-runner": {
+        "image": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+        "config_digest": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+        "source": "2dfb4dcd556949c32aeb176a77a6daafe3506259",
+        "started": "2026-11-11T15:00:36.79856231Z",
+        "restarts": 0,
+        "runtime_uid": 10002,
+        "runtime_capabilities_verified": true
+      }
+    },
+    "revision": 26,
+    "format": 5,
+    "pending": false,
+    "admin_domain": "",
+    "admin_path": "/proxy",
+    "registered_domains": [],
+    "access_logging_configured": true
+  },
+  "validation": {
+    "real_access_capture_and_prewrite_redaction_verified": true,
+    "preserved_other_processes": true,
+    "preserved_trojan_child": true,
+    "preserved_settings_account_certificates": true,
+    "http_checks": {
+      "/": 200,
+      "/robots.txt": 200,
+      "/proxy/": 200,
+      "/futures": 307,
+      "/flow": 307,
+      "https://qin-xin.top": 401,
+      "https://unregistered.qin-xin.top": 403
+    },
+    "vpn": {
+      "port": 18443,
+      "runner_started": "2026-11-11T15:00:36.79856231Z",
+      "checks": {
+        "local_tls": {
+          "tls": "TLSv1.3",
+          "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+        },
+        "direct_google_http": {
+          "status_line": "HTTP/1.1 204 No Content"
+        },
+        "trojan_google_domain_http": {
+          "status_line": "HTTP/1.1 204 No Content"
+        },
+        "trojan_google_ip_http": {
+          "status_line": "HTTP/1.1 204 No Content"
+        },
+        "trojan_google_https": {
+          "status_line": "HTTP/1.1 204 No Content",
+          "inner_tls_verified": true
+        },
+        "wrong_password": {
+          "rejected": true,
+          "error_type": "ConnectionResetError"
+        }
+      }
+    }
+  },
+  "note": "Procedure first ready check saw revision25 bootstrap; subsequent access-log check and independent runtime inspection verified final compiler revision26. No domain candidate or new app route has been applied."
+}
