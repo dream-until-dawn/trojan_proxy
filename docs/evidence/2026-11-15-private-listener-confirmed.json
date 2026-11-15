@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "revision": 42,
+  "schema": 8,
+  "loopback_only_confirmed": true,
+  "public_port": 443,
+  "backend_port": 18443,
+  "kernel_listener": "127.0.0.1",
+  "gateway_and_other_containers_preserved": true,
+  "engine_other_parameters_and_credentials_preserved": true
+}

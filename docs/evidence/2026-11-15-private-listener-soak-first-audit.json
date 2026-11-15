@@ -1,0 +1,33 @@
+{
+  "record_consistency_and_checks_valid": true,
+  "observation_complete": false,
+  "review_passed": false,
+  "raw_samples_reviewed": 2,
+  "raw_failures": 0,
+  "raw_deep_checks": 1,
+  "observed_span_seconds": 60.0,
+  "max_sample_gap_seconds": 60.0,
+  "max_deep_gap_seconds": 0,
+  "certificate_fingerprint_count": 1,
+  "findings": [],
+  "observer_running": true,
+  "code_unchanged": true,
+  "raw_prefix_sha256": "7985849d00833fb2762467300a11960b417401e895612bfef5253c0580d51358",
+  "started_utc": "2026-11-15T06:54:09.572164Z",
+  "updated_utc": "2026-11-15T06:55:12.465128Z",
+  "expected_finish_utc": "2026-11-16T06:54:09Z",
+  "summary_completed": false,
+  "summary_passed": false,
+  "vpn_public_port": 443,
+  "vpn_backend_port": 18443,
+  "vpn_loopback_only": true,
+  "observer_source_commit": "12c1d4201ad269cff801e63d657bd387d0224b8e",
+  "runtime_manifest_commit": "3edd775d0e1d2ddf9235bdecbac675cfa8435476",
+  "latest_private_listener": {
+    "port": 18443,
+    "addresses": [
+      "127.0.0.1"
+    ]
+  },
+  "latest_sample_passed": true
+}

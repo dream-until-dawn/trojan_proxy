@@ -1,0 +1,37 @@
+{
+  "port": 443,
+  "runner_started": "2026-11-15T06:49:21.083282875Z",
+  "checks": {
+    "local_tls": {
+      "tls": "TLSv1.3",
+      "certificate_sha256": "717170b0ad546f05f1c71c479a94c83c57ccfec1be26b42e74ef99eb77cb5723"
+    },
+    "direct_google_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "trojan_google_domain_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "google_ipv4_dns": [
+      "142.251.150.119",
+      "142.251.151.119",
+      "142.251.152.119",
+      "142.251.153.119",
+      "142.251.154.119",
+      "142.251.155.119",
+      "142.251.156.119",
+      "142.251.157.119"
+    ],
+    "trojan_google_ip_http": {
+      "status_line": "HTTP/1.1 204 No Content"
+    },
+    "trojan_google_https": {
+      "status_line": "HTTP/1.1 204 No Content",
+      "inner_tls_verified": true
+    },
+    "wrong_password": {
+      "rejected": true,
+      "error_type": "EOFError"
+    }
+  }
+}
