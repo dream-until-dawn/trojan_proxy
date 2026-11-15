@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "source_commit": "291e4c7be4dc82753caa236255d296dbbca83fc3",
+  "shared443_enabled": false,
+  "revision": 38,
+  "schema": 6,
+  "gateway_replacement_and_restore_seconds": 2.511,
+  "site_health": {
+    "qin-xin.top": 200,
+    "proxy.qin-xin.top": 200,
+    "futures.qin-xin.top": 307,
+    "flow.qin-xin.top": 307,
+    "okx.qin-xin.top": 303,
+    "swap.qin-xin.top": 307
+  },
+  "gateway_config_preserved": true,
+  "vpn_child_and_other_containers_preserved": true,
+  "account_and_subscriptions_preserved": true,
+  "observer_marker_preserved": true,
+  "consistent_configuration_and_subscription_backup_verified": true,
+  "limitations": [
+    "Shared switch remained disabled at deployment verification; owner recent-MFA candidate confirmation is pending.",
+    "Gateway replacement/restore duration is not an independently measured public outage duration.",
+    "Public VPN 18443 is retained for existing clients.",
+    "Historical failed soak is preserved; no new 24-hour pass is claimed."
+  ]
+}

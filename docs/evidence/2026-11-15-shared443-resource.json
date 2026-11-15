@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "probe": "shared443_probe.py",
+  "resource_observations": [
+    {
+      "memory_limit_bytes": 134217728,
+      "oom_killed": false,
+      "restarts": 0,
+      "memory_peak_bytes": 16166912
+    }
+  ],
+  "functional_probe": {
+    "checks": {
+      "good": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealTrojanEgressAndUDP\n--- PASS: TestRealTrojanEgressAndUDP (2.08s)\nPASS\n"
+      },
+      "bad-password": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealTrojanEgressAndUDP\n--- PASS: TestRealTrojanEgressAndUDP (0.01s)\nPASS\n"
+      },
+      "bad-ca": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealTrojanEgressAndUDP\n--- PASS: TestRealTrojanEgressAndUDP (3.07s)\nPASS\n"
+      },
+      "shared_web": {
+        "exit_code": 0,
+        "output": "=== RUN   TestRealShared443WebAndRollback\n    shared_integration_test.go:234: shared443 short HTTP, h2, welcome, WS, source IP, log privacy, unknown SNI, bounded prefix and rollback passed\n--- PASS: TestRealShared443WebAndRollback (3.09s)\nPASS\n"
+      }
+    },
+    "server_image": "sha256:41e6438468fe56b1a081eb2e2684c14c8be375414ad05220ef8e31291340e601",
+    "client_image": "metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c",
+    "limitations": [
+      "未替代Clash Verge/Clash Mi图形客户端验收。"
+    ],
+    "actual_export_mihomo_check": true,
+    "actual_shared443": true,
+    "backend_tls_verified": true,
+    "original_engine_port": 18443,
+    "public_client_port": 443,
+    "passed": true
+  }
+}

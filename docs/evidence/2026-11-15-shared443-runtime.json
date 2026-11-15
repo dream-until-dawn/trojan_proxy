@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "scope": "core base upgrade; shared switch disabled at recorded deployment",
+  "core": [
+    {
+      "service": "control",
+      "image": "sha256:423f32bfca4d6e686aaa91279da029000fdaa8cc486ab6487d15ee4562c0bb74",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:b711c5cb124867e514bc6c44c3dbdc3c14180add2189ffcab30440089b22d29a",
+      "started": "2026-11-15T05:40:55.903292382Z",
+      "healthy": "healthy",
+      "restarts": 0
+    },
+    {
+      "service": "admin-gateway",
+      "image": "sha256:c0b8c931117cf841bdc4b46048cf5bb5f1deb5ca836da4b90a97acb631fbbd7d",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:20fd57d7d1b858cccf2ea5744c2f2fc698a536380c0c0cbeda94fd460648fb66",
+      "started": "2026-11-15T05:40:53.603107621Z",
+      "healthy": null,
+      "restarts": 0
+    },
+    {
+      "service": "vpn-runner",
+      "image": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+      "started": "2026-11-11T15:00:36.79856231Z",
+      "healthy": null,
+      "restarts": 0
+    }
+  ],
+  "routes": [
+    {
+      "host": "futures.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3033
+    },
+    {
+      "host": "flow.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3034
+    },
+    {
+      "host": "swap.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3100
+    },
+    {
+      "host": "okx.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3032
+    }
+  ],
+  "http_server_local_sni": {
+    "proxy.qin-xin.top": 200,
+    "futures.qin-xin.top": 307,
+    "flow.qin-xin.top": 307,
+    "okx.qin-xin.top": 303,
+    "swap.qin-xin.top": 307
+  },
+  "image_source_commits": {
+    "control": "291e4c7be4dc82753caa236255d296dbbca83fc3",
+    "gateway": "291e4c7be4dc82753caa236255d296dbbca83fc3",
+    "runner": "2dfb4dcd556949c32aeb176a77a6daafe3506259"
+  }
+}

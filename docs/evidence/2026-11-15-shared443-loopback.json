@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "public_ingress_changed": false,
+  "listen": "127.0.0.1:34443",
+  "source_commit": "291e4c7be4dc82753caa236255d296dbbca83fc3",
+  "trusted_frontend_tls": true,
+  "system_roots_backend_tls_verified": true,
+  "welcome_page_verified": true,
+  "trojan_google_https": {
+    "status_line": "HTTP/1.1 204 No Content",
+    "inner_tls_verified": true
+  },
+  "wrong_password": {
+    "rejected": true,
+    "error_type": "EOFError"
+  },
+  "memory_limit_bytes": 134217728,
+  "existing_containers_preserved": true
+}

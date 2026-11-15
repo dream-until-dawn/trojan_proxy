@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "vpn_command_preserved": true,
+  "business_rules_preserved": true,
+  "exactly_one_vpn_child_predates_upgrade": true,
+  "revision": 40
+}
