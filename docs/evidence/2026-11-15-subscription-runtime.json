@@ -1,0 +1,68 @@
+{
+  "passed": true,
+  "scope": "server-local SNI HTTPS verification; not physical public-network proof",
+  "revision": 38,
+  "core": [
+    {
+      "service": "control",
+      "image": "sha256:07bf9a0a47b6a9d74b2ea4b821ddbb0464b19b68b98d9c893ab934c870679b42",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:d0218b0c3871c509ba9e601aea023e5c0411aa33bc79b923436b62ca4835cd3d",
+      "started": "2026-11-15T04:41:53.871240375Z",
+      "healthy": "healthy",
+      "restarts": 0
+    },
+    {
+      "service": "admin-gateway",
+      "image": "sha256:cb64d3d73aed61fd610321fb188c4e142ac8c706abdab0c3ac42e3e66f11e929",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:18216cd296b155555dc0cb190bd7698943d54d470482bc4fb3ff826d3e4fe1e5",
+      "started": "2026-11-13T08:29:11.144928407Z",
+      "healthy": null,
+      "restarts": 0
+    },
+    {
+      "service": "vpn-runner",
+      "image": "sha256:cd930f4bd5b1311159c28e476e19954619f73a8752dbceac36981d8286f7a5b1",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:e9f17e2b52ecbc6f7cb45693110b78c92e6d1e59836ebf7d826ce8fc7dc68737",
+      "started": "2026-11-11T15:00:36.79856231Z",
+      "healthy": null,
+      "restarts": 0
+    }
+  ],
+  "routes": [
+    {
+      "host": "futures.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3033
+    },
+    {
+      "host": "flow.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3034
+    },
+    {
+      "host": "swap.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3100
+    },
+    {
+      "host": "okx.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3032
+    }
+  ],
+  "http": {
+    "proxy.qin-xin.top": 200,
+    "futures.qin-xin.top": 307,
+    "flow.qin-xin.top": 307,
+    "okx.qin-xin.top": 303,
+    "swap.qin-xin.top": 307
+  },
+  "vpn_port": 18443,
+  "trojan_google_https_status": "HTTP/1.1 204 No Content",
+  "inner_google_tls_verified": true,
+  "wrong_vpn_password_rejected": true
+}

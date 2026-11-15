@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "source_commit": "d0ee76745e472ac707b1361b888f787328bdf887",
+  "revision": 38,
+  "config_digest": "sha256:07bf9a0a47b6a9d74b2ea4b821ddbb0464b19b68b98d9c893ab934c870679b42",
+  "subscription_frontend_served": true,
+  "auth_origin_checks_passed": true,
+  "settings_auth_and_other_processes_preserved": true,
+  "gateway_config_and_vpn_child_preserved": true,
+  "subscription_store_integrity_permissions_and_empty_verified": true,
+  "consistent_private_backup_verified": true,
+  "limitations": [
+    "Owner Clash Verge and Clash Mi URL import/update/revoke acceptance is pending.",
+    "Public VPN port remains 18443; shared 443 not deployed.",
+    "Historical failed stability window is preserved; this is not a new 24-hour pass."
+  ]
+}

@@ -1,6 +1,6 @@
 # 固定为通过完整CI门槛且已匿名拉取的Linux/amd64候选；正式发布仍待长稳验收。
 name: trojan-proxy
-x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:1761328200914469ec1bb7b285743c59f633ae8c75fe484d5dd178ae2db45bb8}
+x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:d0218b0c3871c509ba9e601aea023e5c0411aa33bc79b923436b62ca4835cd3d}
 x-logging: &logging
   driver: json-file
   options: {max-size: "5m", max-file: "3"}
@@ -27,7 +27,7 @@ services:
     pids_limit: 32
     logging: *logging
   admin-gateway:
-    image: ${TROJAN_GATEWAY_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:bf5bcd05d2ded1463e3c8477e943bd40f3a3586a7a2bd4734712fa28051107ac}
+    image: ${TROJAN_GATEWAY_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:b1d0a410d88d5f62d8b7ae865ec02563c8a397a020b710cc7cf065d5c7c5ca46}
     depends_on:
       prepare: {condition: service_completed_successfully}
     command: [caddy, run, --config, /run/caddy/bootstrap.json]
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
     logging: *logging
   vpn-runner:
-    image: ${TROJAN_RUNNER_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:327272f7ec7c5e2a13f5b499b06c6847c6a9913bc6c0899d7a40e804853a0497}
+    image: ${TROJAN_RUNNER_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:d08ba4a7762df00b9cc1c999b6ca84b4b3dbcd7bf66548eb727e46f2f7ee255d}
     depends_on:
       prepare: {condition: service_completed_successfully}
     user: "10002:10001"

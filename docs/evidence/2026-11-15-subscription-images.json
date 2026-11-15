@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "anonymous": true,
+  "commit": "d0ee76745e472ac707b1361b888f787328bdf887",
+  "images": {
+    "control": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:d0218b0c3871c509ba9e601aea023e5c0411aa33bc79b923436b62ca4835cd3d",
+      "manifest_digest": "sha256:d0218b0c3871c509ba9e601aea023e5c0411aa33bc79b923436b62ca4835cd3d",
+      "config_digest": "sha256:07bf9a0a47b6a9d74b2ea4b821ddbb0464b19b68b98d9c893ab934c870679b42",
+      "platform": "linux/amd64"
+    },
+    "runner": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:d08ba4a7762df00b9cc1c999b6ca84b4b3dbcd7bf66548eb727e46f2f7ee255d",
+      "manifest_digest": "sha256:d08ba4a7762df00b9cc1c999b6ca84b4b3dbcd7bf66548eb727e46f2f7ee255d",
+      "config_digest": "sha256:bf5d660a30adba1950aca29908f7d5a92750a8ac1c3d03256cb351c3b02df35d",
+      "platform": "linux/amd64"
+    },
+    "gateway": {
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:b1d0a410d88d5f62d8b7ae865ec02563c8a397a020b710cc7cf065d5c7c5ca46",
+      "manifest_digest": "sha256:b1d0a410d88d5f62d8b7ae865ec02563c8a397a020b710cc7cf065d5c7c5ca46",
+      "config_digest": "sha256:200d120154d2d3eb21fa881547692f5ff1a7312614e58d3d693d20dedfbf4079",
+      "platform": "linux/amd64"
+    }
+  },
+  "complete_anonymous_pull_verified": true,
+  "workflow_run": "https://github.com/dream-until-dawn/trojan_proxy/actions/runs/43676822399",
+  "ci_artifact_sha256": "675ba34bc7dec08e6beaa782df28921c27b64d93b7977b61f653daf6ad3c413c",
+  "ci_artifact_id": 14147470112
+}
