@@ -22,6 +22,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/maintenance"
 	control "github.com/dream-until-dawn/trojan_proxy/internal/runtime"
 	"github.com/dream-until-dawn/trojan_proxy/internal/storage"
+	"github.com/dream-until-dawn/trojan_proxy/internal/subscription"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 	"github.com/dream-until-dawn/trojan_proxy/internal/webaccess"
 	"github.com/dream-until-dawn/trojan_proxy/internal/webui"
@@ -76,7 +77,21 @@ func run() error {
 	statisticsDone := make(chan struct{})
 	go func() { defer close(statisticsDone); statistics.Run(ctx) }()
 	defer func() { stop(); <-statisticsDone }()
-	management.API.Auth = auth.NewService(s, key)
+	authentication := auth.NewService(s, key)
+	management.API.Auth = authentication
+	subscriptions, subscriptionErr := subscription.Open(ctx, filepath.Join(c.DataDir, "subscription.db"))
+	if subscriptionErr != nil {
+		// 独立授权库不可用时关闭订阅，后台、反代和VPN仍可管理。
+		log.Print("订阅服务暂不可用，现有后台和VPN保持独立运行")
+	} else {
+		defer subscriptions.Close()
+		management.API.Subscriptions = subscription.New(subscriptions, authentication.CredentialBinding, func(ctx context.Context) ([]byte, error) {
+			if management.API.VPN == nil {
+				return nil, subscription.ErrUnavailable
+			}
+			return management.API.VPN.Export(ctx)
+		})
+	}
 	management.API.Static = webui.Handler()
 	management.API.Traffic = statistics
 	access := webaccess.NewService(filepath.Join(c.DataDir, "access.db"), "/caddy-data/access")

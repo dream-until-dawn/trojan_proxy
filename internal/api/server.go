@@ -14,6 +14,7 @@ import (
 	"github.com/dream-until-dawn/trojan_proxy/internal/certificates"
 	"github.com/dream-until-dawn/trojan_proxy/internal/routing"
 	"github.com/dream-until-dawn/trojan_proxy/internal/settings"
+	"github.com/dream-until-dawn/trojan_proxy/internal/subscription"
 	"github.com/dream-until-dawn/trojan_proxy/internal/traffic"
 	"github.com/dream-until-dawn/trojan_proxy/internal/vpnservice"
 	"github.com/dream-until-dawn/trojan_proxy/internal/webaccess"
@@ -32,6 +33,14 @@ type VPNManagement interface {
 	Status(context.Context) (vpnservice.Status, error)
 	Apply(context.Context, uint64, bool, bool) error
 	Export(context.Context) ([]byte, error)
+}
+
+// SubscriptionManagement 与后台会话分离，公开令牌只允许读取已应用VPN配置。
+type SubscriptionManagement interface {
+	Create(context.Context, string) (subscription.Record, string, error)
+	List(context.Context) ([]subscription.Record, error)
+	Revoke(context.Context, string) error
+	Fetch(context.Context, string) ([]byte, error)
 }
 
 // SettingsManagement 不向HTTP层暴露回滚JSON和加密VPN配置。
@@ -75,6 +84,7 @@ type Server struct {
 	Traffic           TrafficManagement
 	Certificates      CertificateManagement
 	WebAccess         WebAccessManagement
+	Subscriptions     SubscriptionManagement
 }
 
 func respond(w http.ResponseWriter, status int, value any) {
@@ -100,6 +110,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/vpn/status", s.protected(s.vpnStatus))
 	mux.HandleFunc("POST /api/vpn/apply", s.protected(s.vpnApply))
 	mux.HandleFunc("POST /api/vpn/export", s.protected(s.vpnExport))
+	mux.HandleFunc("POST /api/subscriptions/list", s.protected(s.subscriptionList))
+	mux.HandleFunc("POST /api/subscriptions/create", s.protected(s.subscriptionCreate))
+	mux.HandleFunc("POST /api/subscriptions/revoke", s.protected(s.subscriptionRevoke))
+	mux.HandleFunc("GET /subscription/clash", s.subscriptionFetch)
 	mux.HandleFunc("POST /api/settings/status", s.protected(s.settingsStatus))
 	mux.HandleFunc("POST /api/settings/propose", s.protected(s.settingsPropose))
 	mux.HandleFunc("POST /api/settings/confirm", s.protected(s.settingsConfirm))

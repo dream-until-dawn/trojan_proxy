@@ -431,6 +431,23 @@
       <p aria-live="polite" id="vpn-message" role="status">
       </p>
      </div>
+     <div class="panel">
+      <div class="section-heading"><h2>客户端订阅</h2><span class="tag">Clash Verge / Clash Mi</span></div>
+      <p class="hint">在客户端添加远程订阅，粘贴链接即可导入和更新。链接能读取含VPN口令的配置，请像口令一样保管。撤销链接只阻止后续获取，已下载的节点需轮换VPN口令才能失效。</p>
+      <label>设备名称<input id="subscription-name" maxlength="40" placeholder="例如：电脑 / 手机" autocomplete="off"></label>
+      <label class="checkbox"><input id="subscription-ack" type="checkbox">我会妥善保管订阅链接，不发送给他人</label>
+      <button id="subscription-create" type="button">创建订阅链接</button>
+      <button class="secondary" id="subscription-refresh" type="button">刷新订阅列表</button>
+      <div hidden id="subscription-secret">
+       <p class="hint">原始链接仅在创建时提供一次。保存到客户端后可清除显示；丢失后撤销并重新创建。默认一年到期。</p>
+       <label>订阅链接<input id="subscription-url" type="password" readonly autocomplete="off" spellcheck="false"></label>
+       <button id="subscription-copy" type="button">复制链接</button>
+       <button class="secondary" id="subscription-reveal" type="button">显示链接</button>
+       <button class="secondary" id="subscription-clear" type="button">清除显示</button>
+      </div>
+      <table><thead><tr><th>设备</th><th>到期时间</th><th>操作</th></tr></thead><tbody id="subscription-rows"></tbody></table>
+      <p id="subscription-message" role="status" aria-live="polite"></p>
+     </div>
     </section>
     <section class="page" data-page="access" hidden id="page-access">
      <div class="panel">

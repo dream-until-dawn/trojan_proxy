@@ -1,6 +1,7 @@
 import { login, logout, request } from "./auth.js";
 import { refreshRoutes } from "./routes.js";
 import { refreshVPN } from "./vpn.js";
+import { refreshSubscriptions, clearSubscriptions } from "./subscription.js";
 import { startTraffic, stopTraffic } from "./traffic.js";
 import { refreshSettings, clearSettings } from "./settings.js";
 import { showWorkspace, hideWorkspace } from "./navigation.js";
@@ -12,7 +13,7 @@ const message = document.querySelector("#message");
 const submit = document.querySelector("#submit");
 
 function showLogin() {
-  stopTraffic(); clearSettings(); clearAccess();
+  stopTraffic(); clearSettings(); clearAccess(); clearSubscriptions();
   hideWorkspace();
   document.querySelector("#login-panel").hidden = false;
   document.querySelector("#dashboard").hidden = true;
@@ -38,6 +39,7 @@ form.addEventListener("submit", async (event) => {
     await refreshSettings();
 	await refreshRoutes();
 	await refreshVPN();
+	await refreshSubscriptions();
     await startTraffic();
     startAccess();
     message.textContent = "";
