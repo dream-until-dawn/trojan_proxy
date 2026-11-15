@@ -25,11 +25,14 @@ func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) 
 			return "", errors.New("候选后台端口与现有业务规则冲突")
 		}
 	}
-	oldBody, err := Compile(current, ruleset)
+	// 候选阶段保留当前VPN入口；合并HTTP策略后只恢复当前共享模式。
+	oldBase, newBase := current, candidate
+	oldBase.SharedTrojan, newBase.SharedTrojan = nil, nil
+	oldBody, err := Compile(oldBase, ruleset)
 	if err != nil {
 		return "", err
 	}
-	newBody, err := Compile(candidate, nil)
+	newBody, err := Compile(newBase, nil)
 	if err != nil {
 		return "", err
 	}
@@ -76,6 +79,9 @@ func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) 
 		insertCandidatePath(oldPublic, adminPathRoute(candidate))
 	}
 	mergeCertificates(oldApps["tls"].(map[string]any), newApps["tls"].(map[string]any))
+	if err := configureSharedTrojan(current, oldServers); err != nil {
+		return "", err
+	}
 	body, err := json.Marshal(oldConfig)
 	return string(body), err
 }

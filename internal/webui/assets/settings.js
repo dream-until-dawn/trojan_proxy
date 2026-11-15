@@ -47,6 +47,7 @@ function render() {
   field("admin-path").value = site.admin_path || "/proxy";
   toggleAdminMode();
   field("vpn-port").value = site.vpn_port;
+  field("shared-443").checked = Boolean(site.shared_trojan_443);
   field("resolver").value = site.vpn_resolver;
   field("addresses").value = (site.vpn_own_addresses || []).join("\n");
   field("certificate-source").value = site.certificate_source;
@@ -122,6 +123,7 @@ function draftSite() {
   return {
     domain, domains: field("domains").value.split(/\s+/).filter(Boolean), admin_domain: field("admin-mode").value === "domain" ? field("admin-domain").value.trim() : "", admin_port: Number(field("admin-port").value), vpn_port: Number(field("vpn-port").value),
     admin_path: field("admin-mode").value === "path" ? field("admin-path").value.trim() : "",
+    shared_trojan_443: field("shared-443").checked,
     vpn_resolver: field("resolver").value.trim(), vpn_own_addresses: field("addresses").value.split(/[\s,，]+/).filter(Boolean),
     certificate_source: source, acme_email: field("acme-email").value.trim(),
     imported_version: source === "imported" && imported?.domain === domain ? imported.version : "",

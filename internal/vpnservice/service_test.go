@@ -208,6 +208,26 @@ func TestServiceRevisionExportRenewalAndSafePause(t *testing.T) {
 	if err != nil || !strings.Contains(string(profile), first.Password) {
 		t.Fatal("受控导出失败", err)
 	}
+	priorApplies := runner.applies
+	service.options.Shared443 = func(revision control.Revision) (bool, error) {
+		if revision.Number != j.Applied.Number {
+			return false, errors.New("wrong export revision")
+		}
+		return true, nil
+	}
+	sharedProfile, e := service.Export(ctx)
+	if e != nil || !strings.Contains(string(sharedProfile), "\"port\": 443") {
+		t.Fatal("service export ignored shared port", e)
+	}
+	sharedStatus, e := service.Status(ctx)
+	if e != nil || sharedStatus.PublicPort != 443 || sharedStatus.Port != 18443 || runner.applies != priorApplies {
+		t.Fatal("shared export/status restarted engine or mixed ports", e)
+	}
+	service.options.Shared443 = func(control.Revision) (bool, error) { return false, errors.New("unavailable shared setting") }
+	if _, e = service.Export(ctx); e == nil {
+		t.Fatal("shared setting failure silently exported legacy port")
+	}
+	service.options.Shared443 = nil
 	if err = service.Apply(ctx, 1, false, false); !errors.Is(err, control.ErrRevisionConflict) {
 		t.Fatal("过时修订未拒绝", err)
 	}

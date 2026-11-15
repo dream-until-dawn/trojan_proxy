@@ -75,6 +75,9 @@ func TestRealMultiHostHTTP01(t *testing.T) {
 	for _, name := range []string{"one.probe.test", "two.probe.test", "proxy.probe.test", "missing.probe.test"} {
 		s.Hosts = append(s.Hosts, gateway.Host{Name: name, Ingress: &gateway.Ingress{Mode: "automatic", AwaitCertificate: true}})
 	}
+	if os.Getenv("TROJAN_SHARED443_TEST") == "1" {
+		s.SharedTrojan = &gateway.SharedTrojan{Port: 18443}
+	}
 	rules := []routes.Rule{{ID: "one", Name: "one", Port: 443, Host: "one.probe.test", Path: "/", Kind: "proxy", UpstreamIP: "127.0.0.1", UpstreamPort: number(one), HTTPS: true}, {ID: "two", Name: "two", Port: 443, Host: "two.probe.test", Path: "/", Kind: "proxy", UpstreamIP: "127.0.0.1", UpstreamPort: number(two), HTTPS: true}}
 	engine := gateway.NewClient(s.Socket)
 	deadline = time.Now().Add(10 * time.Second)
@@ -168,6 +171,19 @@ func TestRealMultiHostHTTP01(t *testing.T) {
 	request("two.probe.test", "two.probe.test", "/same?x=1", "two|two.probe.test|/same?x=1|https", 200)
 	checkHostWebSocket(t, roots, "one.probe.test", "one")
 	checkHostWebSocket(t, roots, "two.probe.test", "two")
+	if s.SharedTrojan != nil {
+		c, e := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", "127.0.0.1:443", &tls.Config{RootCAs: roots, ServerName: "one.probe.test"})
+		if e != nil {
+			t.Fatal(e)
+		}
+		c.SetDeadline(time.Now().Add(3 * time.Second))
+		c.Write([]byte(strings.Repeat("a", 56) + "\r\n"))
+		b, _ := io.ReadAll(c)
+		c.Close()
+		if !strings.Contains(string(b), "400 Bad Request") {
+			t.Fatal("business SNI reached Trojan branch")
+		}
+	}
 	request("probe.test", "probe.test", "/proxy/test", "admin|probe.test", 200)
 	request("one.probe.test", "unknown.probe.test", "/same", "", 404)
 	if c, e := tls.DialWithDialer(&net.Dialer{Timeout: time.Second}, "tcp", "127.0.0.1:443", &tls.Config{RootCAs: roots, ServerName: "unknown.probe.test"}); e == nil {

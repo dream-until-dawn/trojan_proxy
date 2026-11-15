@@ -68,6 +68,9 @@ func (v *View) ForSite(ctx context.Context, site Site) (gateway.Settings, error)
 	if v.Standard {
 		result.AccessLog = true
 		result.AdminDomain = site.AdminDomain
+		if site.SharedTrojan443 {
+			result.SharedTrojan = &gateway.SharedTrojan{Port: site.VPNPort}
+		}
 		for _, name := range site.Domains {
 			if v.DomainIngress == nil {
 				return gateway.Settings{}, errors.New("附加域名证书适配器未连接")

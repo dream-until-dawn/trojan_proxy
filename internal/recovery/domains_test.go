@@ -13,9 +13,19 @@ import (
 )
 
 func TestDomainFormatBackupRestoreAndMislabelRejection(t *testing.T) {
+	testDomainFormatBackup(t, false)
+}
+func TestShared443FormatBackupRestoreAndMislabelRejection(t *testing.T) {
+	testDomainFormatBackup(t, true)
+}
+func testDomainFormatBackup(t *testing.T, shared bool) {
 	ctx := context.Background()
 	c, store, _ := recoveryFixture(t)
 	c.StandardIngress = true
+	if shared {
+		c.VPNManagement = true
+		c.VPNAddresses = []string{"198.51.100.10"}
+	}
 	j, e := store.Load(ctx)
 	if e != nil {
 		t.Fatal(e)
@@ -28,6 +38,7 @@ func TestDomainFormatBackupRestoreAndMislabelRejection(t *testing.T) {
 	document.Site.CertificateSource = "automatic"
 	document.Site.Domains = []string{"proxy.qin-xin.top", "flow.qin-xin.top"}
 	document.Site.AdminDomain = "proxy.qin-xin.top"
+	document.Site.SharedTrojan443 = shared
 	next := j.Applied
 	next.Number++
 	next.Settings, e = document.Encode(c)
@@ -66,7 +77,11 @@ func TestDomainFormatBackupRestoreAndMislabelRejection(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	_, e = db.Exec("PRAGMA user_version=5")
+	wrongVersion := "PRAGMA user_version=5"
+	if shared {
+		wrongVersion = "PRAGMA user_version=6"
+	}
+	_, e = db.Exec(wrongVersion)
 	db.Close()
 	if e != nil {
 		t.Fatal(e)

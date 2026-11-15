@@ -5,11 +5,13 @@ from pathlib import Path
 import subprocess
 import tempfile
 import uuid
-from images import control_image, openssl_image
+from images import control_image, openssl_image, gateway_image, container_logs
 from gateway_probe import command
 
 SERVER=os.environ.get('TROJAN_RUNNER_IMAGE','trojan-runner:dev')
 CLIENT='metacubex/mihomo@sha256:9211361a3ed85305383288d38c05e85862d6d5a590c10007c37fc059cca82e9c'
+shared=os.environ.get('TROJAN_SHARED443_PROBE')=='1'
+shared_volumes=[]
 prefix='trojan-egress-'+uuid.uuid4().hex[:10]
 network=None
 containers=[]
@@ -85,8 +87,16 @@ while True:
         server=command(['docker','run','-d','--name',prefix+'-server','--network',network,'--network-alias','vpn.test','--ip','198.51.100.10',
             '--memory','128m','--cap-drop','ALL','--security-opt','no-new-privileges','--mount','type=volume,source='+statistics+',target=/run/vpn,volume-nocopy','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro','--entrypoint','/usr/local/bin/trojan-engine',SERVER,'run','-c','/fixture/server.json']);containers.append(server)
         sentinel=command(['docker','run','-d','--name',prefix+'-private-sentinel','--network','container:'+server,'--memory','64m','python:3.12-slim','python','-c',backend_code]);containers.append(sentinel)
+        if shared:
+            gateway_binary=str(Path('.work/gateway-integration.test').resolve())+':/probe:ro'
+            command(['docker','run','--rm','--network','none','-v',mount,'-v',gateway_binary,'--entrypoint','/probe',control_image(),'-test.run','^TestWriteSharedGatewayFixture$'])
+            for kind in ('gateway-socket','gateway-data'):shared_volumes.append(command(['docker','volume','create',prefix+'-'+kind]))
+            gs,gd=shared_volumes
+            command(['docker','run','--rm','--network','none','-v',gs+':/socket','-v',gd+':/data','alpine:3.22','sh','-c','chown 0:10001 /socket && chmod 0770 /socket && chown 10001:10001 /data && chmod 0700 /data'])
+            gateway_container=command(['docker','run','-d','--name',prefix+'-gateway','--network','container:'+server,'--memory','192m','--read-only','--user','0:10001','--cap-drop','ALL','--cap-add','SETUID','--cap-add','SETGID','--cap-add','SETPCAP','--cap-add','NET_BIND_SERVICE','--security-opt','no-new-privileges','-v',mount+':ro','-v',str(root.resolve())+':/certificates:ro','-v',gs+':/run/caddy','-v',gd+':/data','--tmpfs','/config:uid=10001,gid=10001,mode=0700',gateway_image(),'caddy','run','--config','/fixture/gateway.json']);containers.append(gateway_container)
         for phase,password,trust in [('good','fixture-only-password-0123456789abcdef','trusted'),('bad-password','incorrect-password','trusted'),('bad-ca','fixture-only-password-0123456789abcdef','untrusted')]:
             config={'mixed-port':7890,'allow-lan':True,'bind-address':'0.0.0.0','mode':'rule','proxies':[{'name':'probe','type':'trojan','server':'vpn.test','port':18443,'sni':'vpn.test','password':password,'skip-cert-verify':False,'udp':True}],'rules':['MATCH,probe']}
+            if shared:config['proxies'][0]['port']=443
             (root/'client.json').write_text(json.dumps(config),encoding='utf-8')
             client=command(['docker','run','-d','--name',prefix+'-client-'+phase,'--network',network,'--memory','128m','--cap-drop','ALL',
                 '-e','SSL_CERT_FILE=/fixture/'+trust+'.crt','-v',mount+':ro',CLIENT,'-f','/fixture/client.json','-d','/tmp']);containers.append(client)
@@ -101,6 +111,12 @@ while True:
             if result.returncode:raise RuntimeError('真实VPN阶段失败: '+phase)
             if phase=='bad-ca' and 'certificate' not in logs(client).lower():raise RuntimeError('没有观察到证书拒绝原因')
             command(['docker','rm','-f',client]);containers.remove(client);client=None
+        if shared:
+            result=subprocess.run(['docker','run','--rm','--network','container:'+server,'--memory','192m','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',gateway_binary,'-v',gs+':/run/caddy','-v',gd+':/data:ro','-v',str(root.resolve())+':/certificates:ro','-e','TROJAN_SHARED_TLS_MUTATION='+os.environ.get('TROJAN_SHARED_TLS_MUTATION','0'),'--entrypoint','/probe',control_image(),'-test.run','^TestRealShared443WebAndRollback$','-test.v','-test.timeout','25s'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=35)
+            report['checks']['shared_web']={'exit_code':result.returncode,'output':result.stdout}
+            if result.returncode:raise RuntimeError('shared443 Web/rollback flow failed')
+            if 'fixture-only-password-0123456789abcdef' in container_logs(gateway_container):raise RuntimeError('shared gateway logged VPN password')
+            report.update(actual_shared443=True,backend_tls_verified=True,original_engine_port=18443,public_client_port=443)
 except Exception as error:
     report['error']=str(error)
     report['logs']={cid:logs(cid)[-2500:] for cid in containers}
@@ -108,6 +124,7 @@ finally:
     for cid in reversed(containers):command(['docker','rm','-f',cid])
     if network:command(['docker','network','rm',network])
     if statistics:command(['docker','volume','rm',statistics])
+    for volume in reversed(shared_volumes):command(['docker','volume','rm',volume])
 report['passed']='error' not in report
 print(json.dumps(report,ensure_ascii=False,indent=2))
 raise SystemExit(0 if report['passed'] else 1)

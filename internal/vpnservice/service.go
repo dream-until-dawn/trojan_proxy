@@ -22,6 +22,7 @@ type Runner interface {
 
 // Options 的路径与来源来自部署，不允许Web选择任意文件或解析器。
 type Options struct {
+	Shared443          func(control.Revision) (bool, error) // 读取同一已提交修订。
 	Settings           vpn.Settings
 	Key                []byte
 	PublishedDirectory string
@@ -33,6 +34,7 @@ type Options struct {
 
 // Status 是普通读取接口，口令、私钥、路径、密文均不在响应中。
 type Status struct {
+	PublicPort       int                    "json:\"public_port,omitempty\""
 	Revision         uint64                 `json:"revision"`
 	Enabled          bool                   `json:"enabled"`
 	Running          bool                   `json:"running"`
@@ -125,6 +127,15 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 		}
 	}
 	status := Status{Revision: j.Applied.Number, Enabled: d.Enabled, Pending: j.Pending != nil, Domain: settings.Domain, Port: settings.Port, Capabilities: vpn.TrojanCapabilities(), Message: "VPN未启用"}
+	if s.options.Shared443 != nil {
+		shared, e := s.options.Shared443(j.Applied)
+		if e != nil {
+			return Status{}, e
+		}
+		if shared {
+			status.PublicPort = 443
+		}
+	}
 	if s.options.WriteGuard != nil && s.options.WriteGuard(ctx) != nil {
 		status.Pending = true
 	}
@@ -252,7 +263,17 @@ func (s *Service) Export(ctx context.Context) ([]byte, error) {
 	if err != nil || !state.Running || state.Fingerprint != vpn.CommandFingerprint(d) {
 		return nil, errors.New("VPN实际配置尚未就绪")
 	}
-	return vpn.ExportClash(s.options.Settings, d)
+	port := 0
+	if s.options.Shared443 != nil {
+		shared, e := s.options.Shared443(j.Applied)
+		if e != nil {
+			return nil, e
+		}
+		if shared {
+			port = 443
+		}
+	}
+	return vpn.ExportClashPort(s.options.Settings, d, port)
 }
 
 // Reconcile 恢复崩溃日志和执行器；证书有效时读取新版本，失败保留旧可信版本。

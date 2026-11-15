@@ -51,7 +51,7 @@ try:
         result=subprocess.run(['docker','run','--rm','--network','container:'+caddy,'--user','10001:10001','--read-only',
             '--cap-drop','ALL','--security-opt','no-new-privileges','--memory','128m','--tmpfs','/tmp','-v',binary,
             '-v',sock+':/run/caddy:ro','-v',fixture+':/fixture:ro','-v',cache+':/cache:ro','-v',published+':/published',
-            '--entrypoint','/probe',control_image(),'-test.run','^TestRealMultiHostHTTP01$' if multi else '^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
+            '-e','TROJAN_SHARED443_TEST='+os.environ.get('TROJAN_SHARED443_TEST','0'),'--entrypoint','/probe',control_image(),'-test.run','^TestRealMultiHostHTTP01$' if multi else '^TestRealHTTP01AndRenewal$','-test.v','-test.timeout','90s'],
             stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=100)
         report['test']={'exit_code':result.returncode,'output':result.stdout}
         if result.returncode:raise RuntimeError('ACME生命周期验收失败')

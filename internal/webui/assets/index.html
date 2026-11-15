@@ -666,9 +666,11 @@
           VPN网络设置
          </summary>
          <label>
-          Trojan端口
+          Trojan引擎／旧入口端口
           <input id="site-vpn-port" max="65535" min="1024" required="" type="number"/>
          </label>
+         <label class="check"><input id="site-shared-443" type="checkbox"/>网站与Trojan共享443，正常浏览器显示网页</label>
+         <p class="muted">确认共享设置后，订阅和下载使用443；原引擎端口保留，待所有设备更新验收后再关闭旧公网入口。此处不要将引擎端口改为443。</p>
          <label>
           公网DNS解析器
           <input id="site-resolver" placeholder="9.9.9.9:53" required=""/>

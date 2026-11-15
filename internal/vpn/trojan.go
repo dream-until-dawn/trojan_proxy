@@ -127,6 +127,11 @@ func CompileTrojan(s Settings, d Desired) (string, error) {
 
 // ExportClash 返回完整JSON（合法YAML子集）；只在近期MFA保护的下载接口调用。
 func ExportClash(s Settings, d Desired) ([]byte, error) {
+	return ExportClashPort(s, d, 0)
+}
+
+// ExportClashPort 分离客户端公开端口与引擎监听；只允许原端口或共享443。
+func ExportClashPort(s Settings, d Desired, publicPort int) ([]byte, error) {
 	if !d.Enabled {
 		return nil, errors.New("VPN未启用")
 	}
@@ -138,8 +143,14 @@ func ExportClash(s Settings, d Desired) ([]byte, error) {
 	if err := validate(s, d); err != nil {
 		return nil, err
 	}
+	if publicPort == 0 {
+		publicPort = s.Port
+	}
+	if publicPort != 443 && publicPort != s.Port {
+		return nil, errors.New("VPN公开端口不符合已授权入口")
+	}
 	config := map[string]any{"mixed-port": 7890, "allow-lan": false, "bind-address": "127.0.0.1", "mode": "rule",
-		"proxies": []any{map[string]any{"name": "独用Trojan", "type": "trojan", "server": s.Domain, "port": s.Port, "password": d.Password, "sni": s.Domain, "skip-cert-verify": false, "udp": true}},
+		"proxies": []any{map[string]any{"name": "独用Trojan", "type": "trojan", "server": s.Domain, "port": publicPort, "password": d.Password, "sni": s.Domain, "skip-cert-verify": false, "udp": true}},
 		"rules":   []string{"DOMAIN," + s.Domain + ",DIRECT", "MATCH,独用Trojan"}}
 	return json.MarshalIndent(config, "", "  ")
 }

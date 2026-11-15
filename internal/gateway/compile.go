@@ -36,6 +36,7 @@ type Settings struct {
 	AccessLog                        bool
 	Hosts                            []Host
 	AdminDomain                      string
+	SharedTrojan                     *SharedTrojan "json:\",omitempty\"" // 关闭时保持旧指纹。
 }
 
 // Compile 生成完整配置，始终保留后台入口，绝不拼接原始配置文本。
@@ -134,6 +135,9 @@ func Compile(settings Settings, rules []routes.Rule) (string, error) {
 		}
 	}
 	configureAdminPath(settings, servers)
+	if err := configureSharedTrojan(settings, servers); err != nil {
+		return "", err
+	}
 	for name, value := range servers {
 		domain := ""
 		if name == "admin" || (settings.Domain != "" && (name == "public_80" || name == "public_443" || value.(map[string]any)["tls_connection_policies"] != nil)) {

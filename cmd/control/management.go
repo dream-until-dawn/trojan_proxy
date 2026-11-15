@@ -102,6 +102,10 @@ func newManagement(c config.Config, store control.Store, key []byte, roots map[s
 		m.Router = routing.NewServiceWithProvider(store, engine, compiled, m.coordinator, m.View.Gateway)
 		guard := func(ctx context.Context) error { return settings.RequireStable(ctx, store, c) }
 		options.WriteGuard = guard
+		options.Shared443 = func(revision control.Revision) (bool, error) {
+			d, e := settings.Decode(revision.Settings, c)
+			return d.Site.SharedTrojan443, e
+		}
 		options.ProfileSource = func(ctx context.Context) (*vpn.Profile, error) {
 			d, err := m.View.Read(ctx)
 			if err != nil {
