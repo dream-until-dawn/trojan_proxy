@@ -121,6 +121,15 @@ func TestRealShared443WebAndRollback(t *testing.T) {
 	if !tunnel() {
 		t.Fatal("shared backend TLS positive control failed")
 	}
+	if os.Getenv("TROJAN_PRIVATE_VPN_LISTENER") == "1" {
+		for _, address := range []string{"198.51.100.10:18443", "[::1]:18443"} {
+			if c, e := net.DialTimeout("tcp", address, time.Second); e == nil {
+				c.Close()
+				t.Fatal("private engine exposed nonloopback", address)
+			}
+		}
+		t.Log("private_nonloopback_ports_rejected")
+	}
 	current, e := engine.Current(ctx)
 	if e != nil {
 		t.Fatal(e)

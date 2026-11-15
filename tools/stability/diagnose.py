@@ -32,7 +32,7 @@ try:
         started = time.monotonic()
         sample = {'at_utc': datetime.datetime.utcnow().isoformat()+'Z', 'passed': False, 'http_checks': []}
         try:
-            web_checks(args.domain, manifest.get('admin_port', 8007), 18443, 18090, sample['http_checks'],
+            web_checks(args.domain, manifest.get('admin_port', 8007), manifest.get('vpn_public_port',18443), 18090, sample['http_checks'],
                        manifest.get('https_routes', []), manifest.get('admin_path', ''), manifest.get('admin_domain'))
             if domains:
                 sample['domain_checks'] = []

@@ -19,6 +19,10 @@ func TestSharedTrojanTLSAndTransitionBoundaries(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	unchanged, e := CompileAdminTransition(s, s, nil)
+	if e != nil || unchanged != on {
+		t.Fatal("same gateway transition reloaded business config", e)
+	}
 	server := pathServers(t, on)["public_443"].(map[string]any)
 	if server["tls_connection_policies"] != nil || server["listener_wrappers"] == nil {
 		t.Fatal("shared TLS terminated twice or listener missing")

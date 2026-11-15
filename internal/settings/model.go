@@ -24,6 +24,7 @@ type Directory struct {
 
 // Site 不含管理员、VPN口令、私钥、宿主路径及内控socket。
 type Site struct {
+	VPNLoopbackOnly   bool        "json:\"vpn_loopback_only,omitempty\""
 	SharedTrojan443   bool        "json:\"shared_trojan_443,omitempty\""
 	Domain            string      `json:"domain"`
 	Domains           []string    `json:"domains,omitempty"`
@@ -86,6 +87,9 @@ func (d Document) Validate(deployment config.Config) error {
 	}
 	if err := ValidateDomains(d.Site); err != nil {
 		return err
+	}
+	if d.Site.VPNLoopbackOnly && !d.Site.SharedTrojan443 {
+		return errors.New("仅回环监听必须保留共享443入口")
 	}
 	if d.Site.SharedTrojan443 && (!deployment.StandardIngress || !deployment.VPNManagement || d.Site.Domain == "" || d.Site.CertificateSource == "none") {
 		return errors.New("共享443需要启用VPN管理、标准域名和可信证书")

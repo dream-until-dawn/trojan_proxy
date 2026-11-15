@@ -31,7 +31,11 @@ func Selection(site settings.Site) certificates.Selection {
 
 // RuntimeProfile 复制可变参数，避免调用者修改草稿影响已生成的命令。
 func RuntimeProfile(site settings.Site) *vpn.Profile {
-	return &vpn.Profile{Version: 1, Domain: site.Domain, Port: site.VPNPort, AdminPort: site.AdminPort, OwnAddresses: append([]string(nil), site.VPNAddresses...), Resolver: site.VPNResolver}
+	version := 1
+	if site.VPNLoopbackOnly {
+		version = 2
+	}
+	return &vpn.Profile{Version: version, LoopbackOnly: site.VPNLoopbackOnly, Domain: site.Domain, Port: site.VPNPort, AdminPort: site.AdminPort, OwnAddresses: append([]string(nil), site.VPNAddresses...), Resolver: site.VPNResolver}
 }
 
 // Ingress 推导就绪状态；手工来源失效不能偷偷改成自动签发。

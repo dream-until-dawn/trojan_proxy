@@ -8,6 +8,7 @@ import (
 // Profile 是已提交业务设置的运行快照；仅进入加密修订和受限Unix命令。
 // 部署固定的保护端口和保护地址始终由执行器保留，不允许请求覆盖。
 type Profile struct {
+	LoopbackOnly bool     "json:\"loopback_only,omitempty\"" // 仅版本2可声明回环监听。
 	Version      int      `json:"version"`
 	Domain       string   `json:"domain"`
 	Port         int      `json:"port"`
@@ -23,7 +24,10 @@ func EffectiveSettings(base Settings, desired Desired) (Settings, error) {
 		return base, nil
 	}
 	p := desired.Profile
-	if p.Version != 1 || p.Port < 1024 || p.Port > 65535 || p.AdminPort < 1024 || p.AdminPort > 65535 || p.Port == p.AdminPort || len(p.OwnAddresses) == 0 || len(p.OwnAddresses) > 64 {
+	if (p.Version != 1 || p.LoopbackOnly) && (p.Version != 2 || !p.LoopbackOnly) {
+		return Settings{}, errors.New("VPN监听模式与运行参数版本不匹配")
+	}
+	if p.Port < 1024 || p.Port > 65535 || p.AdminPort < 1024 || p.AdminPort > 65535 || p.Port == p.AdminPort || len(p.OwnAddresses) == 0 || len(p.OwnAddresses) > 64 {
 		return Settings{}, errors.New("VPN运行参数版本、端口或自身地址无效")
 	}
 	for _, port := range base.ReservedPorts {
@@ -36,6 +40,7 @@ func EffectiveSettings(base Settings, desired Desired) (Settings, error) {
 		return Settings{}, errors.New("VPN运行解析器必须为有效IP:端口")
 	}
 	result := Settings{Domain: p.Domain, Port: p.Port, Resolver: resolver, ReservedPorts: append([]int(nil), base.ReservedPorts...)}
+	result.LoopbackOnly = p.LoopbackOnly
 	seen := map[netip.Addr]bool{}
 	for _, value := range p.OwnAddresses {
 		address, err := netip.ParseAddr(value)

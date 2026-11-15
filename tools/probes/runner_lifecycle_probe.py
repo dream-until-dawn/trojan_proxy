@@ -31,7 +31,7 @@ try:
     command(['docker','run','--rm','--network','none','-v',certs+':/certificates','alpine:3.22','sh','-c',
         'chown -R 0:10001 /certificates && find /certificates -type d -exec chmod 0750 {} + && find /certificates -type f -exec chmod 0640 {} +'])
     runner=command(['docker','run','-d','--name',prefix,'--network','none','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
-        '--memory','192m','--cpus','1','--pids-limit','64','-v',socket+':/run/vpn','-v',certs+':/certificates:ro',
+        '--memory','128m','--cpus','1','--pids-limit','64','-v',socket+':/run/vpn','-v',certs+':/certificates:ro',
         os.environ.get('TROJAN_RUNNER_IMAGE','trojan-runner:dev'),'--config','/certificates/proxy.json'])
     binary=str(Path('.work/runner-integration.test').resolve())+':/probe:ro'
     for phase in ('first','crash','restart'):

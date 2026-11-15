@@ -28,6 +28,7 @@ func TrojanCapabilities() Capabilities {
 
 // Settings 保存部署底线；有运行快照时，合并可变参数但保留保护端口和自身地址。
 type Settings struct {
+	LoopbackOnly  bool // 由版本2命令控制，不接受任意监听地址。
 	Domain        string
 	Port          int
 	OwnAddresses  []netip.Addr
@@ -109,10 +110,14 @@ func CompileTrojan(s Settings, d Desired) (string, error) {
 	}
 	sort.Strings(blocked)
 	versionRoot := "/certificates/" + d.CertificateVersion + "/"
+	listen := "::"
+	if s.LoopbackOnly {
+		listen = "127.0.0.1"
+	}
 	config := map[string]any{
 		"log":       map[string]any{"level": "error", "timestamp": true},
 		"dns":       map[string]any{"servers": []any{map[string]any{"type": "udp", "tag": "public-dns", "server": s.Resolver.Addr().String(), "server_port": s.Resolver.Port()}}, "disable_cache": true},
-		"inbounds":  []any{map[string]any{"type": "trojan", "tag": "trojan-in", "listen": "::", "listen_port": s.Port, "users": []any{map[string]any{"name": "owner", "password": d.Password}}, "tls": map[string]any{"enabled": true, "certificate_path": versionRoot + "fullchain.pem", "key_path": versionRoot + "private.key", "min_version": "1.2"}}},
+		"inbounds":  []any{map[string]any{"type": "trojan", "tag": "trojan-in", "listen": listen, "listen_port": s.Port, "users": []any{map[string]any{"name": "owner", "password": d.Password}}, "tls": map[string]any{"enabled": true, "certificate_path": versionRoot + "fullchain.pem", "key_path": versionRoot + "private.key", "min_version": "1.2"}}},
 		"outbounds": []any{map[string]any{"type": "direct", "tag": "public", "connect_timeout": "10s"}},
 		"route": map[string]any{"default_domain_resolver": "public-dns", "final": "public", "rules": []any{
 			map[string]any{"domain_suffix": []string{"localhost", "local", "internal"}, "action": "reject"},
@@ -144,7 +149,14 @@ func ExportClashPort(s Settings, d Desired, publicPort int) ([]byte, error) {
 		return nil, err
 	}
 	if publicPort == 0 {
-		publicPort = s.Port
+		if s.LoopbackOnly {
+			publicPort = 443
+		} else {
+			publicPort = s.Port
+		}
+	}
+	if s.LoopbackOnly && publicPort != 443 {
+		return nil, errors.New("回环VPN仅允许导出共享443")
 	}
 	if publicPort != 443 && publicPort != s.Port {
 		return nil, errors.New("VPN公开端口不符合已授权入口")

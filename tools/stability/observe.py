@@ -12,6 +12,7 @@ import time
 from checks import CheckFailure, SERVICE_ROLES, completed_pass, validate_containers, validate_vpn
 from http_checks import web_checks
 from domain_checks import domain_checks, validate_domains
+from vpn_checks import check_private_listener
 
 
 def command(arguments, timeout=20):
@@ -76,6 +77,9 @@ def main():
     with open(args.manifest) as source: manifest = json.load(source)
     if manifest.get('passed') is not True: raise CheckFailure('verified_manifest_required')
     domains = validate_domains(manifest.get('domain_probes', []), manifest.get('admin_domain'))
+    public_vpn_port=manifest.get('vpn_public_port',args.vpn_port)
+    if type(public_vpn_port) is not int or public_vpn_port!=args.vpn_port:raise CheckFailure('vpn_public_port_manifest_mismatch')
+    if manifest.get('vpn_loopback_only') and public_vpn_port!=443:raise CheckFailure('private_vpn_requires_shared_probe')
     initial = inspect(args.project)
     output = private_output(args.output, initial)
     lock = os.fdopen(os.open(str(output / 'observer.lock'), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), 'w')
@@ -107,12 +111,15 @@ def main():
                 if previous_sample is not None and now - previous_sample > args.interval_seconds + 90: raise CheckFailure('sampling_gap')
                 sample['http_checks'] = []
                 sample['certificate_sha256'] = web_checks(args.domain, args.admin_port, args.vpn_port, args.control_port, sample['http_checks'], manifest.get('https_routes', []), manifest.get('admin_path', ''), manifest.get('admin_domain'))['443']
+                if manifest.get('vpn_loopback_only'):
+                    sample['private_vpn_listener']=check_private_listener(manifest.get('vpn_backend_port',18443))
                 if domains:
                     sample['domain_checks'] = []
                     sample['domain_certificates'] = domain_checks(domains, sample['domain_checks'])
                 if now >= next_deep or final:
-                    raw = command([sys.executable, args.vpn_diagnostic, '--project', args.project, '--domain', args.domain], timeout=85)
-                    validate_vpn(json.loads(raw));summary['deep_checks'] += 1;sample['vpn_positive_and_negative'] = True
+                    raw = command([sys.executable, args.vpn_diagnostic, '--project', args.project, '--domain', args.domain,'--port',str(public_vpn_port)], timeout=85)
+                    validate_vpn(json.loads(raw),public_vpn_port);summary['deep_checks'] += 1;sample['vpn_positive_and_negative'] = True
+                    sample['vpn_public_port']=public_vpn_port
                     while next_deep <= now: next_deep += 3600
                 sample['passed'] = True
             except Exception as error:

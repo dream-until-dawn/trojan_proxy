@@ -34,6 +34,7 @@ type Options struct {
 
 // Status 是普通读取接口，口令、私钥、路径、密文均不在响应中。
 type Status struct {
+	LoopbackOnly     bool                   "json:\"loopback_only,omitempty\""
 	PublicPort       int                    "json:\"public_port,omitempty\""
 	Revision         uint64                 `json:"revision"`
 	Enabled          bool                   `json:"enabled"`
@@ -124,9 +125,11 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 		}
 		if profile != nil {
 			settings.Domain, settings.Port = profile.Domain, profile.Port
+			settings.LoopbackOnly = profile.LoopbackOnly
 		}
 	}
 	status := Status{Revision: j.Applied.Number, Enabled: d.Enabled, Pending: j.Pending != nil, Domain: settings.Domain, Port: settings.Port, Capabilities: vpn.TrojanCapabilities(), Message: "VPN未启用"}
+	status.LoopbackOnly = settings.LoopbackOnly
 	if s.options.Shared443 != nil {
 		shared, e := s.options.Shared443(j.Applied)
 		if e != nil {

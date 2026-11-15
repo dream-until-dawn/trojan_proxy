@@ -11,6 +11,10 @@ import (
 // CompileAdminTransition 保留当前公共业务，仅叠加候选后台监听和其证书授权。
 // 同端口更换域名时合并精确Host路由；候选Host不覆盖旧入口或公开规则。
 func CompileAdminTransition(current, candidate Settings, ruleset []routes.Rule) (string, error) {
+	// 只变更VPN监听等非网关参数时，保持配置逐字相同，不重载业务WS连接。
+	if reflect.DeepEqual(current, candidate) {
+		return Compile(current, ruleset)
+	}
 	if err := validateAdminPath(candidate, ruleset); err != nil {
 		return "", err
 	}

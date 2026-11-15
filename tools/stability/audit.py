@@ -42,6 +42,11 @@ def audit_records(summary, records, manifest, now=None, interval=60):
         if sample.get('passed') is not True:
             failures += 1
             continue
+        if manifest.get('vpn_loopback_only'):
+            if sample.get('private_vpn_listener')!={'port':manifest.get('vpn_backend_port',18443),'addresses':['127.0.0.1']}:
+                findings.append('private_listener_check_missing_at_'+str(number))
+            if sample.get('vpn_positive_and_negative') is True and sample.get('vpn_public_port')!=443:
+                findings.append('vpn_shared_port_not_tested_at_'+str(number))
         actual = {}
         for check in sample.get('http_checks', []):
             key = (check.get('port'), check.get('path'), check.get('method'))

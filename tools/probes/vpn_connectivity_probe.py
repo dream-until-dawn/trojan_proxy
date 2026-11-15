@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--project', default='trojan-refactor')
 parser.add_argument('--deployment-config', default='/opt/trojan-proxy-refactor/admin.proxy.example.json')
 parser.add_argument('--domain', help='明确给定当前业务域名时不读取旧部署文件')
+parser.add_argument('--port',type=int,help='明确验证共享443；其他值必须等于当前实际引擎端口')
 options = parser.parse_args()
 
 
@@ -47,6 +48,9 @@ if not container['State']['Running']:
 config = json.loads(docker(['exec', ids[0], 'cat', '/run/vpn/private/config.json']))
 inbound = config['inbounds'][0]
 port = inbound['listen_port']
+if options.port is not None:
+    if options.port not in (443,port):parser.error('诊断端口必须是共享443或实际引擎端口')
+    port=options.port
 if options.domain:
     domain = options.domain
 else:

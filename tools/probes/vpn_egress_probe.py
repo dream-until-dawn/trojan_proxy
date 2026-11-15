@@ -37,10 +37,14 @@ try:
                 '-subj','/CN=vpn.test','-addext','subjectAltName=DNS:vpn.test','-keyout','/fixture/'+name+'.key','-out','/fixture/'+name+'.crt'])
         command(['docker','run','--rm','--network','none','-v',mount,'alpine:3.22','sh','-c','chmod 0644 /fixture/*.key /fixture/*.crt'])
         binary=str(Path('.work/vpn-integration.test').resolve())+':/probe:ro'
-        command(['docker','run','--rm','--network','none','-v',mount,'-v',binary,'--entrypoint','/probe',control_image(),'-test.run','^TestWriteEngineFixture$'])
+        command(['docker','run','--rm','--network','none','-v',mount,'-v',binary,'-e','TROJAN_PRIVATE_VPN_LISTENER='+os.environ.get('TROJAN_PRIVATE_VPN_LISTENER','0'),'--entrypoint','/probe',control_image(),'-test.run','^TestWriteEngineFixture$'])
         command(['docker','run','--rm','--network','none','-v',mount,'alpine:3.22','chmod','0666','/fixture/server.json'])
         command(['docker','run','--rm','--network','none','-v',mount,CLIENT,'-t','-f','/fixture/clash-export.yaml'])
         report['actual_export_mihomo_check']=True
+        if os.environ.get('TROJAN_PRIVATE_VPN_LISTENER')=='1':
+            fixture_config=json.loads((root/'server.json').read_text(encoding='utf-8'))
+            if fixture_config['inbounds'][0]['listen']!='127.0.0.1':raise RuntimeError('private listener fixture not actually compiled')
+            report['private_listener_fixture']=True
         if mutation:
             config=json.loads((root/'server.json').read_text(encoding='utf-8'))
             config['route']['rules']=[rule for rule in config['route']['rules'] if 'ip_cidr' not in rule]
@@ -112,9 +116,10 @@ while True:
             if phase=='bad-ca' and 'certificate' not in logs(client).lower():raise RuntimeError('没有观察到证书拒绝原因')
             command(['docker','rm','-f',client]);containers.remove(client);client=None
         if shared:
-            result=subprocess.run(['docker','run','--rm','--network','container:'+server,'--memory','192m','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',gateway_binary,'-v',gs+':/run/caddy','-v',gd+':/data:ro','-v',str(root.resolve())+':/certificates:ro','-e','TROJAN_SHARED_TLS_MUTATION='+os.environ.get('TROJAN_SHARED_TLS_MUTATION','0'),'--entrypoint','/probe',control_image(),'-test.run','^TestRealShared443WebAndRollback$','-test.v','-test.timeout','25s'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=35)
+            result=subprocess.run(['docker','run','--rm','--network','container:'+server,'--memory','192m','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','-v',mount+':ro','-v',gateway_binary,'-v',gs+':/run/caddy','-v',gd+':/data:ro','-v',str(root.resolve())+':/certificates:ro','-e','TROJAN_PRIVATE_VPN_LISTENER='+os.environ.get('TROJAN_PRIVATE_VPN_LISTENER','0'),'-e','TROJAN_SHARED_TLS_MUTATION='+os.environ.get('TROJAN_SHARED_TLS_MUTATION','0'),'--entrypoint','/probe',control_image(),'-test.run','^TestRealShared443WebAndRollback$','-test.v','-test.timeout','25s'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,encoding='utf-8',timeout=35)
             report['checks']['shared_web']={'exit_code':result.returncode,'output':result.stdout}
             if result.returncode:raise RuntimeError('shared443 Web/rollback flow failed')
+            if os.environ.get('TROJAN_PRIVATE_VPN_LISTENER')=='1' and 'private_nonloopback_ports_rejected' not in result.stdout:raise RuntimeError('private external-port checks not executed')
             if 'fixture-only-password-0123456789abcdef' in container_logs(gateway_container):raise RuntimeError('shared gateway logged VPN password')
             report.update(actual_shared443=True,backend_tls_verified=True,original_engine_port=18443,public_client_port=443)
 except Exception as error:

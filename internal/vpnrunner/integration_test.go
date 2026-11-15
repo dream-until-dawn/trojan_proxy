@@ -133,6 +133,20 @@ func TestRealRunnerLifecycle(t *testing.T) {
 		if err != nil || !state.Running || state.Fingerprint != vpn.CommandFingerprint(desired) {
 			t.Fatal("启动失败未回退旧VPN", state, err)
 		}
+		private := desired
+		private.Profile = &vpn.Profile{Version: 2, LoopbackOnly: true, Domain: "probe.test", Port: 18443, AdminPort: 8007, OwnAddresses: []string{"47.82.112.245"}, Resolver: "9.9.9.9:53"}
+		if err = client.Check(ctx, private); err != nil {
+			t.Fatal("private profile check failed", err)
+		}
+		if err = client.Apply(ctx, private); err != nil {
+			t.Fatal("private runner apply failed", err)
+		}
+		assertRunnerCertificate(t, private.CertificateVersion)
+		assertOnlyLoopbackListener(t)
+		if err = client.Apply(ctx, desired); err != nil {
+			t.Fatal("private runner rollback failed", err)
+		}
+		assertRunnerCertificate(t, desired.CertificateVersion)
 		key := make([]byte, 32)
 		component := &Component{Key: key, Runner: client, CertificateValid: func(d vpn.Desired) error {
 			if d.CertificateVersion == expired.CertificateVersion {
@@ -209,6 +223,31 @@ func TestRealRunnerLifecycle(t *testing.T) {
 		assertRunnerCertificate(t, desired.CertificateVersion)
 	default:
 		t.Fatal("未知探针阶段")
+	}
+}
+
+// 检查内核实际监听表，不能只凭生成的配置声称旧公网端口已关闭。
+func assertOnlyLoopbackListener(t *testing.T) {
+	t.Helper()
+	found := false
+	for _, path := range []string{"/proc/net/tcp", "/proc/net/tcp6"} {
+		body, e := os.ReadFile(path)
+		if e != nil {
+			t.Fatal(e)
+		}
+		for _, line := range strings.Split(string(body), "\n") {
+			fields := strings.Fields(line)
+			if len(fields) < 4 || fields[3] != "0A" || !strings.HasSuffix(fields[1], ":480B") {
+				continue
+			}
+			if fields[1] != "0100007F:480B" {
+				t.Fatal("private runner exposes nonloopback listener", fields[1])
+			}
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("private runner loopback listener missing")
 	}
 }
 

@@ -55,13 +55,30 @@ func (s *Server) settingsPropose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		Revision uint64        `json:"revision"`
-		Site     settings.Site `json:"site"`
+		Revision uint64 `json:"revision"`
+		Site     struct {
+			settings.Site
+			LoopbackOnly *bool `json:"vpn_loopback_only"`
+		} `json:"site"`
 	}
 	if !settingsDecode(w, r, &input) {
 		return
 	}
-	if err := s.Settings.Propose(r.Context(), input.Revision, input.Site); err != nil {
+	if input.Site.LoopbackOnly == nil {
+		current, err := s.Settings.Status(r.Context())
+		if err != nil {
+			settingsError(w, err)
+			return
+		}
+		// 旧页面未认识新字段时，不能将省略字段解释成重新开放公网。
+		if current.Site.VPNLoopbackOnly {
+			respond(w, 400, map[string]string{"error": "请刷新后台后明确选择VPN监听模式，不能省略已启用的回环保护"})
+			return
+		}
+	} else {
+		input.Site.Site.VPNLoopbackOnly = *input.Site.LoopbackOnly
+	}
+	if err := s.Settings.Propose(r.Context(), input.Revision, input.Site.Site); err != nil {
 		settingsError(w, err)
 		return
 	}

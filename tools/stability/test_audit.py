@@ -29,6 +29,18 @@ class RawObservationAuditTest(unittest.TestCase):
         result=audit_records(summary,records,manifest)
         self.assertTrue(result['record_consistency_and_checks_valid']);self.assertFalse(result['review_passed'])
 
+    def test_shared_private_audit_requires_actual_public_port_and_bind_checks(self):
+        summary,records,manifest=self.fixture()
+        manifest.update(vpn_loopback_only=True,vpn_public_port=443,vpn_backend_port=18443)
+        for row in records:
+            row['private_vpn_listener']={'port':18443,'addresses':['127.0.0.1']}
+            if row.get('vpn_positive_and_negative'):row['vpn_public_port']=443
+        self.assertTrue(audit_records(summary,records,manifest)['review_passed'])
+        bad=copy.deepcopy(records);bad[0]['vpn_public_port']=18443
+        self.assertIn('vpn_shared_port_not_tested_at_1',audit_records(summary,bad,manifest)['findings'])
+        bad=copy.deepcopy(records);bad[1].pop('private_vpn_listener')
+        self.assertIn('private_listener_check_missing_at_2',audit_records(summary,bad,manifest)['findings'])
+
     def test_summary_cannot_hide_failures_or_bad_http(self):
         summary,records,manifest=self.fixture()
         records[1]['passed']=False

@@ -24,6 +24,9 @@ import (
 func TestWriteEngineFixture(t *testing.T) {
 	s := Settings{Domain: "vpn.test", Port: 18443, OwnAddresses: []netip.Addr{netip.MustParseAddr("198.51.100.10")}, Resolver: netip.MustParseAddrPort("198.51.100.53:53")}
 	d := Desired{Enabled: true, Password: "fixture-only-password-0123456789abcdef", CertificateVersion: strings.Repeat("a", 64)}
+	if os.Getenv("TROJAN_PRIVATE_VPN_LISTENER") == "1" {
+		d.Profile = &Profile{Version: 2, LoopbackOnly: true, Domain: s.Domain, Port: s.Port, AdminPort: 8007, OwnAddresses: []string{"198.51.100.10"}, Resolver: s.Resolver.String()}
+	}
 	body, err := CompileTrojan(s, d)
 	if err != nil {
 		t.Fatal(err)

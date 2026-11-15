@@ -13,7 +13,7 @@ export async function refreshVPN() {
     enabled = Boolean(state.enabled);
     const available = state.available !== false;
     document.querySelector("#vpn-status").textContent = state.message;
-    document.querySelector("#vpn-endpoint").textContent = available ? `${state.domain || "尚无域名"}:${state.public_port || state.port}${state.public_port ? " · 引擎／旧入口 " + state.port : ""} · 修订 ${revision}` : "";
+    document.querySelector("#vpn-endpoint").textContent = available ? `${state.domain || "尚无域名"}:${state.public_port || state.port}${state.loopback_only ? " · 仅回环引擎 " + state.port : state.public_port ? " · 引擎／旧入口 " + state.port : ""} · 修订 ${revision}` : "";
     const certificate = state.certificate;
     document.querySelector("#vpn-certificate").textContent = certificate
       ? `证书有效至 ${new Date(certificate.not_after).toLocaleString()} · 指纹 ${certificate.fingerprint}`

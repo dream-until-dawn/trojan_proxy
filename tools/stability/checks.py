@@ -34,9 +34,11 @@ def validate_containers(containers, images, baseline=None):
     return current
 
 
-def validate_vpn(result):
+def validate_vpn(result,expected_port=None):
     """必须同时证明可信HTTPS确实可达、错误口令确实不可用。"""
     checks = result.get('checks', {})
+    if expected_port is not None and (type(result.get('port')) is not int or result['port']!=expected_port):
+        raise CheckFailure('vpn_public_port_not_tested')
     positive = checks.get('trojan_google_https', {})
     negative = checks.get('wrong_password', {})
     if positive.get('status_line') != 'HTTP/1.1 204 No Content' or positive.get('inner_tls_verified') is not True:
