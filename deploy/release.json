@@ -1,6 +1,6 @@
 {
   "format": 1,
   "candidate_only": true,
-  "registry_proof": "docs/evidence/2026-11-15-shared443-images.json",
-  "ci_gate": "docs/evidence/2026-11-15-shared443-ci-gate.json"
+  "registry_proof": "docs/evidence/2026-11-15-private-listener-images.json",
+  "ci_gate": "docs/evidence/2026-11-15-private-listener-ci-gate.json"
 }

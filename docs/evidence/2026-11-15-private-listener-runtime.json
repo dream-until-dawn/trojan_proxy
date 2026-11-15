@@ -1,0 +1,66 @@
+{
+  "checked_utc": "2026-11-15T06:49:50.272555Z",
+  "revision": 40,
+  "schema": 7,
+  "pending": false,
+  "core": [
+    {
+      "service": "control",
+      "image": "sha256:e05ce3609a93bfcbf432b7ba9268a279aeb9dfccd86d87f5f227540f9914e8e3",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:49c4f61360dab2f24e7651fbd8b5ee2119ccb50c6dec4793b2e307daab59a8d6",
+      "started": "2026-11-15T06:49:24.076112547Z",
+      "healthy": "healthy",
+      "restarts": 0
+    },
+    {
+      "service": "vpn-runner",
+      "image": "sha256:6b49fb57aff07aca1441f5675fa9398dd4468b6d75c2587507af3aa7cc15ae8d",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-runner@sha256:abb99d0def357d0cafeb883cf44380b696e44167ab0d4a5a0a3aae5b0bb9b6be",
+      "started": "2026-11-15T06:49:21.083282875Z",
+      "healthy": null,
+      "restarts": 0
+    },
+    {
+      "service": "admin-gateway",
+      "image": "sha256:c0b8c931117cf841bdc4b46048cf5bb5f1deb5ca836da4b90a97acb631fbbd7d",
+      "reference": "ghcr.io/dream-until-dawn/trojan-proxy-gateway@sha256:20fd57d7d1b858cccf2ea5744c2f2fc698a536380c0c0cbeda94fd460648fb66",
+      "started": "2026-11-15T05:40:53.603107621Z",
+      "healthy": null,
+      "restarts": 0
+    }
+  ],
+  "routes": [
+    {
+      "host": "futures.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3033
+    },
+    {
+      "host": "flow.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3034
+    },
+    {
+      "host": "swap.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3100
+    },
+    {
+      "host": "okx.qin-xin.top",
+      "path": "/",
+      "port": 443,
+      "upstream_port": 3032
+    }
+  ],
+  "subscription_db_exists": true,
+  "http": {
+    "proxy.qin-xin.top": 200,
+    "futures.qin-xin.top": 307,
+    "flow.qin-xin.top": 307,
+    "okx.qin-xin.top": 303,
+    "swap.qin-xin.top": 307
+  }
+}

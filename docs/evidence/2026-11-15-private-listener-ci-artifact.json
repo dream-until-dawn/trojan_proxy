@@ -1,0 +1,10 @@
+{
+  "run_id": 43685796013,
+  "job_id": 132725883115,
+  "artifact_id": 14150033047,
+  "commit": "3edd775d0e1d2ddf9235bdecbac675cfa8435476",
+  "artifact_sha256": "8a62a6929bc5e42a01c180af5cedbc3f4d793e84086ebbb7778ec1ddcf119e94",
+  "conclusion": "success",
+  "checks": 45,
+  "original_artifact_digest_verified": true
+}

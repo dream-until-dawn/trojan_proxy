@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "source_commit": "3edd775d0e1d2ddf9235bdecbac675cfa8435476",
+  "loopback_only_enabled": false,
+  "private_backup": "/opt/trojan-proxy-refactor/backups/before-private-listener-20261115T064919Z",
+  "revision": 40,
+  "schema": 7,
+  "runner_replacement_and_recovery_seconds": 2.232,
+  "site_health": {
+    "qin-xin.top": 200,
+    "proxy.qin-xin.top": 200,
+    "futures.qin-xin.top": 307,
+    "flow.qin-xin.top": 307,
+    "okx.qin-xin.top": 303,
+    "swap.qin-xin.top": 307
+  },
+  "gateway_and_business_containers_preserved": true,
+  "engine_configuration_and_credentials_preserved": true,
+  "account_and_subscriptions_preserved": true,
+  "observer_marker_preserved": true
+}
