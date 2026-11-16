@@ -1,0 +1,41 @@
+{
+  "project_scope_accepted": true,
+  "acceptance_basis": "explicit owner instruction: only this project core is in acceptance scope",
+  "strict_end_to_end_passed": false,
+  "original_raw_summary_unchanged": true,
+  "original_window": "/opt/trojan-proxy-refactor/backups/stability-20261115T065357Z-2c4f2e/24h",
+  "original_raw_sha256": "114e3ecbbc37675a7be05bc34809f0aa7974ce0cc44483052e6ccb8e0d12937d",
+  "samples": 1441,
+  "observed_seconds": 86400,
+  "core_http_checks_per_sample": 5,
+  "core_loopback_checks": 1441,
+  "public443_positive_negative_checks": 25,
+  "external_upstream_exceptions": [
+    {
+      "line": 488,
+      "at_utc": "2026-11-15T15:01:09.572564Z",
+      "domain": "futures.qin-xin.top",
+      "path": "/login",
+      "status": 502
+    },
+    {
+      "line": 489,
+      "at_utc": "2026-11-15T15:02:09.572809Z",
+      "domain": "futures.qin-xin.top",
+      "path": "/login",
+      "status": 502
+    }
+  ],
+  "repeat_observer_stopped": true,
+  "repeat_window": "/opt/trojan-proxy-refactor/backups/stability-20261116T090519Z-3d51c9/24h",
+  "repeat_completed": false,
+  "repeat_samples": 7,
+  "repeat_failures": 0,
+  "core_container_identities_preserved": true,
+  "accepted_at_utc": "2026-11-16T09:11:55.407798Z",
+  "repeat_automation": {
+    "id": "443",
+    "deleted": true,
+    "reason": "Owner accepted project-core scope; repeat full end-to-end observation is no longer required."
+  }
+}
