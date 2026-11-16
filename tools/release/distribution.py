@@ -3,9 +3,11 @@ import argparse
 import datetime
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+import tempfile
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,6 +21,10 @@ REQUIRED_CHECKS = {'packaged_binaries_and_local_images', 'three_modules_test_vet
                    'gateway_linux_source_scan', 'default_deployment', 'shared443',
                    'shared443_acme', 'private_listener', 'private_listener_mutation',
                    'subscription_mutation', 'recovery_mutation', 'gateway_cache_mount_mutation'}
+PUBLIC_SOURCE_NOTICES = {'go.mod', 'go.sum', 'engines/trojan/LICENSE', 'engines/trojan/NOTICE.html',
+                         'engines/trojan/go.mod', 'engines/trojan/go.sum',
+                         'engines/gateway/LICENSE', 'engines/gateway/NOTICE.html',
+                         'engines/gateway/go.mod', 'engines/gateway/go.sum'}
 
 
 def git(root, *args):
@@ -82,7 +88,7 @@ def selected_files(root):
     """明确白名单，不扫描工作目录，排除.git、本地产物和旧版启动脚本。"""
     result = []
     for name in git(root, 'ls-files').splitlines():
-        if name not in {'README.md', 'LICENSE', 'deploy/compose.yaml', 'deploy/release.json'} and not name.startswith('docs/'):
+        if name not in {'README.md', 'LICENSE', 'deploy/compose.yaml', 'deploy/release.json'} | PUBLIC_SOURCE_NOTICES and not name.startswith('docs/'):
             continue
         path = root / name
         if path.is_symlink() or path.suffix.lower() in {'.pem', '.key', '.db', '.tgz', '.zip'}:
@@ -97,12 +103,51 @@ def selected_files(root):
     return sorted(result)
 
 
+def vendor_dependencies(source):
+    """三个独立模块分别携带对应依赖源码及许可，离线检查依赖闭包。"""
+    environment = dict(os.environ, GOOS='linux', GOARCH='amd64', CGO_ENABLED='0', GOWORK='off')
+    for directory in (source, source/'engines/trojan', source/'engines/gateway'):
+        locked = {name:(directory/name).read_bytes() for name in ('go.mod','go.sum')}
+        subprocess.run(['go','mod','vendor'], cwd=directory, env=environment, check=True)
+        if any((directory/name).read_bytes()!=body for name,body in locked.items()):
+            raise ValueError('vendoring_changed_locked_dependencies')
+        subprocess.run(['go','list','-mod=vendor','-deps','./...'], cwd=directory,
+                       env=dict(environment,GOPROXY='off',GOSUMDB='off'), check=True,
+                       stdout=subprocess.DEVNULL)
+
+
+def source_bundle(root, version, commit, output):
+    # 临时构建树位于.work中，不污染工作区，也不会被go test ./...递归扫描。
+    with tempfile.TemporaryDirectory(prefix='release-source-',dir=root/'.work') as temporary:
+        directory=Path(temporary)
+        initial=directory/'tracked.zip'
+        subprocess.run(['git','archive','--format=zip','--output='+str(initial),commit],cwd=root,check=True)
+        source=directory/'source';source.mkdir()
+        with zipfile.ZipFile(initial) as archive:archive.extractall(source)
+        vendor_dependencies(source)
+        stamp=int(git(root,'show','-s','--format=%ct',commit))
+        date=datetime.datetime.fromtimestamp(stamp,datetime.timezone.utc).timetuple()[:6]
+        with zipfile.ZipFile(output,'w') as archive:
+            for path in sorted(source.rglob('*')):
+                if not path.is_file():continue
+                if path.is_symlink():raise ValueError('source_bundle_symlink')
+                info=zipfile.ZipInfo('trojan-proxy-'+version+'-source/'+path.relative_to(source).as_posix(),date)
+                info.create_system=3;info.external_attr=0o100644<<16;info.compress_type=zipfile.ZIP_DEFLATED
+                archive.writestr(info,path.read_bytes())
+
+
 def build(root, version, output):
     if git(root, 'status', '--porcelain'):
         raise ValueError('clean_source_commit_required')
     registry, gate, acceptance, audit = validate(root, version)
     commit = git(root, 'rev-parse', 'HEAD')
     names = selected_files(root)
+    output = output.resolve();output.parent.mkdir(parents=True, exist_ok=True)
+    source_output = output.parent / ('trojan-proxy-' + version + '-source.zip')
+    (root/'.work').mkdir(exist_ok=True)
+    source_bundle(root, version, commit, source_output)
+    source_digest = hashlib.sha256(source_output.read_bytes()).hexdigest()
+    source_output.with_suffix('.zip.sha256').write_text(source_digest + '  ' + source_output.name + '\n', encoding='ascii')
     manifest = {'format': 1, 'version': version, 'candidate_only': False,
                 'deployment_source_commit': commit, 'image_source_commit': registry['commit'],
                 'runtime_source_equivalent': True, 'images': registry['images'],
@@ -112,9 +157,10 @@ def build(root, version, output):
                 'external_upstream_failures_preserved': audit['raw_failures'],
                 'entry': 'docs/user-guide/quickstart.html', 'start_directory': 'deploy',
                 'start_command': 'mkdir -p public && docker compose up -d --pull missing',
-                'platform': 'linux/amd64'}
+                'platform': 'linux/amd64', 'source_archive': source_output.name,
+                'source_archive_sha256': source_digest, 'source_dependencies_vendored': True,
+                'offline_dependency_graph_verified': True}
     prefix = 'trojan-proxy-' + version + '/'
-    output = output.resolve();output.parent.mkdir(parents=True, exist_ok=True)
     stamp = int(git(root, 'show', '-s', '--format=%ct', 'HEAD'))
     date = datetime.datetime.fromtimestamp(stamp, datetime.timezone.utc).timetuple()[:6]
     def put(archive, name, body):

@@ -6,4 +6,4 @@
 <section><h2>记录与隐私</h2><p>网站记录包含时间、真实连接IP、域名/入口、方法、去掉查询部分的路径、状态码、耗时、上下行字节。不保存查询参数、Cookie、Authorization、验证码和正文；但路径本身可能包含业务ID，因此仍是私有数据。连接IP来自真实网络连接，不盲信X-Forwarded-For；经过CDN时可能显示CDN地址。</p><p>IP白名单可填IPv4、IPv6和CIDR，只改变分类与保留期，非白名单仍能访问；变更后按当前名单重新计算历史保留期。网站记录只覆盖本项目HTTP网关完成的请求，不保证记录TLS握手前失败、原生VPN包或绕过网关的其他端口。VPN记录独立保存目标IP及流量，速率来自采样窗口，不是测速带宽保证。</p><p>日志与统计都有容量及批次边界。流量库约256MiB、访问库约1GiB页数上限，不是连同WAL和其他文件在内的整盘绝对上限。采集异常会在后台显示；记录有上限，不能声称在磁盘耗尽或持续过载时仍无损保存无限请求。保持足够磁盘空间并检查采集健康。</p></section>
 <section><h2>独用安全模型</h2><p>单管理员；强口令使用Argon2id，TOTP和恢复码有重放保护，敏感操作要求近期双因素会话并校验来源。没有开放注册、邮件找回或多租户。公开目录是匿名可读服务；robots.txt、X-Robots-Tag和noindex是爬虫声明，不是鉴权。</p><p>VPN出站拒绝私网、元数据、自身IP及部分特殊目标，并验证解析后的地址；不会因反代需求开放内网代理。原生Trojan用TLS保护，但不承诺不可识别，也不等于支持任意CDN、所有网络或所有客户端。网站和Trojan共享443时，普通HTTP/HTTPS请求仍访问网站/欢迎页，不展示VPN文字。</p></section>
 
-</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · MIT License</footer></body></html>
+</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · <a href="components.html">组件来源与许可</a></footer></body></html>

@@ -21,4 +21,4 @@ docker compose -f compose.yaml -f recovery.compose.yaml run --rm --no-deps --ent
 docker compose run --rm --no-deps --entrypoint proxyctl control admin-reset
 docker compose up -d</pre><p>归档校验成功后旧管理凭据锁定，必须先完成SSH重绑。重新导入/签发或从私有卷备份恢复证书与ACME缓存，再核对所有入口；订阅需要重新创建。若失败留下recovery-required标志，保留现场，在另一个空卷恢复，不删除保护标志硬启动。</p></section>
 
-</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · MIT License</footer></body></html>
+</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · <a href="components.html">组件来源与许可</a></footer></body></html>

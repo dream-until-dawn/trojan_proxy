@@ -44,5 +44,7 @@ jobs:
             ".work/trojan-proxy-${RELEASE_VERSION}.zip" \
             ".work/trojan-proxy-${RELEASE_VERSION}.zip.sha256" \
             ".work/trojan-proxy-${RELEASE_VERSION}.manifest.json" \
+            ".work/trojan-proxy-${RELEASE_VERSION}-source.zip" \
+            ".work/trojan-proxy-${RELEASE_VERSION}-source.zip.sha256" \
             --verify-tag --title "Trojan Proxy ${RELEASE_VERSION}" \
             --notes-file ".work/trojan-proxy-${RELEASE_VERSION}.release-notes.txt"

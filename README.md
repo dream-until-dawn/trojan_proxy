@@ -52,6 +52,7 @@ DNS、自动 HTTPS、后台子域名、反代和 VPN 的后续操作请按包内
 | 备份、升级、密码恢复与冷还原 | [维护恢复](docs/user-guide/operations.html) |
 | 证书、登录、502、订阅与客户端排障 | [常见问题](docs/user-guide/troubleshooting.html) |
 | 本版内容、发布证据及限制 | [v1.0.0 版本说明](docs/releases/v1.0.0.html) |
+| 组件许可证、依赖与源码附件 | [来源与许可](docs/user-guide/components.html) |
 | 架构、开发计划和历史验证 | [开发文档](docs/index.html) |
 
 正式包通过 45 项候选 CI，镜像源码与运行代码绑定；完整 24 小时、1441 条核心样本及 25 轮真实 VPN 正反向已按本项目范围验收。原整站两次外部期货上游 502 保留，**不宣称整站零失败**。
@@ -77,4 +78,4 @@ python tools/release/check_docs.py
 
 根模块和两个独立引擎均需测试，单独 `go test ./...` 会漏掉嵌套模块。完整镜像扫描、隔离 Docker 正反向和定向破坏探针由候选工作流执行。正式发行工具会拒绝运行源码漂移、缺失长稳验收和镜像摘要不匹配。
 
-MIT License，见 [LICENSE](LICENSE)。
+根项目采用 MIT License，见 [LICENSE](LICENSE)。独立引擎及第三方组件依各自许可分发，详见[组件与源码说明](docs/user-guide/components.html)。

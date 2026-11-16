@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 import distribution as release
@@ -49,8 +50,12 @@ class DistributionTests(unittest.TestCase):
 
     def test_valid_archive_is_reproducible_and_excludes_private_untracked_files(self):
         private=self.root/'.work';private.mkdir();(private/'secret.pem').write_text('PRIVATE FIXTURE ONLY')
-        first=release.build(self.root,'v1.0.0',private/'first.zip')
-        second=release.build(self.root,'v1.0.0',private/'second.zip')
+        def fake_vendor(source):
+            for relative in ('vendor','engines/trojan/vendor','engines/gateway/vendor'):
+                path=source/relative;path.mkdir(parents=True);(path/'modules.txt').write_text('# fixture dependency\n')
+        with patch.object(release,'vendor_dependencies',side_effect=fake_vendor):
+            first=release.build(self.root,'v1.0.0',private/'first.zip')
+            second=release.build(self.root,'v1.0.0',private/'second.zip')
         self.assertEqual(first['archive_sha256'],second['archive_sha256'])
         with zipfile.ZipFile(private/'first.zip') as archive:
             names=archive.namelist()
@@ -60,6 +65,11 @@ class DistributionTests(unittest.TestCase):
             manifest=json.loads(archive.read('trojan-proxy-v1.0.0/release-manifest.json'))
             self.assertFalse(manifest['strict_end_to_end_passed'])
             self.assertEqual(manifest['external_upstream_failures_preserved'],2)
+            self.assertEqual(manifest['source_archive'],'trojan-proxy-v1.0.0-source.zip')
+        with zipfile.ZipFile(private/'trojan-proxy-v1.0.0-source.zip') as source:
+            self.assertIn('trojan-proxy-v1.0.0-source/internal/sentinel.go',source.namelist())
+            self.assertIn('trojan-proxy-v1.0.0-source/engines/trojan/vendor/modules.txt',source.namelist())
+            self.assertFalse(any('/.work/' in name for name in source.namelist()))
 
     def test_missing_owner_acceptance_rejected(self):
         self.mutate_evidence('acceptance_proof',lambda d:d.update(project_scope_accepted=False))
