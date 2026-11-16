@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>共享443长稳终审与重开计划</title><link rel="stylesheet" href="assets/docs.css"></head>
+<body><header><h1>完整窗口已终审，业务上游中断导致本轮失败</h1><nav><a href="plan.html">开发计划</a><a href="stability.html">长稳记录</a><a href="release-readiness.html">发布门槛</a></nav></header><main>
+<section><h2>2026-11-16终审结论</h2><p>本轮从北京时间11月15日14:54:09至11月16日14:54:09，原始1441条样本覆盖86400秒，25次真实公开443 VPN正反向检查。观察源码摘要未变，最大采样间隔60.014秒。累计2次失败，完整端到端长稳判为失败，稳定发布和标签仍受阻。</p>
+<table><thead><tr><th>检查项</th><th>实测</th><th>结论</th></tr></thead><tbody><tr><td>时长与采样</td><td>86400秒 / 1441条</td><td>完整</td></tr><tr><td>VPN真实443深检</td><td>25次正确认证、可信Google HTTPS及错误口令拒绝</td><td>通过已记录检查</td></tr><tr><td>端到端业务HTTP</td><td>期货/login两次502</td><td>失败</td></tr><tr><td>整体发布门槛</td><td>累计失败不为零</td><td>未通过</td></tr></tbody></table></section>
+<section><h2>原始失败与独立归因</h2><p>第488、489条样本分别发生在11月15日23:01:09、23:02:09。对应Caddy错误在23:01:12及23:02:12，均为访问futures.qin-xin.top/login时拨号127.0.0.1:3033遭connection refused，随后响应502。该上游当前容器创建于23:02:31，启动于23:02:33；与两次拒绝连接时间吻合。证据能确定上游当时不可连接，不能确定由谁、因何替换该业务容器。</p><p>当前直连3033与可信TLS的443期货登录页均返回200；正式443的VPN也重新通过Google HTTPS 204和错误口令拒绝。三个本项目核心容器在该轮无替换、意外重启或OOM。其他业务容器的发布不由本项目修改或回滚。</p></section>
+<section><h2>重新观察的实施计划</h2><ol><li>永久保留本轮原始样本、汇总、代码摘要及两条失败，不删失败、不改变判定标准。</li><li>保留网关、control及VPN镜像与业务路由；不以增加重试掩盖上游停机，不重启业务服务。</li><li>核验当前五个子域名、未登录边界、可信证书、VPN443及回环监听后，以相同源码另立86400秒独立窗口；不拼接旧窗口。</li><li>观察仍要求至少1441条、25次深检和零失败，业务上游若再次停机也继续记录为失败。</li><li>重新安排到期自动终审；全部正式发布门槛满足前，稳定标签保持未发布。</li></ol><p>新窗口启动证据将在实际烟测与首轮采样通过后写入；本段仅为已落实的重开计划。</p></section>
+<section><h2>机器证据</h2><p><a href="evidence/2026-11-16-shared443-24h-audit.json">逐行终审与原始SHA256</a> · <a href="evidence/2026-11-16-shared443-upstream-failure-analysis.json">原始失败行号与独立上游对照</a></p></section>
+</main></body></html>

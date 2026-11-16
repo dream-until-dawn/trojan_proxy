@@ -1,0 +1,67 @@
+{
+  "verdict": "failed",
+  "cause_observed": "upstream_tcp_connection_refused",
+  "upstream": "127.0.0.1:3033",
+  "failed_window": "/opt/trojan-proxy-refactor/backups/stability-20261115T065357Z-2c4f2e/24h",
+  "failures": [
+    {
+      "line": 488,
+      "at_utc": "2026-11-15T15:01:09.572564Z",
+      "reason": "unexpected_http_status",
+      "details": {
+        "port": 443,
+        "path": "/login",
+        "method": "GET",
+        "expected": 200,
+        "actual": 502,
+        "response_category": "other",
+        "domain": "futures.qin-xin.top"
+      }
+    },
+    {
+      "line": 489,
+      "at_utc": "2026-11-15T15:02:09.572809Z",
+      "reason": "unexpected_http_status",
+      "details": {
+        "port": 443,
+        "path": "/login",
+        "method": "GET",
+        "expected": 200,
+        "actual": 502,
+        "response_category": "other",
+        "domain": "futures.qin-xin.top"
+      }
+    }
+  ],
+  "correlation": {
+    "gateway_errors": [
+      {
+        "at_utc": "2026-11-15T15:01:12.993695Z",
+        "status": 502,
+        "category": "connection_refused",
+        "upstream": "127.0.0.1:3033",
+        "path": "/login"
+      },
+      {
+        "at_utc": "2026-11-15T15:02:12.769447Z",
+        "status": 502,
+        "category": "connection_refused",
+        "upstream": "127.0.0.1:3033",
+        "path": "/login"
+      }
+    ],
+    "current_upstream": {
+      "container": "/futures-engine-ops-v02-web-1",
+      "created": "2026-11-15T15:02:31.410020035Z",
+      "started": "2026-11-15T15:02:33.56314403Z",
+      "restarts": 0,
+      "oom": false
+    },
+    "current_checks": {
+      "direct_3033_login": 200,
+      "trusted_443_login": 200
+    }
+  },
+  "attribution_limit": "The current upstream container was created and started after both refused connections; this establishes upstream unavailability, not the operator or reason for replacement.",
+  "action": "Preserve this failed window; keep gateway and VPN images unchanged; after current checks pass, launch a new full 24h strict end-to-end window. No failed sample is excluded."
+}
