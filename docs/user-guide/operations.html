@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>备份、升级与恢复 · Trojan Proxy</title><link rel="stylesheet" href="../assets/docs.css"></head><body><header><div class="eyebrow">TROJAN PROXY / v1.0.0</div><h1>备份、升级与恢复</h1><p class="muted">所有维护命令在原发行包deploy目录执行。备份是秘密材料，绝不能放入public目录或公开Issue。</p><nav><a href="index.html">手册首页</a><a href="quickstart.html">首次部署</a><a href="features.html">功能</a><a href="configuration.html">配置项</a><a href="operations.html">维护恢复</a><a href="troubleshooting.html">排障</a></nav></header><main>
+
+<section id="status"><h2>状态与停止</h2><pre>docker compose ps -a
+docker compose logs --tail 100 prepare control admin-gateway vpn-runner
+docker compose stop</pre><p>日志可能包含站点及连接信息，发给别人前先脱敏。日常重新启动使用docker compose up -d。停止不会删除卷；不要运行docker compose down -v。更换目录时保持相同Compose项目名和数据卷，否则看起来会像一台全新服务器。</p></section>
+<section id="backup"><h2>在线配置一致性备份</h2><pre>docker compose exec -T control proxyctl backup
+mkdir -p private-backups
+chmod 700 private-backups
+docker compose cp control:/data/backups/. ./private-backups/</pre><p>首条命令输出归档路径、大小与SHA256，单独可信保存该摘要，并对取回文件核验。归档包含control.db、master.key和部署描述等；不包含证书、ACME缓存、subscription.db、访问记录、VPN流量或public文件，也不是整盘备份。配置和主密钥必须成套保存。</p><p>升级与迁机还应私有保存整个部署清单、目录文件以及control-data、certificates和caddy-data卷。需要完整卷备份时安排维护窗口停止本项目后，用系统/备份工具保留权限和所有权地导出命名卷；不要在线直接cp SQLite及其WAL。订阅库应使用SQLite一致性快照，或者在停止相关写入后做完整冷备。仅有配置归档不能立即恢复HTTPS或旧订阅URL。</p></section>
+<section id="upgrade"><h2>升级到后续正式版本</h2><ol><li>阅读目标版本说明，确认架构、配置格式和迁移要求；备份并记录现有Compose、镜像摘要和卷名。</li><li>下载目标固定版本发行包，核对SHA256；保留现有public、覆盖配置、项目名和所有命名卷。</li><li>在原部署目录使用目标版本Compose，先执行docker compose config核对挂载与摘要，再执行docker compose pull及docker compose up -d。组件更换可能造成短暂连接中断。</li><li>检查后台、各应用、证书、未登录边界和真实VPN访问。客户端URL无需因普通重建而重建，管理员重置/冷还原则另有失效规则。</li></ol><p>不建议仅运行docker compose pull就期待自动升级：本项目固定摘要，只有换成新发行清单才会升级。不要将自动更新器对latest的行为套在固定摘要上。</p><p>当前仅回环配置格式为8。旧程序不能安全读取更高格式；回退前需由兼容的新程序撤回相关特性并确认，停止control并在维护独占锁内运行受限downgrade-format工具。不得直接修改PRAGMA user_version、倒回旧认证库或让已消费恢复码复活。具体目标格式和镜像必须按该次版本说明确定。</p></section>
+<section id="reset"><h2>口令或验证器遗失</h2><p>还有离线恢复码时按登录页提示使用一次。全部丢失，则在自己的交互SSH终端执行：</p><pre>docker compose stop control
+docker compose run --rm --no-deps --entrypoint proxyctl control admin-reset
+docker compose up -d control</pre><p>重新设强口令、绑定新TOTP并保存新恢复码。该操作不替换主密钥、路由和VPN口令，但旧管理会话及原订阅授权失效，需为客户端重新创建订阅。不能使用管道或把交互内容重定向到日志；如果主密钥丢失，必须恢复原密钥，不能随意生成替代。</p></section>
+<section id="restore"><h2>空卷灾难恢复</h2><p>用于一套专门的空目标卷，不能覆盖正在工作的部署。恢复主机需兼容备份中的部署边界；先核对配置、域名、IP及目录挂载。准备只读归档挂载：</p><pre># recovery.compose.yaml，路径替换为自己的私有备份
+services:
+  control:
+    volumes:
+      - /private/backup.tgz:/restore/backup.tgz:ro</pre><pre>docker compose run --rm --no-deps prepare
+docker compose -f compose.yaml -f recovery.compose.yaml run --rm --no-deps --entrypoint proxyctl control restore --archive /restore/backup.tgz --sha256 从可信记录取得的完整SHA256
+docker compose run --rm --no-deps --entrypoint proxyctl control admin-reset
+docker compose up -d</pre><p>归档校验成功后旧管理凭据锁定，必须先完成SSH重绑。重新导入/签发或从私有卷备份恢复证书与ACME缓存，再核对所有入口；订阅需要重新创建。若失败留下recovery-required标志，保留现场，在另一个空卷恢复，不删除保护标志硬启动。</p></section>
+
+</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · MIT License</footer></body></html>

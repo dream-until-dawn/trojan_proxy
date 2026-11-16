@@ -1,4 +1,4 @@
-# 固定为通过完整CI门槛且已匿名拉取的Linux/amd64候选；正式发布仍待长稳验收。
+# v1.0.0：固定为通过45项CI、匿名拉取及项目核心长稳验收的Linux/amd64镜像。
 name: trojan-proxy
 x-control-image: &control-image ${TROJAN_CONTROL_IMAGE:-ghcr.io/dream-until-dawn/trojan-proxy-control@sha256:49c4f61360dab2f24e7651fbd8b5ee2119ccb50c6dec4793b2e307daab59a8d6}
 x-logging: &logging

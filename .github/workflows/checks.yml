@@ -1,0 +1,25 @@
+name: Verify source and distribution contracts
+on:
+  push:
+    branches: [main, codex/refactor-design]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version: '1.26.11'
+          cache: false
+      - run: python3 tools/validate.py
+      - run: python3 -m unittest discover -s tools/stability -p 'test_*.py'
+      - run: python3 -m unittest discover -s tools/release -p 'test_*.py'
+      - run: python3 tools/release/check_docs.py
+      - run: python3 tools/release/distribution.py --version v1.0.0

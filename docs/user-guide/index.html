@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>个人 HTTPS 网关与 Trojan 管理平台 · Trojan Proxy</title><link rel="stylesheet" href="../assets/docs.css"></head><body><header><div class="eyebrow">TROJAN PROXY / v1.0.0</div><h1>个人 HTTPS 网关与 Trojan 管理平台</h1><p class="muted">第一次使用，从“首次部署”开始；日常设置都在后台。</p><nav><a href="index.html">手册首页</a><a href="quickstart.html">首次部署</a><a href="features.html">功能</a><a href="configuration.html">配置项</a><a href="operations.html">维护恢复</a><a href="troubleshooting.html">排障</a></nav></header><main>
+
+<section><h2>你会得到什么</h2><div class="grid"><div class="card"><h3>一个入口</h3><p>80/443统一管理。无域名先用HTTP，有域名自动申请证书、开启HTTPS并将HTTP跳转到HTTPS。</p></div><div class="card"><h3>独用后台</h3><p>强口令＋手机验证器。按域名、路径和端口管理反代、只读目录、证书和VPN。</p></div><div class="card"><h3>VPN与订阅</h3><p>Trojan与网站共享443，普通网页访问回落到网站；Clash Verge / Clash Mi可用URL导入和更新。</p></div></div></section>
+<section><h2>最短上手路线</h2><ol><li>Linux/amd64服务器安装Docker Engine与Compose插件，保证80、443空闲。</li><li>下载v1.0.0发行ZIP并核对SHA256，在deploy目录运行一条Compose启动命令。</li><li>通过SSH隧道绑定管理员、手机验证器和恢复码。</li><li>需要HTTPS时配置DNS，在后台填写域名、自动证书和后台子域名，确认新入口。</li><li>添加反代；需要VPN时启用Trojan，创建每台设备的订阅。</li></ol><p><a href="quickstart.html">按步骤开始部署 →</a></p></section>
+<section><h2>部署前须知</h2><p>本版正式支持Linux/amd64，建议至少2GiB内存，并为系统、其他应用和统计数据保留余量。三个常驻容器的内存上限合计512MiB，prepare为一次性服务；宿主机和Docker额外占用不包含其中。首次拉取需要访问ghcr.io；不用在服务器安装Go、Node或数据库。</p><p>一个服务器只部署一套本项目。它将独占80/443，不会自动停止已有Nginx/Caddy或修改云防火墙。域名和公网可达条件由你提供，后台不会自动操作DNS。公开目录内的文件可匿名读取。</p></section>
+
+</main><footer>本手册对应v1.0.0固定摘要发行包。<a href="../releases/v1.0.0.html">版本说明与边界</a> · <a href="../index.html">开发设计及历史证据</a> · MIT License</footer></body></html>

@@ -1,6 +1,9 @@
 {
   "format": 1,
-  "candidate_only": true,
+  "candidate_only": false,
   "registry_proof": "docs/evidence/2026-11-15-private-listener-images.json",
-  "ci_gate": "docs/evidence/2026-11-15-private-listener-ci-gate.json"
+  "ci_gate": "docs/evidence/2026-11-15-private-listener-ci-gate.json",
+  "version": "v1.0.0",
+  "acceptance_proof": "docs/evidence/2026-11-16-project-core-soak-acceptance.json",
+  "soak_audit": "docs/evidence/2026-11-16-shared443-24h-audit.json"
 }

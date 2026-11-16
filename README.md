@@ -1,76 +1,80 @@
-# trojan_proxy
+# Trojan Proxy
 
-trojan 代理 docker 容器
+面向个人服务器的 HTTPS 网关、独用管理后台和 Trojan 服务。**v1.0.0** 使用固定摘要 Docker 镜像，域名、证书、反代和 VPN 在后台配置。
 
-> 重构候选已上线验证：使用 [HTML 部署与维护手册](docs/operations.html) 和 `deploy/compose.yaml`，固定摘要镜像可匿名拉取，业务在后台配置。架构与进度见 [HTML 文档](docs/index.html)。正式发布仍待长稳验收。以下为旧版使用说明。
+## 第一次使用
 
-## 证书管理
+正式支持 **Linux / amd64**，建议至少 2GiB 内存。需要 Docker Engine、Compose 插件和 SSH 权限；服务器 **80、443 必须空闲**。无域名也能先部署 HTTP，后台通过 SSH 隧道访问。
 
-### 概述
-
-#### docker 启动时脚本流程
-
-- 启动 docker 容器时，执行`install.environment.sh`脚本。
-- 安装 acme.sh 脚本和 trojan 程序。
-- 启动 nginx,使用 acme.sh 申请证书。
-- 检查是否已有或未完成申请,如有使用 acme.sh 内置 80 端口服务申请证书
-- 如未有,先尝试 zerossl,再尝试 letsencrypt
-- 申请成功后,将证书和密钥文件保存到`/usr/src/trojan-cert`目录下
-- 使用 trojan 密码和证书文件启动启动 trojan 程序
-
-#### PS
-
-- 非常强烈建议挂载 /usr/src/trojan-cert 和 /root/.acme.sh 目录持久化
-- 有挂载目录情况下,首次启动证书申请如不成功(这时仅尝试了 zerossl 和 letsencrypt),二次启动的申请会使用 standalone 方式
-- 第二次启动还是失败,可以尝试自己手动申请证书,并将证书和密钥文件的本地路径挂载到 /usr/src/trojan-cert 目录下(目标目录下应有一个以你的域名为名的文件夹,在其中包含 private.key 和 fullchain.cer 文件)
-- 可以配置使用自己的前端项目作为伪装(于 Dockerfile.trojan 中修改)
-  ```bash
-  # 复制html
-  COPY config/index.html /usr/share/nginx/html/index.html
-  ```
-
-### docker 打包
-
-#### 在包含 Dockerfile 和 scripts 目录的文件夹中运行：
+在服务器执行：
 
 ```bash
-docker build -f Dockerfile.trojan -t trojan:latest .
+mkdir -p ~/trojan-proxy-download
+cd ~/trojan-proxy-download
+curl -fLO https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0.zip
+curl -fLO https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0.zip.sha256
+sha256sum -c trojan-proxy-v1.0.0.zip.sha256
+unzip trojan-proxy-v1.0.0.zip
+cd trojan-proxy-v1.0.0/deploy
+mkdir -p public
+docker compose up -d --pull missing
+docker compose ps -a
+docker compose exec control proxyctl setup-token
 ```
 
-### 运行容器
+`prepare` 成功退出、三个服务运行即为正常启动。最后一条命令在交互终端显示十分钟有效的令牌，请勿分享。在自己的电脑另开终端，替换用户名和服务器 IP：
 
 ```bash
-docker run --name trojan -it -d \
--p 80:80 -p 443:443 \
--e DOMAIN=example.com \
--e FORCE_LOCAL=false \
--e TROJAN_PW= \
--v /mnt/trojan-cert:/usr/src/trojan-cert \
--v /mnt/acme-home:/root/.acme.sh \
-trojan:latest
+ssh -N -L 18092:127.0.0.1:18092 -L 18090:127.0.0.1:18090 用户名@服务器IP
 ```
 
-参数说明:
+打开 `http://127.0.0.1:18092`，设置至少 16 字节的强口令、绑定手机验证器并离线保存恢复码。完成后打开 `http://127.0.0.1:18090` 登录后台。**没有默认账号和密码，不要把初始化端口开放到公网。**
+
+DNS、自动 HTTPS、后台子域名、反代和 VPN 的后续操作请按包内 **`docs/user-guide/quickstart.html`** 完成。HTML 手册可直接离线浏览；GitHub 文件预览通常显示 HTML 源码，下载发行包后打开效果完整。
+
+## 功能
+
+- 无域名 HTTP；有域名自动申请和管理证书，HTTP 跳转 HTTPS。
+- 单管理员强口令＋TOTP、离线恢复码、近期双因素敏感操作保护。
+- 按子域名、路径和自定义端口反代到宿主机回环服务；只读目录发布。
+- Trojan 独立端口或共享 443、网页回落、仅回环引擎。
+- Clash Verge / Clash Mi 每设备 URL 订阅、导入与更新。
+- 网站请求记录：白名单 IP 保留 7 天，其他来源 30 天；白名单只分类，不拦截访问。
+- 独立的 VPN 目标 IP、上下行流量和采样速率，滚动保留 30 天。
+
+## 手册
+
+| 内容 | HTML 文件 |
+| --- | --- |
+| 从下载到首次可用 | [首次部署](docs/user-guide/quickstart.html) |
+| 功能、端口与支持边界 | [功能说明](docs/user-guide/features.html) |
+| 每个配置项、子域名/端口/目录反代示例 | [配置手册](docs/user-guide/configuration.html) |
+| 备份、升级、密码恢复与冷还原 | [维护恢复](docs/user-guide/operations.html) |
+| 证书、登录、502、订阅与客户端排障 | [常见问题](docs/user-guide/troubleshooting.html) |
+| 本版内容、发布证据及限制 | [v1.0.0 版本说明](docs/releases/v1.0.0.html) |
+| 架构、开发计划和历史验证 | [开发文档](docs/index.html) |
+
+正式包通过 45 项候选 CI，镜像源码与运行代码绑定；完整 24 小时、1441 条核心样本及 25 轮真实 VPN 正反向已按本项目范围验收。原整站两次外部期货上游 502 保留，**不宣称整站零失败**。
+
+下载地址：[GitHub Releases](https://github.com/dream-until-dawn/trojan_proxy/releases)。默认清单固定镜像摘要；升级应下载目标版本清单并按手册保留数据卷。
+
+## 注意事项
+
+- 常驻组件为 `control`、`admin-gateway`、`vpn-runner`，`prepare` 为一次性预检。不能与其他网关争用 80/443。
+- 当前仅实现 Trojan；其他 VPN 协议为扩展接口。反代上游只支持宿主回环 HTTP 服务。
+- 订阅 URL、私钥、恢复码和备份都是秘密。撤销订阅不能收回已经下载的节点口令。
+- 不要使用 `docker compose down -v` 停止服务，否则会删除持久卷。
+- 根目录 `docker-compose.yml`、`Dockerfile.trojan` 和旧 acme.sh/nginx 脚本是历史实现，**不属于 v1.0.0 部署方式**。使用发行包 `deploy/compose.yaml`；旧版升级按全新部署迁移，先保留备份。
+
+## 开发验证
 
 ```bash
--p 80:80 -p 443:443 ,映射端口
--e DOMAIN=example.com ,设置服务器绑定域名
--e FORCE_LOCAL=false ,acme.sh和trojan是否使用本地旧版文件安装(默认false-联网拉取最新版)
--e TROJAN_PW= ,设置trojan密码(默认为空-将使用随机密码,需留意日志输出的随机密码)
--v /mnt/trojan-cert:/usr/src/trojan-cert ,用于持久化存储证书.最好映射到本地目录
--v /mnt/acme-home:/root/.acme.sh ,因acme.sh有内部管理文件.最好映射到本地目录
+python tools/validate.py
+python -m unittest discover -s tools/stability -p 'test_*.py'
+python -m unittest discover -s tools/release -p 'test_*.py'
+python tools/release/check_docs.py
 ```
 
-### 容器内部操作
+根模块和两个独立引擎均需测试，单独 `go test ./...` 会漏掉嵌套模块。完整镜像扫描、隔离 Docker 正反向和定向破坏探针由候选工作流执行。正式发行工具会拒绝运行源码漂移、缺失长稳验收和镜像摘要不匹配。
 
-先进入容器
-
-```bash
-docker exec -it trojan bash
-```
-
-再开始交互
-
-```bash
-bash menu.sh
-```
+MIT License，见 [LICENSE](LICENSE)。
