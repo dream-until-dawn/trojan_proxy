@@ -1,0 +1,65 @@
+{
+  "passed": true,
+  "release_url": "https://github.com/dream-until-dawn/trojan_proxy/releases/tag/v1.0.0",
+  "version": "v1.0.0",
+  "tag_commit": "29e0c6dd2ca13a84a5eb8eb45226221285d8910c",
+  "published_at": "2026-11-16T09:55:53Z",
+  "anonymous_public_downloads_verified": true,
+  "deployment_files_match_tag": true,
+  "source_files_and_vendor_modules_verified": true,
+  "extracted_compose_parsed": true,
+  "assets": {
+    "trojan-proxy-v1.0.0.zip": {
+      "sha256": "823d71239f8913e21611c19eff07a92c0d2f435510a73072652e2e214ebf810e",
+      "bytes": 1100256,
+      "url": "https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0.zip"
+    },
+    "trojan-proxy-v1.0.0.zip.sha256": {
+      "sha256": "598eec854d98c2da13267bb18050167d554b3316285a9a03b19306fd4ce48273",
+      "bytes": 90,
+      "url": "https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0.zip.sha256"
+    },
+    "trojan-proxy-v1.0.0.manifest.json": {
+      "sha256": "36d1127caa0562ea518e4b117799dc846d28fe19549814c83f1d34336a25ba74",
+      "bytes": 2061,
+      "url": "https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0.manifest.json"
+    },
+    "trojan-proxy-v1.0.0-source.zip": {
+      "sha256": "77ab9dedc1796dd73f6dcabcfd2829179a8c63437fbfd8076d9b14e5f45e9803",
+      "bytes": 59349164,
+      "url": "https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0-source.zip"
+    },
+    "trojan-proxy-v1.0.0-source.zip.sha256": {
+      "sha256": "64a00085e74d4f066d446806e3bc8ba0fcabe72ba784acf1ddb9f50dbb58bbbd",
+      "bytes": 97,
+      "url": "https://github.com/dream-until-dawn/trojan_proxy/releases/download/v1.0.0/trojan-proxy-v1.0.0-source.zip.sha256"
+    }
+  },
+  "image_source_commit": "3edd775d0e1d2ddf9235bdecbac675cfa8435476",
+  "ci_checks": 45,
+  "soak_scope": "project_core_owner_accepted",
+  "original_external_failures_preserved": 2,
+  "workflows": {
+    "branch": {
+      "run_id": 43842771389,
+      "conclusion": "success"
+    },
+    "main": {
+      "run_id": 43843326067,
+      "conclusion": "success"
+    },
+    "stable_release": {
+      "run_id": 43843744844,
+      "conclusion": "success"
+    }
+  },
+  "validation": {
+    "candidate_runtime_gate_checks": 45,
+    "go_modules_test_vet": 3,
+    "stability_positive_negative_tests": 19,
+    "distribution_positive_negative_tests": 11,
+    "html_pages_link_checked": 48,
+    "offline_vendor_modules": 3
+  },
+  "production_action": "No deployment, restart or image change; existing verified runtime preserved."
+}
