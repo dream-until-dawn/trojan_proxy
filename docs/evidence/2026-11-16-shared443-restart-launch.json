@@ -1,0 +1,28 @@
+{
+  "launch_verified": true,
+  "completed": false,
+  "observation_passed": false,
+  "observer_source_commit": "45005f3bcef2920da354be64f0b37da3dcc853eb",
+  "pid": 1774368,
+  "script": "/opt/trojan-proxy-refactor/backups/stability-20261116T090519Z-3d51c9/code/observe.py",
+  "output": "/opt/trojan-proxy-refactor/backups/stability-20261116T090519Z-3d51c9/24h",
+  "started_utc": "2026-11-16T09:05:33.664977Z",
+  "expected_finish_utc": "2026-11-17T09:05:33Z",
+  "smoke_passed": true,
+  "first_sample_and_VPN_positive_negative_passed": true,
+  "code_sha256": {
+    "audit.py": "5aa6cf921eb876389511889a5d6650e9b6342f10aa572f9137c00226748e5baf",
+    "checks.py": "afe534642cf92d565594c3d6c4eb3a2ffc8b51ff012b7d65dace7bdcb823b7f6",
+    "domain_checks.py": "b6f76a8976a3bca34c427480335f1b1503660b828a4820839e0b932f0cfd693d",
+    "http_checks.py": "32b657f4be63d85ab27919ef3bb135d4de0841ee3f097dd2fd58ce71a52452d3",
+    "observe.py": "1cd9c4b0a7beb3d9bb4bc63df1ba20520dcf1bfa6d7288cdec7718ae148c50d2",
+    "test_audit.py": "a52cf77a2d19969f484558089943bd3004e26b8de0537a4d5764e05325aa29f5",
+    "test_checks.py": "bf04b8a6b7d81ab4c13c836f1d8b220aeb64c7a7cd14d26a0c10687bcf88fb86",
+    "test_domains.py": "251ff4662fe258e6ad832a0e0d2d2f2f780be9921299415ad34c3bcc4dabfe57",
+    "test_http_checks.py": "68ebeb24591baa2e652f697d0e28a69d81093760b63c8645a854e3051d88c2e0",
+    "test_vpn_checks.py": "c77791d095bb6f063959f840512efae71953dac834f0fafc58b7fac61fd62b31",
+    "vpn_checks.py": "3a72ca2db5f39d2b08664eb08519635d8afe646caa12373b733f98025224dddc",
+    "vpn_connectivity_probe.py": "d301d011f1312b376c6c1053290ea6903b77182911c9e532c1a06a680950efb2",
+    "manifest.json": "008fa672c886cdfef736ca5235ee3272bdecff3e1b4cd3d5e64ce619913436ad"
+  }
+}

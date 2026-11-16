@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "revision": 42,
+  "schema": 8,
+  "kernel_listener": "127.0.0.1",
+  "gateway_configuration_preserved": true,
+  "engine_other_parameters_preserved": true
+}
