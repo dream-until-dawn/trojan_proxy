@@ -106,12 +106,19 @@ def selected_files(root):
 def vendor_dependencies(source):
     """三个独立模块分别携带对应依赖源码及许可，离线检查依赖闭包。"""
     environment = dict(os.environ, GOOS='linux', GOARCH='amd64', CGO_ENABLED='0', GOWORK='off')
+    # 先解析已选定的真实工具链，离线检查时不能再由旧go启动器联网选择工具链。
+    goroot=subprocess.check_output(['go','env','GOROOT'],cwd=source,env=environment).decode().strip()
+    executable=Path(goroot)/'bin'/('go.exe' if os.name=='nt' else 'go')
+    environment['GOTOOLCHAIN']='local'
+    version=subprocess.check_output([str(executable),'version'],env=environment).decode().split()[2]
+    expected=re.search(r'^go (\S+)$',(source/'go.mod').read_text(),re.MULTILINE).group(1)
+    if version!='go'+expected:raise ValueError('release_toolchain_version_mismatch')
     for directory in (source, source/'engines/trojan', source/'engines/gateway'):
         locked = {name:(directory/name).read_bytes() for name in ('go.mod','go.sum')}
-        subprocess.run(['go','mod','vendor'], cwd=directory, env=environment, check=True)
+        subprocess.run([str(executable),'mod','vendor'], cwd=directory, env=environment, check=True)
         if any((directory/name).read_bytes()!=body for name,body in locked.items()):
             raise ValueError('vendoring_changed_locked_dependencies')
-        subprocess.run(['go','list','-mod=vendor','-deps','./...'], cwd=directory,
+        subprocess.run([str(executable),'list','-mod=vendor','-deps','./...'], cwd=directory,
                        env=dict(environment,GOPROXY='off',GOSUMDB='off'), check=True,
                        stdout=subprocess.DEVNULL)
 
